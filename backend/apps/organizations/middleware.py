@@ -16,6 +16,8 @@ class TenantMiddleware(MiddlewareMixin):
     """
 
     def process_request(self, request):
+        if request.path_info in ("/healthz/", "/readyz/"):
+            return None
         tenant: Optional[Organization] = None
 
         # 1. Try to resolve from Authorization header (JWT)

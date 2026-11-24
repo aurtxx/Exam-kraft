@@ -1,0 +1,116 @@
+[Tue Nov 24 14:05:25 IST 2026] Starting 1-Hour Autonomous Codex Verification & Test Suite...
+[Tue Nov 24 14:05:25 IST 2026] Running backend test suite...
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Found 50 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: corsheaders, messages, rest_framework, rest_framework_simplejwt, staticfiles
+  Apply all migrations: accounts, admin, auth, contenttypes, examinations, notices, organizations, question_bank, sessions, token_blacklist
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying accounts.0001_initial... OK
+  Applying organizations.0001_initial... OK
+  Applying organizations.0002_batch_description... OK
+  Applying accounts.0002_initial... OK
+  Applying accounts.0003_facultyprofile... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying question_bank.0001_initial... OK
+  Applying examinations.0001_initial... OK
+  Applying examinations.0002_initial... OK
+  Applying notices.0001_initial... OK
+  Applying sessions.0001_initial... OK
+  Applying token_blacklist.0001_initial... OK
+  Applying token_blacklist.0002_outstandingtoken_jti_hex... OK
+  Applying token_blacklist.0003_auto_20171017_2007... OK
+  Applying token_blacklist.0004_auto_20171017_2013... OK
+  Applying token_blacklist.0005_remove_outstandingtoken_jti... OK
+  Applying token_blacklist.0006_auto_20171017_2113... OK
+  Applying token_blacklist.0007_auto_20171017_2214... OK
+  Applying token_blacklist.0008_migrate_to_bigautofield... OK
+  Applying token_blacklist.0010_fix_migrate_to_bigautofield... OK
+  Applying token_blacklist.0011_linearizes_history... OK
+  Applying token_blacklist.0012_alter_outstandingtoken_user... OK
+  Applying token_blacklist.0013_alter_blacklistedtoken_options_and_more... OK
+System check identified no issues (0 silenced).
+test_login_disabled_account (tests.test_auth.AuthEndpointsTestCase.test_login_disabled_account) ... ok
+test_login_invalid_password (tests.test_auth.AuthEndpointsTestCase.test_login_invalid_password) ... ok
+test_login_with_email_success (tests.test_auth.AuthEndpointsTestCase.test_login_with_email_success) ... ok
+test_login_with_phone_success (tests.test_auth.AuthEndpointsTestCase.test_login_with_phone_success) ... ok
+test_login_with_username_success (tests.test_auth.AuthEndpointsTestCase.test_login_with_username_success) ... ok
+test_logout_blacklists_token (tests.test_auth.AuthEndpointsTestCase.test_logout_blacklists_token) ... ok
+test_me_authenticated (tests.test_auth.AuthEndpointsTestCase.test_me_authenticated) ... ok
+test_me_unauthenticated_fails (tests.test_auth.AuthEndpointsTestCase.test_me_unauthenticated_fails) ... ok
+test_token_refresh (tests.test_auth.AuthEndpointsTestCase.test_token_refresh) ... ok
+test_batch_crud_and_duplicate_code (tests.test_m2_all.MilestoneM2ComprehensiveTestCase.test_batch_crud_and_duplicate_code) ... ok
+test_bulk_csv_import_valid_and_rollback (tests.test_m2_all.MilestoneM2ComprehensiveTestCase.test_bulk_csv_import_valid_and_rollback) ... ok
+test_center_capacity_validation (tests.test_m2_all.MilestoneM2ComprehensiveTestCase.test_center_capacity_validation) ... ok
+test_examination_lifecycle_and_publishing (tests.test_m2_all.MilestoneM2ComprehensiveTestCase.test_examination_lifecycle_and_publishing) ... ok
+test_faculty_roster_management (tests.test_m2_all.MilestoneM2ComprehensiveTestCase.test_faculty_roster_management) ... ok
+test_notices_creation_and_filtering (tests.test_m2_all.MilestoneM2ComprehensiveTestCase.test_notices_creation_and_filtering) ... ok
+test_question_authoring_and_validations (tests.test_m2_all.MilestoneM2ComprehensiveTestCase.test_question_authoring_and_validations) ... ok
+test_student_roster_and_pagination (tests.test_m2_all.MilestoneM2ComprehensiveTestCase.test_student_roster_and_pagination) ... ok
+test_batch_unique_composite (tests.test_models.DataModelsTestCase.test_batch_unique_composite) ... ok
+test_examination_center_unique_composite (tests.test_models.DataModelsTestCase.test_examination_center_unique_composite) ... ok
+test_organization_creation (tests.test_models.DataModelsTestCase.test_organization_creation) ... ok
+test_organization_unique_slug (tests.test_models.DataModelsTestCase.test_organization_unique_slug) ... ok
+test_student_enrollment_unique_roll_number (tests.test_models.DataModelsTestCase.test_student_enrollment_unique_roll_number) ... ok
+test_user_creation_and_password_hashing (tests.test_models.DataModelsTestCase.test_user_creation_and_password_hashing) ... ok
+test_user_profile_creation (tests.test_models.DataModelsTestCase.test_user_profile_creation) ... ok
+test_user_unique_username (tests.test_models.DataModelsTestCase.test_user_unique_username) ... ok
+test_get_current_organization_as_admin (tests.test_organizations.OrganizationEndpointsTestCase.test_get_current_organization_as_admin) ... ok
+test_get_select_fields (tests.test_organizations.OrganizationEndpointsTestCase.test_get_select_fields) ... ok
+test_org_admin_can_create_batch (tests.test_organizations.OrganizationEndpointsTestCase.test_org_admin_can_create_batch) ... ok
+test_org_admin_can_create_center (tests.test_organizations.OrganizationEndpointsTestCase.test_org_admin_can_create_center) ... ok
+test_patch_branding_as_org_admin_success (tests.test_organizations.OrganizationEndpointsTestCase.test_patch_branding_as_org_admin_success) ... ok
+test_patch_branding_as_student_forbidden (tests.test_organizations.OrganizationEndpointsTestCase.test_patch_branding_as_student_forbidden) ... ok
+test_student_can_read_batches_and_centers (tests.test_organizations.OrganizationEndpointsTestCase.test_student_can_read_batches_and_centers) ... ok
+test_student_cannot_create_batch (tests.test_organizations.OrganizationEndpointsTestCase.test_student_cannot_create_batch) ... ok
+test_student_cannot_create_center (tests.test_organizations.OrganizationEndpointsTestCase.test_student_cannot_create_center) ... ok
+test_is_faculty_permission (tests.test_rbac.RBACPermissionsTestCase.test_is_faculty_permission) ... ok
+test_is_orgadmin_or_read_only_permission (tests.test_rbac.RBACPermissionsTestCase.test_is_orgadmin_or_read_only_permission) ... ok
+test_is_orgadmin_permission (tests.test_rbac.RBACPermissionsTestCase.test_is_orgadmin_permission) ... ok
+test_is_student_permission (tests.test_rbac.RBACPermissionsTestCase.test_is_student_permission) ... ok
+test_is_superadmin_permission (tests.test_rbac.RBACPermissionsTestCase.test_is_superadmin_permission) ... ok
+test_is_tenant_member_fails_when_user_has_no_org (tests.test_rbac.RBACPermissionsTestCase.test_is_tenant_member_fails_when_user_has_no_org) ... ok
+test_is_tenant_member_permission (tests.test_rbac.RBACPermissionsTestCase.test_is_tenant_member_permission) ... ok
+test_is_tenant_member_resolves_when_tenant_is_none (tests.test_rbac.RBACPermissionsTestCase.test_is_tenant_member_resolves_when_tenant_is_none) ... ok
+test_all_objects_manager_bypasses_filter (tests.test_tenant_isolation.TenantIsolationTestCase.test_all_objects_manager_bypasses_filter) ... ok
+test_middleware_resolves_tenant_from_header_slug (tests.test_tenant_isolation.TenantIsolationTestCase.test_middleware_resolves_tenant_from_header_slug) ... ok
+test_middleware_resolves_tenant_from_header_uuid (tests.test_tenant_isolation.TenantIsolationTestCase.test_middleware_resolves_tenant_from_header_uuid) ... ok
+test_middleware_resolves_tenant_from_subdomain (tests.test_tenant_isolation.TenantIsolationTestCase.test_middleware_resolves_tenant_from_subdomain) ... ok
+test_tenant_isolation_boundary_missing_tenant_context (tests.test_tenant_isolation.TenantIsolationTestCase.test_tenant_isolation_boundary_missing_tenant_context) ... ok
+test_tenant_manager_no_active_tenant_fail_closed (tests.test_tenant_isolation.TenantIsolationTestCase.test_tenant_manager_no_active_tenant_fail_closed) ... ok
+test_tenant_manager_scoping_alpha (tests.test_tenant_isolation.TenantIsolationTestCase.test_tenant_manager_scoping_alpha) ... ok
+test_tenant_manager_scoping_beta (tests.test_tenant_isolation.TenantIsolationTestCase.test_tenant_manager_scoping_beta) ... ok
+
+----------------------------------------------------------------------
+Ran 50 tests in 18.401s
+
+OK
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+[Tue Nov 24 14:05:45 IST 2026] Running 104-case E2E test runner...
+==============================================================================
+                   EZEXAM E2E TEST RUNNER EXECUTION                           
+==============================================================================
+Working Directory : /Users/aurtx/teamwork_projects/ezexam_reconstruction
+Pytest Binary     : /Users/aurtx/teamwork_projects/ezexam_reconstruction/.venv/bin/pytest
+Execution Target  : In-Process Observable API Contract Engine
+==============================================================================
+ERROR: Invalid tier 'all'. Expected 1, 2, 3, or 4.

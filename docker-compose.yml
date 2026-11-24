@@ -1,88 +1,100 @@
-version: '3.8'
+x-app: &app
+  image: ezexam-backend:local
+  build: ./backend
+  environment:
+    SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY}
+    DEBUG: "False"
+    ALLOWED_HOSTS: localhost,127.0.0.1,${PUBLIC_HOST:-localhost}
+    HTTPS_ENABLED: ${HTTPS_ENABLED:-0}
+    CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+    DB_NAME: ezexam
+    DB_USER: ezexam
+    DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    DB_HOST: db
+    REDIS_URL: redis://redis:6379/0
 
 services:
   db:
     image: postgres:16-alpine
-    container_name: ezexam_db
     environment:
       POSTGRES_DB: ezexam
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ezexampassword2026
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ezexam
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ezexam"]
+      test: ["CMD", "pg_isready", "-U", "ezexam", "-d", "ezexam"]
       interval: 5s
-      timeout: 5s
-      retries: 5
+      timeout: 3s
+      retries: 12
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    container_name: ezexam_redis
-    ports:
-      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
-      timeout: 5s
-      retries: 5
+      timeout: 3s
+      retries: 12
     restart: unless-stopped
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: ezexam_backend
-    environment:
-      - SECRET_KEY=django-insecure-ezexam-dev-secret-key-m1-2026
-      - DEBUG=True
-      - USE_POSTGRES=1
-      - DB_NAME=ezexam
-      - DB_USER=postgres
-      - DB_PASSWORD=ezexampassword2026
-      - DB_HOST=db
-      - DB_PORT=5432
-      - REDIS_URL=redis://redis:6379/0
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
+  migrate:
+    <<: *app
+    command: ["python", "manage.py", "migrate", "--noinput"]
     depends_on:
       db:
         condition: service_healthy
+
+  backend:
+    <<: *app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8000/readyz/', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  worker:
+    <<: *app
+    command: ["celery", "-A", "config.celery:app", "worker", "--loglevel=INFO", "--concurrency=2"]
+    depends_on:
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: ezexam_frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
+    build: ./frontend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
     restart: unless-stopped
 
   nginx:
     image: nginx:alpine
-    container_name: ezexam_nginx
     ports:
-      - "80:80"
+      - "127.0.0.1:${HTTP_PORT:-8080}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/readyz/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
     restart: unless-stopped
 
 volumes:
