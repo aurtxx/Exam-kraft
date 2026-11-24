@@ -63,25 +63,29 @@ export const ExamFinishPage: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="w-full flex items-center justify-center gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => navigate('/staff/exams')}
-            className="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Return to Dashboard</span>
-          </button>
+        <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <button
             type="button"
             onClick={() => {
-              localStorage.removeItem('access_token');
-              navigate('/login');
+              const attemptId = result?.attempt_id || id;
+              if (attemptId) {
+                navigate(`/student/exam/${attemptId}/report`);
+              } else {
+                navigate('/staff/exams');
+              }
             }}
-            className="flex-1 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs transition-colors shadow-sm flex items-center justify-center gap-2"
+            className="w-full sm:flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-sm flex items-center justify-center gap-2"
           >
-            <LogOut className="w-4 h-4" />
-            <span>Log Out</span>
+            <Award className="w-4 h-4" />
+            <span>View Performance Report</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/staff/exams')}
+            className="w-full sm:flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Dashboard</span>
           </button>
         </div>
       </div>

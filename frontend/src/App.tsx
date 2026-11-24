@@ -14,6 +14,8 @@ import NoticesPage from './pages/staff/NoticesPage';
 import ExamLobbyPage from './pages/student/ExamLobbyPage';
 import ExamCBTPage from './pages/student/ExamCBTPage';
 import ExamFinishPage from './pages/student/ExamFinishPage';
+import ExamResultReportPage from './pages/student/ExamResultReportPage';
+import BatchAnalyticsPage from './pages/staff/BatchAnalyticsPage';
 import NotFound from './pages/NotFound';
 
 export const App: React.FC = () => {
@@ -28,6 +30,10 @@ export const App: React.FC = () => {
           <Route path="/student/exam/:id/lobby" element={<ExamLobbyPage />} />
           <Route path="/student/exam/:id/test" element={<ExamCBTPage />} />
           <Route path="/student/exam/:id/finish" element={<ExamFinishPage />} />
+          <Route path="/student/exam/:id/report" element={<ExamResultReportPage />} />
+          <Route path="/student/exam/:id/results" element={<ExamResultReportPage />} />
+          <Route path="/student/attempts/:id/report" element={<ExamResultReportPage />} />
+          <Route path="/student/results/:id" element={<ExamResultReportPage />} />
           <Route path="/online-exams/:id" element={<ExamLobbyPage />} />
           <Route path="/online-exams/:id/test" element={<ExamCBTPage />} />
 
@@ -35,6 +41,10 @@ export const App: React.FC = () => {
             <Route path="/staff" element={<Navigate to="/staff/exams" replace />} />
             <Route path="/staff/exams" element={<ExaminationsPage />} />
             <Route path="/staff/examinations" element={<ExaminationsPage />} />
+            <Route path="/staff/exams/:id/analytics" element={<BatchAnalyticsPage />} />
+            <Route path="/staff/examinations/:id/analytics" element={<BatchAnalyticsPage />} />
+            <Route path="/staff/analytics/:id" element={<BatchAnalyticsPage />} />
+            <Route path="/staff/reports" element={<ExaminationsPage />} />
             <Route path="/staff/question-bank" element={<QuestionBankPage />} />
             <Route path="/staff/students" element={<StudentsPage />} />
             <Route path="/staff/batches" element={<BatchesPage />} />

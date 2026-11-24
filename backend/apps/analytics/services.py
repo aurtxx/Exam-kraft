@@ -126,12 +126,21 @@ def examination_sections(exam):
 
 
 def evaluate_attempt(attempt, sections):
-    # Idempotent re-evaluation: purge any previous result for this attempt
-    Result.objects.filter(attempt=attempt).delete()
+    result, _ = Result.objects.get_or_create(
+        attempt=attempt,
+        defaults={'total_score': ZERO, 'maximum_score': ZERO, 'penalty': ZERO},
+    )
+    result.total_score = ZERO
+    result.maximum_score = ZERO
+    result.penalty = ZERO
+
+    scorecard, _ = Scorecard.objects.get_or_create(
+        result=result,
+        defaults={'score_percentage': ZERO},
+    )
+    scorecard.sections.all().delete()
 
     responses = {response.question_id: response for response in attempt.responses.all()}
-    result = Result.objects.create(attempt=attempt, total_score=ZERO, maximum_score=ZERO, penalty=ZERO)
-    scorecard = Scorecard.objects.create(result=result, score_percentage=ZERO)
 
     for title, order, questions in sections:
         section = SectionScore(scorecard=scorecard, title=title, order=order, score=ZERO, maximum_score=ZERO)

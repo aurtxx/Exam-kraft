@@ -341,3 +341,134 @@ export interface CBTAttemptPayload {
   };
 }
 
+export type ReviewOutcome =
+  | 'CORRECT'
+  | 'PARTIAL'
+  | 'INCORRECT'
+  | 'UNANSWERED'
+  | 'CANCELLED'
+  | 'PENDING';
+
+export interface QuestionReviewItem {
+  question_id?: string | number;
+  question?: string | number | null;
+  section?: string;
+  marks_awarded: number;
+  marks?: number;
+  is_correct: boolean;
+  is_attempted: boolean;
+  outcome: ReviewOutcome;
+  selected_options?: string[];
+  submitted_value?: string;
+  answer?: string[];
+  explanation?: string;
+  time_spent_seconds?: number;
+  question_text?: string;
+  content_text?: string;
+  question_type?: string;
+  options?: Array<{ key: string; text?: string; content_text?: string }>;
+}
+
+export interface SectionScoreDetail {
+  title: string;
+  order: number;
+  score: number;
+  maximum_score: number;
+  reviews?: QuestionReviewItem[];
+}
+
+export interface ScorecardSummary {
+  attempt_id: string;
+  candidate_id?: string;
+  candidate_name?: string;
+  total_score: number;
+  maximum_score: number;
+  penalty: number;
+  score_percentage: number;
+  passed?: boolean | null;
+  rank?: number | null;
+  percentile?: number | null;
+  total_correct: number;
+  total_incorrect: number;
+  total_unanswered: number;
+  section_scores?: Record<string, { score: number; maximum_score: number; order?: number }>;
+  question_reviews?: QuestionReviewItem[];
+}
+
+export interface ExamReportPayload {
+  status: 'SUCCESS' | 'ERROR';
+  attempt_id: string;
+  exam_id: string;
+  exam_name: string;
+  report: ScorecardSummary;
+  result?: {
+    id: string;
+    total_score: string | number;
+    maximum_score: string | number;
+    penalty: string | number;
+    rank?: number | null;
+    percentile?: string | number | null;
+  };
+  scorecard?: {
+    score_percentage: string | number;
+    passed?: boolean | null;
+  };
+  sections?: SectionScoreDetail[];
+  reviews?: QuestionReviewItem[];
+  message?: string;
+}
+
+export interface CohortRankingEntry {
+  attempt_id: string;
+  candidate_id: string;
+  candidate_name: string;
+  student?: string;
+  username: string;
+  total_score: number;
+  maximum_score: number;
+  penalty: number;
+  total_correct: number;
+  total_incorrect: number;
+  rank: number;
+  percentile: number;
+  section_scores?: Record<string, { score: number; maximum_score: number; order?: number }>;
+  question_reviews?: QuestionReviewItem[];
+}
+
+export interface ScoreDistributionBin {
+  total_score: string | number;
+  candidates: number;
+}
+
+export interface BatchAnalyticsPayload {
+  status: 'SUCCESS' | 'ERROR';
+  exam_id: string;
+  summary: {
+    exam_id: string;
+    evaluated_at: string;
+    total_candidates: number;
+    highest_score: number;
+    lowest_score: number;
+    average_score: number;
+    rankings: CohortRankingEntry[];
+  };
+  results?: any;
+  rankings: CohortRankingEntry[];
+  score_distribution: ScoreDistributionBin[];
+  sections: Array<{
+    title: string;
+    order: number;
+    mean: number | string;
+    highest: number | string;
+    lowest: number | string;
+  }>;
+  questions?: Array<{
+    question_id: string | number;
+    correct: number;
+    partial: number;
+    incorrect: number;
+    unanswered: number;
+    mean_time_seconds: number;
+  }>;
+}
+

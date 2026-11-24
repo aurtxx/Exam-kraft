@@ -94,6 +94,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_student(self) -> bool:
         return self.role == UserRole.STUDENT
 
+    def get_full_name(self) -> str:
+        profile = getattr(self, 'profile', None)
+        return (profile.full_name if profile and profile.full_name else self.username)
+
 
 class UserProfile(models.Model):
     """Profile attributes linked 1-to-1 with User."""
