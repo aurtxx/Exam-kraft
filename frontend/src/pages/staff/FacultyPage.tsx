@@ -69,7 +69,7 @@ export const FacultyPage: React.FC = () => {
       setErrorMsg('');
       const subjectsArray = formData.subjects
         .split(',')
-        .map((s) => s.strip ? s.trim() : s.trim())
+        .map((s) => s.trim())
         .filter((s) => s.length > 0);
 
       await apiService.createFaculty({

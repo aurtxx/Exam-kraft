@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { Notice, Batch, ExaminationCenter } from '../../types';
-import { Plus, Bell, Trash2, Calendar, CheckCircle2, XCircle, Users, Building2, AlertCircle } from 'lucide-react';
+import { Plus, Bell, Trash2, CheckCircle2, XCircle, Users, Building2, AlertCircle } from 'lucide-react';
 
 export const NoticesPage: React.FC = () => {
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -277,6 +277,40 @@ export const NoticesPage: React.FC = () => {
                           }}
                         />
                         <span>{b.name} ({b.code})</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Target Centers */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">
+                  Target Centers (Select multiple or leave empty for all)
+                </label>
+                <div className="max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1">
+                  {centers.map((c) => {
+                    const isChecked = formData.target_center_ids.includes(c.id);
+                    return (
+                      <label key={c.id} className="flex items-center gap-2 text-xs p-1 hover:bg-slate-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isChecked) {
+                              setFormData({
+                                ...formData,
+                                target_center_ids: formData.target_center_ids.filter((id) => id !== c.id),
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                target_center_ids: [...formData.target_center_ids, c.id],
+                              });
+                            }
+                          }}
+                        />
+                        <span>{c.name} ({c.code})</span>
                       </label>
                     );
                   })}

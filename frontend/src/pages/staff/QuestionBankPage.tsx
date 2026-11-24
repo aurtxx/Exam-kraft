@@ -4,16 +4,11 @@ import { QuestionBank, Question, QuestionOption } from '../../types';
 import {
   Plus,
   BookOpen,
-  HelpCircle,
   Trash2,
   Lock,
-  Code,
-  CheckCircle,
-  Hash,
   FileQuestion,
   AlertCircle,
   ChevronRight,
-  Eye,
 } from 'lucide-react';
 
 export const QuestionBankPage: React.FC = () => {

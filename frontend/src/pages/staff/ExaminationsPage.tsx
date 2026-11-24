@@ -11,11 +11,7 @@ import {
   Shield,
   Eye,
   Send,
-  Lock,
-  Camera,
-  Layers,
   AlertCircle,
-  ExternalLink,
 } from 'lucide-react';
 
 export const ExaminationsPage: React.FC = () => {
