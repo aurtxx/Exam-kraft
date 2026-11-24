@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'apps.examinations',
     'apps.notices',
     'apps.engine',
+    'apps.analytics',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
