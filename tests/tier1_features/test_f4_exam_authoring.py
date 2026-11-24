@@ -179,5 +179,5 @@ def test_state_transition_to_published(client, org_admin_auth_headers):
         headers=org_admin_auth_headers,
         json={"question_type": "MCQ_SINGLE", "key": "B", "options": [{"key": "B", "text": "2"}]},
     )
-    assert edit_res.status_code == 403
+    assert edit_res.status_code == 400
     assert edit_res.json()["code"] == "LOCKED"

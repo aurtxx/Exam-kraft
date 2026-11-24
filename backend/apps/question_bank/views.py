@@ -1,5 +1,6 @@
 import uuid
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import status, generics, exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,23 +20,27 @@ from .serializers import (
     TagSerializer,
     QuestionSerializer,
     OptionSerializer,
+    mcq_options_error,
+    prepare_options,
 )
-from apps.organizations.models import Organization
-from apps.organizations.context import get_current_tenant
-from apps.accounts.permissions import IsTenantMember, IsOrgAdminOrReadOnly
+from apps.accounts.permissions import IsActiveTenantMember, IsOrgAdminOrReadOnly, require_tenant
+
+
+def ensure_paper_unlocked(paper):
+    if paper.is_locked:
+        raise exceptions.ValidationError({
+            'status': 'ERROR',
+            'code': 'LOCKED',
+            'message': 'Cannot modify a locked or published question paper.',
+        })
 
 
 class QuestionBankListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
-
-    def get_tenant(self, request):
-        return get_current_tenant() or getattr(request.user, 'organization', None)
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
 
     def get(self, request):
-        tenant = self.get_tenant(request)
-        qs = QuestionBank.objects.all()
-        if tenant:
-            qs = qs.filter(organization=tenant)
+        tenant = require_tenant(request)
+        qs = QuestionBank.objects.filter(organization=tenant)
 
         serializer = QuestionBankSerializer(qs, many=True)
         return Response({
@@ -45,11 +50,7 @@ class QuestionBankListCreateView(APIView):
         }, status=status.HTTP_200_OK)
 
     def post(self, request):
-        tenant = self.get_tenant(request)
-        if not tenant:
-            # Fallback or create default org if needed for testing
-            tenant = Organization.objects.first()
-
+        tenant = require_tenant(request)
         data = request.data
         name = data.get('name') or data.get('title') or 'Untitled Question Paper'
         exam_type = data.get('exam_type', 'GENERAL')
@@ -77,27 +78,43 @@ class QuestionBankListCreateView(APIView):
 
 
 class QuestionBankDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = QuestionBankSerializer
-    queryset = QuestionBank.objects.all()
     lookup_field = 'id'
+
+    def get_queryset(self):
+        queryset = QuestionBank.objects.filter(organization=require_tenant(self.request))
+        if self.request.method in ('PUT', 'PATCH'):
+            return queryset.select_for_update()
+        return queryset
+
+    def get_object(self):
+        instance = super().get_object()
+        if self.request.method in ('PUT', 'PATCH'):
+            ensure_paper_unlocked(instance)
+        return instance
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
 
 
 class QuestionListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
 
-    def get_paper(self, paper_id):
+    def get_paper(self, paper_id, tenant):
         if not paper_id:
             return None
         try:
             uuid.UUID(str(paper_id))
         except (ValueError, TypeError, AttributeError):
             return None
-        return QuestionBank.all_objects.filter(id=paper_id).first()
+        return QuestionBank.all_objects.filter(id=paper_id, organization=tenant).first()
 
     def get(self, request, paper_id=None):
+        tenant = require_tenant(request)
         if paper_id:
-            paper = self.get_paper(paper_id)
+            paper = self.get_paper(paper_id, tenant)
             if not paper:
                 return Response({
                     'status': 'ERROR',
@@ -119,10 +136,7 @@ class QuestionListCreateView(APIView):
             }, status=status.HTTP_200_OK)
 
         # General questions listing
-        tenant = get_current_tenant() or getattr(request.user, 'organization', None)
-        qs = Question.objects.all()
-        if tenant:
-            qs = qs.filter(question_bank__organization=tenant)
+        qs = Question.objects.filter(question_bank__organization=tenant)
 
         section_filter = request.query_params.get('section')
         if section_filter:
@@ -138,30 +152,21 @@ class QuestionListCreateView(APIView):
             'questions': serializer.data,
         }, status=status.HTTP_200_OK)
 
+    @transaction.atomic
     def post(self, request, paper_id=None):
         data = request.data
         qpid = paper_id or data.get('question_bank_id') or data.get('question_paper_id')
-        paper = self.get_paper(qpid)
+        tenant = require_tenant(request)
+        paper = self.get_paper(qpid, tenant)
+        if qpid and not paper:
+            raise exceptions.NotFound('Question paper not found.')
 
         if not paper:
-            # Fallback: create or find a default question bank
-            tenant = get_current_tenant() or getattr(request.user, 'organization', None) or Organization.objects.first()
             paper = QuestionBank.all_objects.filter(organization=tenant).first()
-            if not paper:
-                paper = QuestionBank.all_objects.create(
-                    organization=tenant,
-                    name='Default Bank',
-                    exam_type='GENERAL',
-                    created_by=request.user if request.user.is_authenticated else None
-                )
 
-        # Check paper lock
-        if paper.is_locked:
-            return Response({
-                'status': 'ERROR',
-                'code': 'LOCKED',
-                'message': 'Cannot modify questions in a locked or published question paper.'
-            }, status=status.HTTP_403_FORBIDDEN)
+        if paper:
+            paper = QuestionBank.all_objects.select_for_update().get(pk=paper.pk, organization=tenant)
+            ensure_paper_unlocked(paper)
 
         # Validate question type
         raw_type = data.get('question_type')
@@ -192,25 +197,30 @@ class QuestionListCreateView(APIView):
                 'message': 'Marking values must be numbers.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        if neg_marks > pos_marks:
+        if not neg_marks <= pos_marks:
             return Response({
                 'status': 'ERROR',
                 'code': 'INVALID_MARKING',
                 'message': f'Negative penalty ({neg_marks}) cannot exceed positive marks ({pos_marks}).'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate MCQ options
-        options_data = data.get('options', [])
-        if normalized_type in (QuestionType.MCQ_SINGLE, QuestionType.MCQ_MULTI):
-            if not options_data or len(options_data) == 0:
-                return Response({
-                    'status': 'ERROR',
-                    'code': 'MISSING_OPTIONS',
-                    'message': 'Multiple choice questions require at least one option choice.'
-                }, status=status.HTTP_400_BAD_REQUEST)
+        key_val = str(data.get('key', '')).strip()
+        options_serializer = OptionSerializer(data=data.get('options', []), many=True)
+        options_serializer.is_valid(raise_exception=True)
+        options = prepare_options(normalized_type, key_val, options_serializer.validated_data)
+        error = mcq_options_error(normalized_type, [option['is_correct'] for option in options])
+        if error:
+            code, message = error
+            return Response({
+                'status': 'ERROR',
+                'code': code,
+                'message': message,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if normalized_type == QuestionType.MCQ_SINGLE:
+            key_val = next(option['option_key'] for option in options if option['is_correct'])
 
         # Validate Numerical key
-        key_val = str(data.get('key', '')).strip()
         if normalized_type == QuestionType.NUMERICAL:
             if not key_val:
                 return Response({
@@ -234,54 +244,40 @@ class QuestionListCreateView(APIView):
         if isinstance(difficulty, int):
             difficulty = 'EASY' if difficulty == 1 else ('HARD' if difficulty == 3 else 'MEDIUM')
 
+        if not paper:
+            paper = QuestionBank.all_objects.create(
+                organization=tenant,
+                name='Default Bank',
+                exam_type='GENERAL',
+                created_by=request.user if request.user.is_authenticated else None,
+            )
+
         # Auto-compute question number
         next_qnum = paper.questions.count() + 1
         qnum = data.get('question_number', next_qnum)
 
-        with transaction.atomic():
-            question = Question.objects.create(
-                question_bank=paper,
-                section_name=section_name,
-                question_number=qnum,
-                question_type=normalized_type,
-                content_text=content_text,
-                content_html=data.get('content_html', ''),
-                explanation=explanation,
-                image_url=data.get('image_url'),
-                difficulty=difficulty,
-                key=key_val,
-                positive_marks=pos_marks,
-                negative_marks=neg_marks,
-                partial_marks=part_marks,
-                is_cancelled=bool(data.get('is_cancelled', data.get('canc', False))),
-                numerical_min=data.get('numerical_min'),
-                numerical_max=data.get('numerical_max'),
-                coding_language=data.get('coding_language', ''),
-                code_boilerplate=data.get('code_boilerplate', ''),
-                test_cases=data.get('test_cases', []),
-            )
-
-            # Create options
-            for idx, opt in enumerate(options_data):
-                opt_key = opt.get('key') or opt.get('option_key') or chr(65 + idx)
-                opt_text = opt.get('text') or opt.get('content_text') or ''
-                is_correct = opt.get('is_correct', False)
-                # If key matches opt_key, mark correct
-                if not is_correct and key_val:
-                    if normalized_type == QuestionType.MCQ_SINGLE:
-                        is_correct = (opt_key.strip().upper() == key_val.strip().upper())
-                    elif normalized_type == QuestionType.MCQ_MULTI:
-                        correct_keys = [k.strip().upper() for k in key_val.replace(',', '+').split('+')]
-                        is_correct = opt_key.strip().upper() in correct_keys
-
-                Option.objects.create(
-                    question=question,
-                    option_key=opt_key,
-                    content_text=opt_text,
-                    content_html=opt.get('content_html', ''),
-                    is_correct=is_correct,
-                    order=opt.get('order', idx),
-                )
+        question = Question.objects.create(
+            question_bank=paper,
+            section_name=section_name,
+            question_number=qnum,
+            question_type=normalized_type,
+            content_text=content_text,
+            content_html=data.get('content_html', ''),
+            explanation=explanation,
+            image_url=data.get('image_url'),
+            difficulty=difficulty,
+            key=key_val,
+            positive_marks=pos_marks,
+            negative_marks=neg_marks,
+            partial_marks=part_marks,
+            is_cancelled=bool(data.get('is_cancelled', data.get('canc', False))),
+            numerical_min=data.get('numerical_min'),
+            numerical_max=data.get('numerical_max'),
+            coding_language=data.get('coding_language', ''),
+            code_boilerplate=data.get('code_boilerplate', ''),
+            test_cases=data.get('test_cases', []),
+        )
+        Option.objects.bulk_create(Option(question=question, **option) for option in options)
 
         serializer = QuestionSerializer(question)
         ret_data = serializer.data
@@ -294,35 +290,70 @@ class QuestionListCreateView(APIView):
 
 
 class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = QuestionSerializer
     queryset = Question.objects.all()
     lookup_field = 'id'
 
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @transaction.atomic
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+    def get_queryset(self):
+        queryset = super().get_queryset().filter(question_bank__organization=require_tenant(self.request))
+        if self.request.method in ('PUT', 'PATCH', 'DELETE'):
+            return queryset.select_for_update()
+        return queryset
+
+    def get_object(self):
+        question = super().get_object()
+        if self.request.method in ('PUT', 'PATCH', 'DELETE'):
+            paper = QuestionBank.all_objects.select_for_update().get(pk=question.question_bank_id, organization=require_tenant(self.request))
+            ensure_paper_unlocked(paper)
+        return question
+
+    def perform_update(self, serializer):
+        paper = serializer.validated_data.get('question_bank')
+        if paper and paper.pk != serializer.instance.question_bank_id:
+            tenant = require_tenant(self.request)
+            if paper.organization_id != tenant.pk:
+                raise exceptions.ValidationError({'question_bank': 'Unknown question paper.'})
+            ensure_paper_unlocked(QuestionBank.all_objects.select_for_update().get(pk=paper.pk, organization=tenant))
+        serializer.save()
+
 
 class SectionListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = SectionSerializer
 
     def get_queryset(self):
+        sections = Section.objects.filter(question_bank__organization=require_tenant(self.request))
         paper_id = self.kwargs.get('paper_id')
         if paper_id:
-            return Section.objects.filter(question_bank_id=paper_id)
-        return Section.objects.all()
+            return sections.filter(question_bank_id=paper_id)
+        return sections
 
-    def perform_create(self, serializer):
-        paper_id = self.kwargs.get('paper_id')
-        tenant = get_current_tenant() or self.request.user.organization
-        serializer.save(organization=tenant, question_bank_id=paper_id)
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        paper = get_object_or_404(QuestionBank.objects.select_for_update(), organization=require_tenant(request), pk=self.kwargs['paper_id'])
+        ensure_paper_unlocked(paper)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(organization=paper.organization, question_bank=paper)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class TagListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = TagSerializer
 
     def get_queryset(self):
-        return Tag.objects.all()
+        return Tag.objects.filter(organization=require_tenant(self.request))
 
     def perform_create(self, serializer):
-        tenant = get_current_tenant() or self.request.user.organization
+        tenant = require_tenant(self.request)
         serializer.save(organization=tenant)

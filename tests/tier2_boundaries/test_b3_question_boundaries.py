@@ -76,12 +76,12 @@ def test_unsupported_question_type_rejected(client, org_admin_auth_headers):
 @pytest.mark.tier2
 @pytest.mark.e2e
 def test_modifying_questions_in_published_paper_rejected(client, published_exam_fixture, org_admin_auth_headers):
-    """B3.5: Attempting to add or alter questions in a paper linked to a PUBLISHED exam returns 403 LOCKED."""
+    """B3.5: Attempting to add or alter questions in a paper linked to a PUBLISHED exam returns 400 LOCKED."""
     qpid = published_exam_fixture["question_paper_id"]
     resp = client.post(
         f"/api/v1/question-papers/{qpid}/questions/",
         headers=org_admin_auth_headers,
         json={"question_type": "MCQ_SINGLE", "key": "A", "options": [{"key": "A", "text": "1"}]},
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 400
     assert resp.json()["code"] == "LOCKED"

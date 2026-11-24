@@ -427,7 +427,7 @@ class ContractHandler:
                     }
                 elif method == "POST":
                     if qp.get("status") == "PUBLISHED":
-                        return 403, {}, {"status": "ERROR", "code": "LOCKED", "message": "Cannot modify questions in a published paper"}
+                        return 400, {}, {"status": "ERROR", "code": "LOCKED", "message": "Cannot modify questions in a published paper"}
                     # Validate question fields
                     qtype = body_json.get("question_type")
                     if qtype not in ["MCQ_SINGLE", "MCQ_MULTI", "NUMERICAL"]:
@@ -514,15 +514,25 @@ class ContractHandler:
                     return 403, {}, {"status": "ERROR", "code": "FORBIDDEN"}
                 if eid not in self.state.examinations:
                     return 404, {}, {"status": "ERROR", "code": "NOT_FOUND"}
-                cand_ids = body_json.get("student_ids", [])
+                exam = self.state.examinations[eid]
+                known_ids = self.state.students.keys() | {
+                    candidate["id"] for candidate in self.state.users.values()
+                    if candidate["role"] == "STUDENT"
+                }
+                requested_ids = dict.fromkeys(body_json.get("student_ids", []))
                 if body_json.get("select_all_matching_batches"):
-                    for s in self.state.students.values():
-                        if s.get("batch_id") in body_json.get("batch_ids", []):
-                            cand_ids.append(s["id"])
-                cand_ids = list(set(cand_ids))
-                self.state.examinations[eid]["assigned_candidates"].extend(cand_ids)
-                self.state.candidate_assignments[eid] = list(set(self.state.examinations[eid]["assigned_candidates"]))
-                return 200, {}, {"status": "SUCCESS", "assigned_count": len(cand_ids)}
+                    batch_ids = body_json.get("batch_ids", [])
+                    for student in self.state.students.values():
+                        if student.get("batch_id") in batch_ids:
+                            requested_ids[student["id"]] = None
+
+                assigned = exam["assigned_candidates"]
+                new_ids = [
+                    sid for sid in requested_ids if sid in known_ids and sid not in assigned
+                ]
+                assigned.extend(new_ids)
+                self.state.candidate_assignments[eid] = assigned.copy()
+                return 200, {}, {"status": "SUCCESS", "assigned_count": len(new_ids)}
 
             match_pub = re.match(r"^/api/v1/examinations/([^/]+)/publish/?$", path)
             if match_pub and method == "POST":

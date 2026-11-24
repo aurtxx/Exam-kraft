@@ -1,7 +1,9 @@
 import io
 import csv
+import secrets
 import uuid
 from django.db import transaction
+from django.db.models.functions import Trim
 from rest_framework import status, generics, exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -18,8 +20,7 @@ from .serializers import (
 )
 from apps.organizations.models import Organization, Batch, ExaminationCenter, StudentBatchEnrollment
 from apps.organizations.serializers import OrganizationSerializer
-from apps.organizations.context import get_current_tenant
-from apps.accounts.permissions import IsOrgAdmin, IsTenantMember, IsOrgAdminOrReadOnly
+from apps.accounts.permissions import IsOrgAdmin, IsActiveTenantMember, IsOrgAdminOrReadOnly, require_tenant
 
 
 class PlainTextOrCSVParser(BaseParser):
@@ -118,16 +119,10 @@ class LogoutView(APIView):
 # ==============================================================================
 
 class FacultyListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
-
-    def get_tenant(self, request, kwargs):
-        org_id = kwargs.get('org_id')
-        if org_id:
-            return Organization.objects.filter(id=org_id).first()
-        return get_current_tenant() or getattr(request.user, 'organization', None)
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
 
     def get(self, request, *args, **kwargs):
-        tenant = self.get_tenant(request, kwargs)
+        tenant = require_tenant(request, kwargs.get('org_id'))
         qs = User.objects.filter(role=UserRole.FACULTY)
         if tenant:
             qs = qs.filter(organization=tenant)
@@ -139,13 +134,20 @@ class FacultyListCreateView(APIView):
         }, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        tenant = self.get_tenant(request, kwargs)
+        tenant = require_tenant(request, kwargs.get('org_id'))
         data = request.data
-        name = data.get('name') or data.get('full_name') or 'Faculty Member'
+        name = data.get('name')
+        if not isinstance(name, str) or not name.strip():
+            return Response({
+                'status': 'ERROR',
+                'code': 'VALIDATION_FAILED',
+                'message': 'name is required.',
+            }, status=status.HTTP_400_BAD_REQUEST)
+        name = name.strip()
         email = data.get('email')
         phone = data.get('phone')
         username = data.get('username') or email or f"fac_{uuid.uuid4().hex[:8]}"
-        password = data.get('password') or 'FacultyPass#2026'
+        password = data.get('password') or secrets.token_urlsafe(16)
         is_active = data.get('is_active', True)
         department = data.get('department', '')
 
@@ -170,10 +172,10 @@ class FacultyListCreateView(APIView):
                 subjects=subjects,
             )
             if batch_ids:
-                batches = Batch.all_objects.filter(id__in=batch_ids)
+                batches = Batch.all_objects.filter(organization=tenant, id__in=batch_ids)
                 fac_profile.assigned_batches.set(batches)
             if centre_ids:
-                centers = ExaminationCenter.all_objects.filter(id__in=centre_ids)
+                centers = ExaminationCenter.all_objects.filter(organization=tenant, id__in=centre_ids)
                 fac_profile.assigned_centers.set(centers)
 
         serializer = FacultyMemberSerializer(user)
@@ -183,10 +185,13 @@ class FacultyListCreateView(APIView):
 
 
 class FacultyDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = FacultyMemberSerializer
-    queryset = User.objects.filter(role=UserRole.FACULTY)
     lookup_field = 'id'
+
+    def get_queryset(self):
+        tenant = require_tenant(self.request, self.kwargs.get('org_id'))
+        return User.objects.filter(role=UserRole.FACULTY, organization=tenant)
 
 
 # ==============================================================================
@@ -194,16 +199,10 @@ class FacultyDetailView(generics.RetrieveUpdateDestroyAPIView):
 # ==============================================================================
 
 class StudentListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
-
-    def get_tenant(self, request, kwargs):
-        org_id = kwargs.get('org_id')
-        if org_id:
-            return Organization.objects.filter(id=org_id).first()
-        return get_current_tenant() or getattr(request.user, 'organization', None)
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
 
     def get(self, request, *args, **kwargs):
-        tenant = self.get_tenant(request, kwargs)
+        tenant = require_tenant(request, kwargs.get('org_id'))
 
         page_size_param = request.query_params.get('page_size', '25')
         try:
@@ -273,14 +272,15 @@ class StudentListCreateView(APIView):
             'students': student_list,
         }, status=status.HTTP_200_OK)
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
-        tenant = self.get_tenant(request, kwargs)
+        tenant = require_tenant(request, kwargs.get('org_id'))
         data = request.data
         roll_number = str(data.get('roll_number', '')).strip()
-        name = data.get('name') or data.get('full_name') or 'Candidate Student'
+        name = data.get('name')
         email = data.get('email')
         phone = data.get('phone')
-        password = data.get('password') or 'StudentPass#2026'
+        password = data.get('password') or secrets.token_urlsafe(16)
         batch_id = data.get('batch_id')
         centre_id = data.get('centre_id')
         is_active = data.get('is_active', True)
@@ -292,8 +292,17 @@ class StudentListCreateView(APIView):
                 'message': 'roll_number is required.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        if not isinstance(name, str) or not name.strip():
+            return Response({
+                'status': 'ERROR',
+                'code': 'VALIDATION_FAILED',
+                'message': 'name is required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        name = name.strip()
+
         # Check duplicate roll number in tenant
         if tenant:
+            Organization.objects.select_for_update().get(pk=tenant.pk)
             dup = StudentBatchEnrollment.objects.filter(
                 batch__organization=tenant,
                 roll_number=roll_number
@@ -315,7 +324,7 @@ class StudentListCreateView(APIView):
 
         batch = None
         if batch_id:
-            batch = Batch.all_objects.filter(id=batch_id).first()
+            batch = Batch.all_objects.filter(organization=tenant, id=batch_id).first()
         if not batch and tenant:
             batch = Batch.all_objects.filter(organization=tenant).first()
             if not batch:
@@ -327,7 +336,7 @@ class StudentListCreateView(APIView):
 
         center = None
         if centre_id:
-            center = ExaminationCenter.all_objects.filter(id=centre_id).first()
+            center = ExaminationCenter.all_objects.filter(organization=tenant, id=centre_id).first()
 
         username = data.get('username') or f"stud_{roll_number}_{uuid.uuid4().hex[:4]}"
 
@@ -362,10 +371,13 @@ class StudentListCreateView(APIView):
 
 
 class StudentDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = StudentMemberSerializer
-    queryset = User.objects.filter(role=UserRole.STUDENT)
     lookup_field = 'id'
+
+    def get_queryset(self):
+        tenant = require_tenant(self.request, self.kwargs.get('org_id'))
+        return User.objects.filter(role=UserRole.STUDENT, organization=tenant)
 
 
 # ==============================================================================
@@ -373,16 +385,12 @@ class StudentDetailView(generics.RetrieveUpdateDestroyAPIView):
 # ==============================================================================
 
 class StudentBulkImportView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser, PlainTextOrCSVParser]
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
-        org_id = kwargs.get('org_id')
-        tenant = None
-        if org_id:
-            tenant = Organization.objects.filter(id=org_id).first()
-        if not tenant:
-            tenant = get_current_tenant() or getattr(request.user, 'organization', None)
+        tenant = require_tenant(request, kwargs.get('org_id'))
 
         # Extract file / content
         content = None
@@ -418,16 +426,24 @@ class StudentBulkImportView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Parse CSV
-        reader = csv.reader(io.StringIO(text))
         try:
-            headers = next(reader)
-        except StopIteration:
+            parsed_rows = list(csv.reader(io.StringIO(text), strict=True))
+        except csv.Error:
+            return Response({
+                'status': 'ERROR',
+                'code': 'MALFORMED_CSV',
+                'created_count': 0,
+                'message': 'The file contains invalid CSV syntax.',
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not parsed_rows:
             return Response({
                 'status': 'ERROR',
                 'code': 'MALFORMED_HEADER',
                 'message': 'No headers found in file.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        headers, *rows = parsed_rows
         header_map = {}
         for idx, h in enumerate(headers):
             clean_h = h.strip().lower().replace('_', '').replace(' ', '')
@@ -456,10 +472,13 @@ class StudentBulkImportView(APIView):
         centre_idx = next((header_map[k] for k in ['centrecode', 'centercode', 'center', 'centre'] if k in header_map), None)
         pass_idx = next((header_map[k] for k in ['password', 'pin'] if k in header_map), None)
 
-        rows = list(reader)
         errors = []
         seen_rolls = set()
         to_create = []
+
+        # Serialize organization-wide roll checks across imports and student creation.
+        if tenant:
+            Organization.objects.select_for_update().get(pk=tenant.pk)
 
         # Validate rows
         for row_num, row in enumerate(rows, start=2):
@@ -476,7 +495,7 @@ class StudentBulkImportView(APIView):
             r_email = row[email_idx].strip() if email_idx is not None and len(row) > email_idx else ''
             r_phone = row[phone_idx].strip() if phone_idx is not None and len(row) > phone_idx else ''
             r_centre_code = row[centre_idx].strip() if centre_idx is not None and len(row) > centre_idx else ''
-            r_pass = row[pass_idx].strip() if pass_idx is not None and len(row) > pass_idx else 'StudentPass#2026'
+            r_pass = row[pass_idx].strip() if pass_idx is not None and len(row) > pass_idx else ''
 
             if not r_num:
                 errors.append(f"Row {row_num}: Roll number is empty.")
@@ -489,30 +508,19 @@ class StudentBulkImportView(APIView):
                 errors.append(f"Row {row_num}: Duplicate roll number '{r_num}' within CSV file.")
             seen_rolls.add(r_num)
 
-            # Check if batch exists
             batch = None
-            if tenant:
-                batch = Batch.all_objects.filter(organization=tenant, code=r_batch_code).first()
-            else:
-                batch = Batch.all_objects.filter(code=r_batch_code).first()
-
-            if not batch:
-                # If batch doesn't exist, create it or report error
-                # In reference, batch is resolved or created
-                if tenant:
-                    batch = Batch.all_objects.create(
-                        organization=tenant,
-                        name=f"Batch {r_batch_code}",
-                        code=r_batch_code,
-                    )
+            if tenant and r_batch_code:
+                batch = Batch.all_objects.filter(organization=tenant).alias(
+                    normalized_code=Trim('code')
+                ).filter(normalized_code__iexact=r_batch_code).first()
+            if r_batch_code and batch is None:
+                errors.append(f"Row {row_num}: Batch code '{r_batch_code}' does not exist in this organization.")
 
             # Check if center exists
             center = None
             if r_centre_code:
                 if tenant:
-                    center = ExaminationCenter.all_objects.filter(organization=tenant, code=r_centre_code).first()
-                else:
-                    center = ExaminationCenter.all_objects.filter(code=r_centre_code).first()
+                    center = ExaminationCenter.all_objects.filter(organization=tenant, code__iexact=r_centre_code).first()
                 if not center and tenant:
                     center = ExaminationCenter.all_objects.create(
                         organization=tenant,
@@ -532,11 +540,12 @@ class StudentBulkImportView(APIView):
                 'phone': r_phone,
                 'batch': batch,
                 'center': center,
-                'password': r_pass,
+                'password': r_pass or secrets.token_urlsafe(16),
             })
 
         # If any validation errors, fail completely and rollback
         if errors:
+            transaction.set_rollback(True)
             return Response({
                 'status': 'ERROR',
                 'code': 'VALIDATION_FAILED',
@@ -547,26 +556,24 @@ class StudentBulkImportView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         created_count = 0
-        with transaction.atomic():
-            for item in to_create:
-                u_name = f"stud_{item['roll_number']}_{uuid.uuid4().hex[:4]}"
-                user = User.objects.create_user(
-                    username=u_name,
-                    email=item['email'] or None,
-                    phone=item['phone'] or None,
-                    password=item['password'],
-                    role=UserRole.STUDENT,
-                    organization=tenant,
-                )
-                UserProfile.objects.create(user=user, full_name=item['name'])
-                if item['batch']:
-                    StudentBatchEnrollment.objects.create(
-                        student=user,
-                        batch=item['batch'],
-                        center=item['center'],
-                        roll_number=item['roll_number'],
-                    )
-                created_count += 1
+        for item in to_create:
+            u_name = f"stud_{item['roll_number']}_{uuid.uuid4().hex[:4]}"
+            user = User.objects.create_user(
+                username=u_name,
+                email=item['email'] or None,
+                phone=item['phone'] or None,
+                password=item['password'],
+                role=UserRole.STUDENT,
+                organization=tenant,
+            )
+            UserProfile.objects.create(user=user, full_name=item['name'])
+            StudentBatchEnrollment.objects.create(
+                student=user,
+                batch=item['batch'],
+                center=item['center'],
+                roll_number=item['roll_number'],
+            )
+            created_count += 1
 
         return Response({
             'status': 'SUCCESS',

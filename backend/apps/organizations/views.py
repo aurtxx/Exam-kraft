@@ -1,8 +1,15 @@
+from django.db import transaction
+from django.db.models.functions import Trim
 from rest_framework import status, generics, exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from apps.accounts.permissions import IsOrgAdmin, IsTenantMember, IsOrgAdminOrReadOnly
+from apps.accounts.permissions import (
+    IsOrgAdmin,
+    IsOrgAdminOrReadOnly,
+    IsTenantMember,
+    require_tenant,
+)
 from .models import Organization, ExaminationCenter, Batch
 from .serializers import (
     OrganizationSerializer,
@@ -86,7 +93,53 @@ class CurrentOrganizationView(APIView):
         )
 
 
-class ExaminationCenterListCreateView(generics.ListCreateAPIView):
+class DuplicateCode(exceptions.APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = 'DUPLICATE_CODE'
+
+
+class OrganizationCodeMixin:
+    def check_permissions(self, request):
+        super().check_permissions(request)
+        if 'org_id' in self.kwargs:
+            require_tenant(request, self.kwargs['org_id'])
+
+    @transaction.atomic
+    def save_with_unique_code(self, serializer, tenant):
+        code = serializer.validated_data.get('code')
+        if code is not None and tenant:
+            Organization.objects.select_for_update().get(pk=tenant.pk)
+            model = serializer.Meta.model
+            matches = model.all_objects.filter(organization=tenant).alias(normalized_code=Trim('code'))
+            if serializer.instance:
+                matches = matches.exclude(pk=serializer.instance.pk)
+            if matches.filter(normalized_code__iexact=code).exists():
+                raise DuplicateCode({
+                    'status': 'ERROR',
+                    'code': 'DUPLICATE_CODE',
+                    'message': f'{model._meta.verbose_name.capitalize()} with code {code} already exists in this organization.',
+                })
+        serializer.save(organization=tenant)
+
+    def perform_create(self, serializer):
+        tenant = get_current_tenant() or self.request.user.organization
+        self.save_with_unique_code(serializer, tenant)
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        # Lock before fetching the object so concurrent partial edits use current data.
+        tenant = get_current_tenant() or request.user.organization
+        if tenant is None:
+            tenant = self.get_object().organization
+        if tenant:
+            Organization.objects.select_for_update().get(pk=tenant.pk)
+        return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        self.save_with_unique_code(serializer, serializer.instance.organization)
+
+
+class ExaminationCenterListCreateView(OrganizationCodeMixin, generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = ExaminationCenterSerializer
 
@@ -114,7 +167,6 @@ class ExaminationCenterListCreateView(generics.ListCreateAPIView):
         })
 
     def create(self, request, *args, **kwargs):
-        tenant = get_current_tenant() or getattr(request.user, 'organization', None)
         capacity = request.data.get('capacity')
         if capacity is not None:
             try:
@@ -131,27 +183,10 @@ class ExaminationCenterListCreateView(generics.ListCreateAPIView):
                     'message': 'Examination center capacity must be a valid integer.'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-        code = request.data.get('code')
-        if code and tenant:
-            if ExaminationCenter.all_objects.filter(organization=tenant, code=code).exists():
-                return Response({
-                    'status': 'ERROR',
-                    'code': 'DUPLICATE_CODE',
-                    'message': f'Examination center with code {code} already exists in this organization.'
-                }, status=status.HTTP_409_CONFLICT)
-
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    def perform_create(self, serializer):
-        tenant = get_current_tenant() or self.request.user.organization
-        serializer.save(organization=tenant)
+        return super().create(request, *args, **kwargs)
 
 
-class ExaminationCenterDetailView(generics.RetrieveUpdateDestroyAPIView):
+class ExaminationCenterDetailView(OrganizationCodeMixin, generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = ExaminationCenterSerializer
     lookup_field = 'id'
@@ -179,7 +214,7 @@ class ExaminationCenterDetailView(generics.RetrieveUpdateDestroyAPIView):
         return super().update(request, *args, **kwargs)
 
 
-class BatchListCreateView(generics.ListCreateAPIView):
+class BatchListCreateView(OrganizationCodeMixin, generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = BatchSerializer
 
@@ -206,29 +241,8 @@ class BatchListCreateView(generics.ListCreateAPIView):
             'batches': serializer.data,
         })
 
-    def create(self, request, *args, **kwargs):
-        tenant = get_current_tenant() or getattr(request.user, 'organization', None)
-        code = request.data.get('code')
-        if code and tenant:
-            if Batch.all_objects.filter(organization=tenant, code=code).exists():
-                return Response({
-                    'status': 'ERROR',
-                    'code': 'DUPLICATE_CODE',
-                    'message': f'Batch with code {code} already exists in this organization.'
-                }, status=status.HTTP_409_CONFLICT)
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    def perform_create(self, serializer):
-        tenant = get_current_tenant() or self.request.user.organization
-        serializer.save(organization=tenant)
-
-
-class BatchDetailView(generics.RetrieveUpdateDestroyAPIView):
+class BatchDetailView(OrganizationCodeMixin, generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = BatchSerializer
     lookup_field = 'id'

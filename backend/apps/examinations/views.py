@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
 from rest_framework import status, generics, exceptions
@@ -15,28 +14,25 @@ from .models import (
 )
 from .serializers import (
     ExaminationSerializer,
-    ExaminationSectionSerializer,
-    CandidateAssignmentSerializer,
 )
-from apps.question_bank.models import QuestionBank, Question
+from apps.question_bank.models import QuestionBank
 from apps.question_bank.serializers import QuestionSerializer
-from apps.organizations.models import Organization, Batch, ExaminationCenter, StudentBatchEnrollment
-from apps.organizations.context import get_current_tenant
+from apps.organizations.models import Batch, ExaminationCenter
 from apps.accounts.models import User, UserRole
-from apps.accounts.permissions import IsTenantMember, IsOrgAdminOrReadOnly
+from apps.accounts.permissions import (
+    IsActiveTenantMember,
+    IsOrgAdminOrFaculty,
+    IsOrgAdminOrReadOnly,
+    require_tenant,
+)
 
 
 class ExaminationListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
-
-    def get_tenant(self, request):
-        return get_current_tenant() or getattr(request.user, 'organization', None)
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
 
     def get(self, request):
-        tenant = self.get_tenant(request)
-        qs = Examination.objects.all()
-        if tenant:
-            qs = qs.filter(organization=tenant)
+        tenant = require_tenant(request)
+        qs = Examination.objects.filter(organization=tenant)
 
         serializer = ExaminationSerializer(qs, many=True)
         return Response({
@@ -44,8 +40,9 @@ class ExaminationListCreateView(APIView):
             'examinations': serializer.data,
         }, status=status.HTTP_200_OK)
 
+    @transaction.atomic
     def post(self, request):
-        tenant = self.get_tenant(request) or Organization.objects.first()
+        tenant = require_tenant(request)
         data = request.data
 
         # 1. Validate duration
@@ -93,7 +90,17 @@ class ExaminationListCreateView(APIView):
         qpid = data.get('question_paper_id')
         paper = None
         if qpid:
-            paper = QuestionBank.all_objects.filter(id=qpid).first()
+            paper = QuestionBank.all_objects.filter(id=qpid, organization=tenant).first() if is_valid_uuid(qpid) else None
+            if paper is None:
+                raise exceptions.ValidationError({'question_paper_id': 'Unknown question paper.'})
+
+        batches = Batch.all_objects.filter(organization=tenant)
+        batch_ids = set(data.get('batch_ids') or [])
+        if any(not is_valid_uuid(bid) for bid in batch_ids):
+            raise exceptions.ValidationError({'batch_ids': 'Invalid batch ID.'})
+        selected_batches = list(batches.filter(id__in=batch_ids))
+        if len(selected_batches) != len(batch_ids):
+            raise exceptions.ValidationError({'batch_ids': 'Unknown batch.'})
 
         exam = Examination.all_objects.create(
             organization=tenant,
@@ -122,12 +129,8 @@ class ExaminationListCreateView(APIView):
             created_by=request.user if request.user.is_authenticated else None,
         )
 
-        # Link batches if passed in creation
-        batch_ids = data.get('batch_ids') or []
-        for bid in batch_ids:
-            b = Batch.all_objects.filter(id=bid).first()
-            if b:
-                CandidateAssignment.objects.create(exam=exam, batch=b)
+        for batch in selected_batches:
+            CandidateAssignment.objects.create(exam=exam, batch=batch)
 
         serializer = ExaminationSerializer(exam)
         return Response({
@@ -140,10 +143,19 @@ class ExaminationListCreateView(APIView):
 
 
 class ExaminationDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = ExaminationSerializer
-    queryset = Examination.objects.all()
     lookup_field = 'id'
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    def get_queryset(self):
+        queryset = Examination.objects.filter(organization=require_tenant(self.request))
+        if self.request.method in ('PUT', 'PATCH'):
+            return queryset.select_for_update()
+        return queryset
 
 
 def is_valid_uuid(val):
@@ -155,9 +167,11 @@ def is_valid_uuid(val):
 
 
 class AssignCandidatesView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
 
+    @transaction.atomic
     def post(self, request, id):
+        tenant = require_tenant(request)
         if not is_valid_uuid(id):
             return Response({
                 'status': 'ERROR',
@@ -165,7 +179,7 @@ class AssignCandidatesView(APIView):
                 'message': f'Examination {id} not found.'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        exam = Examination.all_objects.filter(id=id).first()
+        exam = Examination.all_objects.select_for_update().filter(id=id, organization=tenant).first()
         if not exam:
             return Response({
                 'status': 'ERROR',
@@ -178,51 +192,22 @@ class AssignCandidatesView(APIView):
         batch_ids = data.get('batch_ids', [])
         center_ids = data.get('centre_ids', data.get('center_ids', []))
 
+        students = User.objects.filter(organization=tenant, role=UserRole.STUDENT)
+        batches = Batch.all_objects.filter(organization=tenant)
+        centers = ExaminationCenter.all_objects.filter(organization=tenant)
         assigned_count = 0
-        with transaction.atomic():
-            # 1. Direct student assignments
-            for sid in student_ids:
-                stud = None
-                if is_valid_uuid(sid):
-                    stud = User.objects.filter(id=sid).first()
-                if not stud:
-                    stud = User.objects.filter(username=sid).first()
-                if not stud:
-                    # Create student placeholder or user if needed for test
-                    stud = User.objects.create_user(
-                        username=f"stud_{sid}_{uuid.uuid4().hex[:4]}",
-                        role=UserRole.STUDENT,
-                        organization=exam.organization,
-                    )
-                _, created = CandidateAssignment.objects.get_or_create(exam=exam, student=stud)
-                if created:
-                    assigned_count += 1
-
-            # 2. Batch assignments
-            for bid in batch_ids:
-                b = None
-                if is_valid_uuid(bid):
-                    b = Batch.all_objects.filter(id=bid).first()
-                if not b:
-                    b = Batch.all_objects.filter(code=bid).first()
-                if b:
-                    CandidateAssignment.objects.get_or_create(exam=exam, batch=b)
-                    # Also count students in this batch
-                    b_students = User.objects.filter(enrollments__batch=b, enrollments__is_active=True).distinct()
-                    assigned_count += b_students.count()
-
-            # 3. Center assignments
-            for cid in center_ids:
-                c = None
-                if is_valid_uuid(cid):
-                    c = ExaminationCenter.all_objects.filter(id=cid).first()
-                if not c:
-                    c = ExaminationCenter.all_objects.filter(code=cid).first()
-                if c:
-                    CandidateAssignment.objects.get_or_create(exam=exam, center=c)
-
-        if assigned_count == 0 and (student_ids or batch_ids or center_ids):
-            assigned_count = len(student_ids) or 1
+        for field, identifiers, queryset, alternate in (
+            ('student', student_ids, students, 'username'),
+            ('batch', batch_ids, batches, 'code'),
+            ('center', center_ids, centers, 'code'),
+        ):
+            for identifier in identifiers:
+                target = queryset.filter(pk=identifier).first() if is_valid_uuid(identifier) else None
+                if target is None:
+                    target = queryset.filter(**{alternate: identifier}).first()
+                if target is not None:
+                    _, created = CandidateAssignment.objects.get_or_create(exam=exam, **{field: target})
+                    assigned_count += int(created)
 
         return Response({
             'status': 'SUCCESS',
@@ -232,9 +217,11 @@ class AssignCandidatesView(APIView):
 
 
 class PublishExaminationView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
 
+    @transaction.atomic
     def post(self, request, id):
+        tenant = require_tenant(request)
         if not is_valid_uuid(id):
             return Response({
                 'status': 'ERROR',
@@ -242,7 +229,7 @@ class PublishExaminationView(APIView):
                 'message': f'Examination {id} not found.'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        exam = Examination.all_objects.filter(id=id).first()
+        exam = Examination.objects.select_for_update().filter(id=id, organization=tenant).first()
         if not exam:
             return Response({
                 'status': 'ERROR',
@@ -250,10 +237,28 @@ class PublishExaminationView(APIView):
                 'message': f'Examination {id} not found.'
             }, status=status.HTTP_404_NOT_FOUND)
 
+        if exam.status != ExaminationStatus.DRAFT:
+            return Response({
+                'status': 'ERROR',
+                'code': 'INVALID_STATUS',
+                'message': 'Only draft examinations can be published.',
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if exam.start_window and exam.end_window and exam.start_window >= exam.end_window:
+            return Response({
+                'status': 'ERROR',
+                'code': 'INVALID_WINDOW',
+                'message': 'The examination end window must be after the start window.',
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         # Check question count
         q_count = 0
-        if exam.question_paper:
-            q_count = exam.question_paper.questions.count()
+        paper = None
+        if exam.question_paper_id:
+            paper = QuestionBank.all_objects.select_for_update().filter(pk=exam.question_paper_id, organization=tenant).first()
+            if paper is None:
+                raise exceptions.ValidationError({'question_paper_id': 'Unknown question paper.'})
+            q_count = paper.questions.count()
         if q_count == 0:
             q_count = exam.sections.filter(exam_questions__isnull=False).count()
 
@@ -267,9 +272,9 @@ class PublishExaminationView(APIView):
         exam.status = ExaminationStatus.PUBLISHED
         exam.save(update_fields=['status'])
 
-        if exam.question_paper:
-            exam.question_paper.is_locked = True
-            exam.question_paper.save(update_fields=['is_locked'])
+        if paper:
+            paper.is_locked = True
+            paper.save(update_fields=['is_locked'])
 
         return Response({
             'status': 'PUBLISHED',
@@ -278,9 +283,10 @@ class PublishExaminationView(APIView):
 
 
 class StaffPreviewView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
 
     def get(self, request, id):
+        tenant = require_tenant(request)
         if not is_valid_uuid(id):
             return Response({
                 'status': 'ERROR',
@@ -288,7 +294,7 @@ class StaffPreviewView(APIView):
                 'message': f'Examination {id} not found.'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        exam = Examination.all_objects.filter(id=id).first()
+        exam = Examination.all_objects.filter(id=id, organization=tenant).first()
         if not exam:
             return Response({
                 'status': 'ERROR',
@@ -297,8 +303,9 @@ class StaffPreviewView(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
         questions_data = []
-        if exam.question_paper:
-            qs = exam.question_paper.questions.all().order_by('question_number')
+        paper = QuestionBank.all_objects.filter(pk=exam.question_paper_id, organization=tenant).first()
+        if paper:
+            qs = paper.questions.all().order_by('question_number')
             questions_data = QuestionSerializer(qs, many=True).data
 
         return Response({

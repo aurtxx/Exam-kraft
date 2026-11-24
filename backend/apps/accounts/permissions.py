@@ -1,3 +1,4 @@
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from apps.organizations.context import set_current_tenant
 from .models import UserRole
@@ -23,7 +24,7 @@ class IsOrgAdmin(BasePermission):
         )
 
 
-class IsFaculty(BasePermission):
+class IsOrgAdminOrFaculty(BasePermission):
     """Allows access to Faculty, Org Admins, and Super Admins."""
     def has_permission(self, request, view):
         return bool(
@@ -31,6 +32,10 @@ class IsFaculty(BasePermission):
             request.user.is_authenticated and
             request.user.role in (UserRole.SUPERADMIN, UserRole.ORG_ADMIN, UserRole.FACULTY)
         )
+
+
+class IsFaculty(IsOrgAdminOrFaculty):
+    pass
 
 
 class IsStudent(BasePermission):
@@ -97,3 +102,18 @@ class IsTenantMember(BasePermission):
         if target_org_id:
             return str(request.user.organization_id) == str(target_org_id)
         return True
+
+
+def require_tenant(request, org_id=None):
+    tenant = getattr(request, 'tenant', None)
+    if tenant is None or (org_id is not None and str(tenant.pk) != str(org_id)):
+        raise PermissionDenied('The active organization is required and must match the requested organization.')
+    return tenant
+
+
+class IsActiveTenantMember(IsTenantMember):
+    """Requires a resolved tenant and enforces any organization in the URL."""
+
+    def has_permission(self, request, view):
+        require_tenant(request, view.kwargs.get('org_id'))
+        return super().has_permission(request, view)

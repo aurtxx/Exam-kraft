@@ -6,6 +6,7 @@ from .models import (
     CandidateAssignment,
     ExaminationStatus,
 )
+from apps.question_bank.models import QuestionBank
 from apps.question_bank.serializers import QuestionSerializer
 
 
@@ -27,7 +28,7 @@ class ExaminationSectionSerializer(serializers.ModelSerializer):
 
 class ExaminationSerializer(serializers.ModelSerializer):
     sections = ExaminationSectionSerializer(many=True, read_only=True)
-    question_paper_id = serializers.CharField(required=False, write_only=True, allow_null=True)
+    question_paper_id = serializers.UUIDField(required=False, write_only=True, allow_null=True)
     assigned_groups = serializers.SerializerMethodField()
     assigned_centres = serializers.SerializerMethodField()
 
@@ -65,7 +66,21 @@ class ExaminationSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'organization', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'organization', 'status', 'created_at', 'updated_at']
+
+    def validate_question_paper(self, paper):
+        self.validate_question_paper_id(paper.pk if paper else None)
+        return paper
+
+    def validate_question_paper_id(self, paper_id):
+        if paper_id and self.instance and not QuestionBank.all_objects.filter(
+            pk=paper_id, organization_id=self.instance.organization_id
+        ).exists():
+            raise serializers.ValidationError('Unknown question paper.')
+        if self.instance and self.instance.status == ExaminationStatus.PUBLISHED:
+            if paper_id != self.instance.question_paper_id:
+                raise serializers.ValidationError('Cannot change the question paper of a published examination.')
+        return paper_id
 
     def get_assigned_groups(self, obj) -> list[str]:
         return list(obj.candidate_assignments.filter(batch__isnull=False).values_list('batch__name', flat=True))

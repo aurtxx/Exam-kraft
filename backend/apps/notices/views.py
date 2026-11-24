@@ -1,27 +1,32 @@
+from uuid import UUID
 from django.utils import timezone
-from django.db import models
-from rest_framework import status, generics
+from django.db import models, transaction
+from rest_framework import status, generics, exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Notice
 from .serializers import NoticeSerializer
-from apps.organizations.models import Organization, Batch, ExaminationCenter
-from apps.organizations.context import get_current_tenant
-from apps.accounts.permissions import IsTenantMember, IsOrgAdminOrReadOnly
+from apps.organizations.models import Batch, ExaminationCenter
+from apps.accounts.permissions import IsActiveTenantMember, IsOrgAdminOrReadOnly, require_tenant
+
+
+def resolve_targets(model, tenant, values, field):
+    try:
+        ids = {UUID(str(value)) for value in values}
+    except (TypeError, ValueError):
+        raise exceptions.ValidationError({field: 'Expected a list of valid IDs.'})
+    targets = list(model.all_objects.filter(organization=tenant, pk__in=ids))
+    if len(targets) != len(ids):
+        raise exceptions.ValidationError({field: 'All targets must belong to the active organization.'})
+    return targets
 
 
 class NoticeListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
-
-    def get_tenant(self, request):
-        return get_current_tenant() or getattr(request.user, 'organization', None)
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
 
     def get(self, request):
-        tenant = self.get_tenant(request)
-        qs = Notice.objects.all()
-        if tenant:
-            qs = qs.filter(organization=tenant)
+        qs = Notice.objects.filter(organization=require_tenant(request))
 
         active_only = request.query_params.get('active')
         if active_only and active_only.lower() in ('true', '1'):
@@ -40,8 +45,9 @@ class NoticeListCreateView(APIView):
             'notices': serializer.data,
         }, status=status.HTTP_200_OK)
 
+    @transaction.atomic
     def post(self, request):
-        tenant = self.get_tenant(request) or Organization.objects.first()
+        tenant = require_tenant(request)
         data = request.data
 
         title = data.get('title')
@@ -51,6 +57,9 @@ class NoticeListCreateView(APIView):
                 'code': 'VALIDATION_FAILED',
                 'message': 'Notice title is required.'
             }, status=status.HTTP_400_BAD_REQUEST)
+
+        batches = resolve_targets(Batch, tenant, data.get('target_batch_ids', []), 'target_batch_ids')
+        centers = resolve_targets(ExaminationCenter, tenant, data.get('target_center_ids', []), 'target_center_ids')
 
         notice = Notice.all_objects.create(
             organization=tenant,
@@ -62,15 +71,8 @@ class NoticeListCreateView(APIView):
             created_by=request.user if request.user.is_authenticated else None,
         )
 
-        batch_ids = data.get('target_batch_ids', [])
-        if batch_ids:
-            batches = Batch.all_objects.filter(id__in=batch_ids)
-            notice.target_batches.set(batches)
-
-        center_ids = data.get('target_center_ids', [])
-        if center_ids:
-            centers = ExaminationCenter.all_objects.filter(id__in=center_ids)
-            notice.target_centers.set(centers)
+        notice.target_batches.set(batches)
+        notice.target_centers.set(centers)
 
         serializer = NoticeSerializer(notice)
         return Response({
@@ -82,7 +84,27 @@ class NoticeListCreateView(APIView):
 
 
 class NoticeDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = NoticeSerializer
-    queryset = Notice.objects.all()
     lookup_field = 'id'
+
+    def get_queryset(self):
+        return Notice.objects.filter(organization=require_tenant(self.request))
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        tenant = require_tenant(self.request)
+        targets = {}
+        for field, alias, model in (
+            ('target_batches', 'target_batch_ids', Batch),
+            ('target_centers', 'target_center_ids', ExaminationCenter),
+        ):
+            data = serializer.validated_data
+            if alias in data:
+                targets[field] = resolve_targets(model, tenant, data.pop(alias), alias)
+            elif field in data:
+                targets[field] = resolve_targets(model, tenant, [target.pk for target in data[field]], field)
+        serializer.save(**targets)

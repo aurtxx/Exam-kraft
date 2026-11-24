@@ -1,6 +1,7 @@
 import io
 import uuid
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework import status
 from apps.organizations.models import Organization, Batch, ExaminationCenter, StudentBatchEnrollment
@@ -49,6 +50,20 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
         self.assertEqual(list_res.status_code, status.HTTP_200_OK)
         self.assertTrue(any(b["id"] == batch_id for b in list_res.data["batches"]))
 
+    def test_scoped_batch_and_center_urls_match_active_tenant(self):
+        other_org_id = uuid.uuid4()
+        for model, resource in ((Batch, "batches"), (ExaminationCenter, "centers")):
+            record = model.all_objects.create(organization=self.org, name="Local", code="LOCAL")
+            for org_id, expected in (
+                (self.org.pk, status.HTTP_200_OK),
+                (other_org_id, status.HTTP_403_FORBIDDEN),
+            ):
+                url = f"/api/v1/organizations/{org_id}/{resource}/"
+                for path in (url, f"{url}{record.pk}/"):
+                    with self.subTest(path=path):
+                        response = self.client.get(path, **self.tenant_headers)
+                        self.assertEqual(response.status_code, expected)
+
     def test_center_capacity_validation(self):
         # Capacity <= 0 returns 400
         res = self.client.post(
@@ -68,6 +83,23 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
             **self.tenant_headers,
         )
         self.assertEqual(valid_res.status_code, status.HTTP_201_CREATED)
+
+    def test_normalized_codes_conflict_on_create_and_update(self):
+        for model, resource in ((Batch, "batches"), (ExaminationCenter, "centers")):
+            with self.subTest(resource=resource):
+                model.all_objects.create(organization=self.org, name="First", code=" EXISTING ")
+                other = model.all_objects.create(organization=self.org, name="Second", code="SECOND")
+                url = f"/api/v1/organizations/{resource}/"
+                payload = {"name": "Duplicate", "code": " existing ", "capacity": 50}
+                create = self.client.post(url, payload, format="json", **self.tenant_headers)
+                update = self.client.patch(
+                    f"{url}{other.pk}/", {"code": " existing "}, format="json", **self.tenant_headers,
+                )
+                for response in (create, update):
+                    self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+                    self.assertEqual(response.data["code"], "DUPLICATE_CODE")
+                other.refresh_from_db()
+                self.assertEqual(other.code, "SECOND")
 
     # ==========================================================================
     # 2. Accounts: Faculty, Students & Bulk CSV Import with Rollback
@@ -145,9 +177,59 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
         # Ensure 2026903 was NOT committed to DB (transaction rolled back)
         self.assertFalse(StudentBatchEnrollment.objects.filter(roll_number="2026903").exists())
 
+    def test_bulk_csv_rejects_unterminated_quote_before_writing(self):
+        Batch.all_objects.create(organization=self.org, name="Existing Batch", code="CSV01")
+        response = self.client.post(
+            "/api/v1/users/students/bulk-upload/",
+            data=b'RollNumber,Name,BatchCode,CentreCode\nA1,First,CSV01,NEWCENTER\nA2,"Unterminated',
+            content_type="text/csv",
+            **self.tenant_headers,
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "MALFORMED_CSV")
+        self.assertEqual(response.data["created_count"], 0)
+        self.assertFalse(User.objects.filter(organization=self.org, role=UserRole.STUDENT).exists())
+        self.assertFalse(ExaminationCenter.all_objects.filter(organization=self.org, code="NEWCENTER").exists())
+
+    def test_bulk_csv_missing_batch_rolls_back_all_rows(self):
+        Batch.all_objects.create(organization=self.org, name="Existing Batch", code="CSV01")
+        other_org = Organization.objects.create(name="Other Institute", slug="other-institute")
+        Batch.all_objects.create(organization=other_org, name="Other Batch", code="MISSING")
+        csv_data = (
+            "RollNumber,Name,Email,BatchCode,CentreCode\n"
+            "A1,First Student,first@apex.edu,CSV01,NEWCENTER\n"
+            "A2,Second Student,second@apex.edu,MISSING,NEWCENTER\n"
+        )
+        response = self.client.post(
+            "/api/v1/users/students/bulk-upload/",
+            data=csv_data.encode(), content_type="text/csv", **self.tenant_headers,
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["created_count"], 0)
+        self.assertIn("Row 3", response.data["errors"][0])
+        self.assertIn("MISSING", response.data["errors"][0])
+        self.assertFalse(User.objects.filter(organization=self.org, role=UserRole.STUDENT).exists())
+        self.assertFalse(Batch.all_objects.filter(organization=self.org, code="MISSING").exists())
+        self.assertFalse(ExaminationCenter.all_objects.filter(organization=self.org, code="NEWCENTER").exists())
+
     # ==========================================================================
     # 3. Question Bank: Multi-Type Questions & Marking Schemes
     # ==========================================================================
+    def test_empty_question_payload_does_not_create_default_bank(self):
+        # The request clears tenant context before these database assertions run.
+        banks = QuestionBank.all_objects.filter(organization=self.org)
+        self.assertEqual(banks.count(), 0)
+
+        response = self.client.post(
+            "/api/v1/questions/",
+            {},
+            format="json",
+            **self.tenant_headers,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(banks.count(), 0)
+
     def test_question_authoring_and_validations(self):
         qp_res = self.client.post(
             "/api/v1/question-papers/",
@@ -261,6 +343,87 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
         self.assertEqual(no_options.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(no_options.data["code"], "MISSING_OPTIONS")
 
+    def test_question_updates_validate_marks_and_mcq_options(self):
+        paper = QuestionBank.all_objects.create(organization=self.org, name="Question Validation")
+        create_url = f"/api/v1/question-papers/{paper.pk}/questions/"
+        options = [{"key": "A", "text": "First"}, {"key": "B", "text": "Second"}]
+        payload = {"question_type": "MCQ_SINGLE", "cmk": 4, "imk": 2, "options": options}
+        for invalid_options in (options[:1], options):
+            response = self.client.post(
+                create_url, {**payload, "options": invalid_options}, format="json", **self.tenant_headers,
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        created = self.client.post(create_url, {**payload, "key": "A"}, format="json", **self.tenant_headers)
+        self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+        detail_url = f"/api/v1/questions/{created.data['id']}/"
+        for invalid_update in ({"imk": 5}, {"cmk": 1}, {"options": options[:1]}, {
+            "key": "", "options": options,
+        }):
+            response = self.client.patch(detail_url, invalid_update, format="json", **self.tenant_headers)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        updated = self.client.patch(
+            detail_url, {"key": "B", "options": options}, format="json", **self.tenant_headers,
+        )
+        self.assertEqual(updated.status_code, status.HTTP_200_OK)
+        self.assertEqual([o["key"] for o in updated.data["options"] if o["is_correct"]], ["B"])
+
+    def test_single_mcq_rejects_invalid_options_on_create_and_update(self):
+        paper = QuestionBank.all_objects.create(organization=self.org, name="Single MCQ Validation")
+        create_url = f"/api/v1/question-papers/{paper.pk}/questions/"
+        options = [{"key": "A", "text": "First"}, {"key": "B", "text": "Second"}]
+        payload = {"question_type": 1, "key": "A", "options": options, "content_text": "Choose one."}
+        created = self.client.post(create_url, payload, format="json", **self.tenant_headers)
+        self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+        detail_url = f"/api/v1/questions/{created.data['id']}/"
+        invalid_options = (
+            [{"key": "A", "text": " \t"}, options[1]],
+            [{"key": "A"}, options[1]],
+            [dict(option, is_correct=True) for option in options],
+            [dict(option, is_correct=False) for option in options],
+        )
+        for request, url, fields in (
+            (self.client.post, create_url, payload),
+            (self.client.put, detail_url, {**payload, "question_bank": str(paper.pk)}),
+            (self.client.patch, detail_url, {}),
+        ):
+            for invalid in invalid_options:
+                with self.subTest(method=request.__name__, options=invalid):
+                    response = request(url, {**fields, "options": invalid}, format="json", **self.tenant_headers)
+                    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                    if request != self.client.post:
+                        self.assertIn("options", response.data)
+
+    def test_single_mcq_syncs_key_and_option_correctness(self):
+        paper = QuestionBank.all_objects.create(organization=self.org, name="Single MCQ Key Sync")
+        create_url = f"/api/v1/question-papers/{paper.pk}/questions/"
+        options = [
+            {"key": "A", "text": "First", "is_correct": True},
+            {"key": "B", "text": "Second", "is_correct": False},
+        ]
+        created = self.client.post(
+            create_url, {"question_type": 1, "options": options}, format="json", **self.tenant_headers,
+        )
+        self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(created.data["question"]["key"], "A")
+        detail_url = f"/api/v1/questions/{created.data['id']}/"
+
+        updated = self.client.patch(detail_url, {"key": "B"}, format="json", **self.tenant_headers)
+        self.assertEqual(updated.status_code, status.HTTP_200_OK)
+        self.assertEqual(updated.data["key"], "B")
+        self.assertEqual({o["key"]: o["is_correct"] for o in updated.data["options"]}, {"A": False, "B": True})
+        self.assertEqual(
+            [o["id"] for o in updated.data["options"]],
+            [o["id"] for o in created.data["question"]["options"]],
+        )
+
+        updated = self.client.patch(detail_url, {"options": options}, format="json", **self.tenant_headers)
+        self.assertEqual(updated.status_code, status.HTTP_200_OK)
+        saved = self.client.get(detail_url, **self.tenant_headers)
+        self.assertEqual(saved.data["key"], "A")
+        self.assertEqual({o["key"]: o["is_correct"] for o in saved.data["options"]}, {"A": True, "B": False})
+
     # ==========================================================================
     # 4. Examinations: Lifecycle, Assignment, Publishing & Staff Preview
     # ==========================================================================
@@ -303,6 +466,20 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
         self.assertEqual(exam_res.status_code, status.HTTP_201_CREATED)
         eid = exam_res.data["id"]
 
+        direct_update = self.client.patch(
+            f"/api/v1/examinations/{eid}/", {"status": "PUBLISHED"}, format="json", **self.tenant_headers,
+        )
+        self.assertEqual(direct_update.status_code, status.HTTP_200_OK)
+        self.assertEqual(direct_update.data["status"], "DRAFT")
+
+        exam = Examination.all_objects.filter(pk=eid)
+        boundary = timezone.now()
+        exam.update(start_window=boundary, end_window=boundary)
+        invalid_window = self.client.post(f"/api/v1/examinations/{eid}/publish/", **self.tenant_headers)
+        self.assertEqual(invalid_window.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(invalid_window.data["code"], "INVALID_WINDOW")
+        exam.update(start_window=None, end_window=None)
+
         # 4. Publishing empty exam returns 400 EMPTY_EXAM
         pub_fail = self.client.post(f"/api/v1/examinations/{eid}/publish/", **self.tenant_headers)
         self.assertEqual(pub_fail.status_code, status.HTTP_400_BAD_REQUEST)
@@ -319,6 +496,9 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
             negative_marks=1.0,
         )
 
+        for username in ("student_alpha", "student_beta"):
+            User.objects.create_user(username=username, role=UserRole.STUDENT, organization=self.org)
+
         # 6. Candidate Assignment
         assign_res = self.client.post(
             f"/api/v1/examinations/{eid}/assign-candidates/",
@@ -328,6 +508,15 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
         )
         self.assertEqual(assign_res.status_code, status.HTTP_200_OK)
         self.assertEqual(assign_res.data["assigned_count"], 2)
+
+        repeat = self.client.post(
+            f"/api/v1/examinations/{eid}/assign-candidates/",
+            {"student_ids": ["student_alpha", "unknown_student"]},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(repeat.status_code, status.HTTP_200_OK)
+        self.assertEqual(repeat.data["assigned_count"], 0)
 
         # 7. Assignment to nonexistent exam returns 404
         nonexist_res = self.client.post(
@@ -343,6 +532,16 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
         self.assertEqual(pub_success.status_code, status.HTTP_200_OK)
         self.assertEqual(pub_success.data["status"], "PUBLISHED")
 
+        republish = self.client.post(f"/api/v1/examinations/{eid}/publish/", **self.tenant_headers)
+        self.assertEqual(republish.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(republish.data["code"], "INVALID_STATUS")
+
+        paper_url = f"/api/v1/question-papers/{empty_qp.pk}/"
+        for update in (self.client.put, self.client.patch):
+            response = update(paper_url, {"name": "Renamed"}, format="json", **self.tenant_headers)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(response.data["code"], "LOCKED")
+
         # Verify paper is now locked (cannot add more questions)
         lock_res = self.client.post(
             f"/api/v1/question-papers/{empty_qp.id}/questions/",
@@ -350,14 +549,42 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
             format="json",
             **self.tenant_headers,
         )
-        self.assertEqual(lock_res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(lock_res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(lock_res.data["code"], "LOCKED")
+
+        for field in ("question_paper", "question_paper_id"):
+            response = self.client.patch(
+                f"/api/v1/examinations/{eid}/", {field: None}, format="json", **self.tenant_headers,
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        empty_qp.refresh_from_db()
+        self.assertTrue(empty_qp.is_locked)
+        question_url = f"/api/v1/questions/{empty_qp.questions.get().pk}/"
+        section_url = f"/api/v1/question-papers/{empty_qp.pk}/sections/"
+        for response in (
+            self.client.patch(question_url, {"cmk": 5}, format="json", **self.tenant_headers),
+            self.client.delete(question_url, **self.tenant_headers),
+            self.client.post(section_url, {"name": "Locked Section"}, format="json", **self.tenant_headers),
+        ):
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(response.data["code"], "LOCKED")
 
         # 9. Staff Preview
         preview_res = self.client.get(f"/api/v1/examinations/{eid}/preview/", **self.tenant_headers)
         self.assertEqual(preview_res.status_code, status.HTTP_200_OK)
         self.assertEqual(preview_res.data["status"], "SUCCESS")
         self.assertTrue(len(preview_res.data["questions"]) >= 1)
+        for role, expected in (
+            (UserRole.SUPERADMIN, status.HTTP_200_OK),
+            (UserRole.FACULTY, status.HTTP_200_OK),
+            (UserRole.STUDENT, status.HTTP_403_FORBIDDEN),
+        ):
+            with self.subTest(role=role):
+                viewer = User.objects.create_user(username=role, role=role, organization=self.org)
+                self.client.force_authenticate(user=viewer)
+                response = self.client.get(f"/api/v1/examinations/{eid}/preview/", **self.tenant_headers)
+                self.assertEqual(response.status_code, expected)
 
     # ==========================================================================
     # 5. Notices: Broadcast & Active Filtering
