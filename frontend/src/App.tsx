@@ -4,6 +4,13 @@ import { AuthProvider } from './context/AuthContext';
 import Shell from './components/layout/Shell';
 import Login from './pages/Login';
 import StaffDashboard from './pages/StaffDashboard';
+import BatchesPage from './pages/staff/BatchesPage';
+import CentersPage from './pages/staff/CentersPage';
+import FacultyPage from './pages/staff/FacultyPage';
+import StudentsPage from './pages/staff/StudentsPage';
+import QuestionBankPage from './pages/staff/QuestionBankPage';
+import ExaminationsPage from './pages/staff/ExaminationsPage';
+import NoticesPage from './pages/staff/NoticesPage';
 import NotFound from './pages/NotFound';
 
 export const App: React.FC = () => {
@@ -12,18 +19,20 @@ export const App: React.FC = () => {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Navigate to="/staff" replace />} />
+          <Route path="/" element={<Navigate to="/staff/exams" replace />} />
           <Route element={<Shell />}>
-            <Route path="/staff" element={<StaffDashboard />} />
-            {/* Additional routes will be attached in subsequent milestones */}
-            <Route path="/staff/students" element={<StaffDashboard />} />
+            <Route path="/staff" element={<Navigate to="/staff/exams" replace />} />
+            <Route path="/staff/exams" element={<ExaminationsPage />} />
+            <Route path="/staff/question-bank" element={<QuestionBankPage />} />
+            <Route path="/staff/students" element={<StudentsPage />} />
+            <Route path="/staff/batches" element={<BatchesPage />} />
+            <Route path="/staff/centers" element={<CentersPage />} />
+            <Route path="/staff/faculty" element={<FacultyPage />} />
+            <Route path="/staff/notices" element={<NoticesPage />} />
             <Route path="/staff/settings" element={<StaffDashboard />} />
             <Route path="/staff/plans" element={<StaffDashboard />} />
             <Route path="/staff/customize" element={<StaffDashboard />} />
             <Route path="/staff/demo-videos" element={<StaffDashboard />} />
-            <Route path="/staff/faculty" element={<StaffDashboard />} />
-            <Route path="/staff/centers" element={<StaffDashboard />} />
-            <Route path="/staff/notices" element={<StaffDashboard />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

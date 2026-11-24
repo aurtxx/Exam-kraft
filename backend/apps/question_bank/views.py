@@ -89,6 +89,10 @@ class QuestionListCreateView(APIView):
     def get_paper(self, paper_id):
         if not paper_id:
             return None
+        try:
+            uuid.UUID(str(paper_id))
+        except (ValueError, TypeError, AttributeError):
+            return None
         return QuestionBank.all_objects.filter(id=paper_id).first()
 
     def get(self, request, paper_id=None):

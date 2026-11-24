@@ -14,6 +14,8 @@ import {
   Star,
   ChevronDown,
   ChevronRight,
+  BookOpen,
+  Layers,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -48,8 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       {/* Main Navigation Menu */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
         <NavLink
-          to="/staff"
-          end
+          to="/staff/exams"
           className={({ isActive }) =>
             `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${
               isActive
@@ -60,6 +61,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         >
           <CheckCircle size={18} />
           <span>Exams</span>
+        </NavLink>
+
+        <NavLink
+          to="/staff/question-bank"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${
+              isActive
+                ? 'bg-primary-50 text-primary-600 font-semibold shadow-sm'
+                : 'text-slate-600 hover:text-primary-600 hover:bg-slate-50'
+            }`
+          }
+        >
+          <BookOpen size={18} />
+          <span>Question Bank</span>
         </NavLink>
 
         <NavLink
@@ -144,6 +159,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
           {isManagementOpen && (
             <div className="mt-1 space-y-1 pl-2">
+              <NavLink
+                to="/staff/batches"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-600 font-semibold'
+                      : 'text-slate-600 hover:text-primary-600 hover:bg-slate-50'
+                  }`
+                }
+              >
+                <Layers size={16} />
+                <span>Batches</span>
+              </NavLink>
+
               <NavLink
                 to="/staff/faculty"
                 className={({ isActive }) =>

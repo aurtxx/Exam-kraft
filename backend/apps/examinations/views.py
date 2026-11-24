@@ -146,10 +146,25 @@ class ExaminationDetailView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
 
 
+def is_valid_uuid(val):
+    try:
+        uuid.UUID(str(val))
+        return True
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+
 class AssignCandidatesView(APIView):
     permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
 
     def post(self, request, id):
+        if not is_valid_uuid(id):
+            return Response({
+                'status': 'ERROR',
+                'code': 'NOT_FOUND',
+                'message': f'Examination {id} not found.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
         exam = Examination.all_objects.filter(id=id).first()
         if not exam:
             return Response({
@@ -167,7 +182,11 @@ class AssignCandidatesView(APIView):
         with transaction.atomic():
             # 1. Direct student assignments
             for sid in student_ids:
-                stud = User.objects.filter(id=sid).first() or User.objects.filter(username=sid).first()
+                stud = None
+                if is_valid_uuid(sid):
+                    stud = User.objects.filter(id=sid).first()
+                if not stud:
+                    stud = User.objects.filter(username=sid).first()
                 if not stud:
                     # Create student placeholder or user if needed for test
                     stud = User.objects.create_user(
@@ -181,7 +200,11 @@ class AssignCandidatesView(APIView):
 
             # 2. Batch assignments
             for bid in batch_ids:
-                b = Batch.all_objects.filter(id=bid).first() or Batch.all_objects.filter(code=bid).first()
+                b = None
+                if is_valid_uuid(bid):
+                    b = Batch.all_objects.filter(id=bid).first()
+                if not b:
+                    b = Batch.all_objects.filter(code=bid).first()
                 if b:
                     CandidateAssignment.objects.get_or_create(exam=exam, batch=b)
                     # Also count students in this batch
@@ -190,7 +213,11 @@ class AssignCandidatesView(APIView):
 
             # 3. Center assignments
             for cid in center_ids:
-                c = ExaminationCenter.all_objects.filter(id=cid).first() or ExaminationCenter.all_objects.filter(code=cid).first()
+                c = None
+                if is_valid_uuid(cid):
+                    c = ExaminationCenter.all_objects.filter(id=cid).first()
+                if not c:
+                    c = ExaminationCenter.all_objects.filter(code=cid).first()
                 if c:
                     CandidateAssignment.objects.get_or_create(exam=exam, center=c)
 
@@ -208,6 +235,13 @@ class PublishExaminationView(APIView):
     permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
 
     def post(self, request, id):
+        if not is_valid_uuid(id):
+            return Response({
+                'status': 'ERROR',
+                'code': 'NOT_FOUND',
+                'message': f'Examination {id} not found.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
         exam = Examination.all_objects.filter(id=id).first()
         if not exam:
             return Response({
@@ -247,6 +281,13 @@ class StaffPreviewView(APIView):
     permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
 
     def get(self, request, id):
+        if not is_valid_uuid(id):
+            return Response({
+                'status': 'ERROR',
+                'code': 'NOT_FOUND',
+                'message': f'Examination {id} not found.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
         exam = Examination.all_objects.filter(id=id).first()
         if not exam:
             return Response({
