@@ -20,10 +20,26 @@ SESSION_COOKIE_SECURE = HTTPS_ENABLED
 CSRF_COOKIE_SECURE = HTTPS_ENABLED
 
 CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 1800
+
+# Optional Daphne / Channels support
+try:
+    import daphne  # noqa
+    import channels  # noqa
+    HAS_CHANNELS = True
+except ImportError:
+    HAS_CHANNELS = False
 
 # Application definition
 INSTALLED_APPS = [
+    *(['daphne'] if HAS_CHANNELS else []),
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -31,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Third-party
+    *(['channels'] if HAS_CHANNELS else []),
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -84,7 +101,29 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-# Database Configuration
+# Channel Layers Configuration for ASGI & WebSockets
+if HAS_CHANNELS:
+    if os.environ.get('REDIS_URL'):
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels_redis.core.RedisChannelLayer',
+                'CONFIG': {
+                    'hosts': [os.environ.get('REDIS_URL', 'redis://localhost:6379/0')],
+                    'capacity': 1500,
+                    'expiry': 10,
+                },
+            },
+        }
+    else:
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels.layers.InMemoryChannelLayer',
+            },
+        }
+
+# Database Configuration with Connection Pooling
+CONN_MAX_AGE = int(os.environ.get('CONN_MAX_AGE', 600))
+
 if os.environ.get('USE_POSTGRES') == '1' or os.environ.get('DB_NAME'):
     DATABASES = {
         'default': {
@@ -94,6 +133,8 @@ if os.environ.get('USE_POSTGRES') == '1' or os.environ.get('DB_NAME'):
             'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
             'HOST': os.environ.get('DB_HOST', 'localhost'),
             'PORT': os.environ.get('DB_PORT', '5432'),
+            'CONN_MAX_AGE': CONN_MAX_AGE,
+            'CONN_HEALTH_CHECKS': True,
         }
     }
 else:
@@ -101,6 +142,7 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
+            'CONN_MAX_AGE': CONN_MAX_AGE,
         }
     }
 

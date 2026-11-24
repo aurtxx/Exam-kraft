@@ -1,10 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
 
-from apps.core.views import health, readiness
+from apps.core.views import health, readiness, detailed_health_check
 urlpatterns = [
     path("healthz/", health),
     path("readyz/", readiness),
+    path("api/health/", detailed_health_check),
+    path("api/v1/health/", detailed_health_check),
     path('admin/', admin.site.urls),
     path('api/v1/auth/', include('apps.accounts.urls')),
     path('api/v1/users/', include('apps.accounts.user_urls')),
