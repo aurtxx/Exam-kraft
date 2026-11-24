@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, Award, ArrowLeft, LogOut } from 'lucide-react';
+import { CheckCircle2, Award, ArrowLeft } from 'lucide-react';
 import { SubmitResult } from '../../services/studentExamApi';
 
 export const ExamFinishPage: React.FC = () => {

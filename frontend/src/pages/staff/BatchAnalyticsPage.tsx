@@ -12,7 +12,6 @@ import {
   AlertCircle,
   BarChart2,
   CheckCircle2,
-  XCircle,
   Eye,
 } from 'lucide-react';
 import analyticsApi from '../../services/analyticsApi';

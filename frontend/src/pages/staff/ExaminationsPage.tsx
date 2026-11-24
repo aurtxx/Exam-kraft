@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/api';
 import { Examination, QuestionBank, Batch, ExaminationCenter, Question } from '../../types';
 import {
@@ -12,9 +13,11 @@ import {
   Eye,
   Send,
   AlertCircle,
+  BarChart2,
 } from 'lucide-react';
 
 export const ExaminationsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [exams, setExams] = useState<Examination[]>([]);
   const [papers, setPapers] = useState<QuestionBank[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -357,6 +360,15 @@ export const ExaminationsPage: React.FC = () => {
                   </button>
 
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate(`/staff/exams/${exam.id}/analytics`)}
+                      className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:bg-indigo-50 py-1.5 px-2.5 rounded-lg transition-colors border border-indigo-200"
+                      title="View Cohort Analytics & Leaderboard"
+                    >
+                      <BarChart2 size={13} />
+                      <span>Analytics</span>
+                    </button>
+
                     <button
                       onClick={() => openAssignDrawer(exam)}
                       className="flex items-center gap-1 text-xs font-bold text-primary-600 hover:bg-primary-50 py-1.5 px-2.5 rounded-lg transition-colors border border-primary-200"

@@ -10,10 +10,7 @@ import {
   Clock,
   ArrowLeft,
   Download,
-  Filter,
   BarChart3,
-  Check,
-  X,
   MinusCircle,
   Sparkles,
 } from 'lucide-react';
