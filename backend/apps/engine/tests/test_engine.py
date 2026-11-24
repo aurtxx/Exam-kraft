@@ -136,14 +136,45 @@ class EngineComprehensiveTestCase(TestCase):
         self.assertIn("Physics", sec_names)
         self.assertIn("Chemistry", sec_names)
 
-        # Confirm NO leak of secret answer keys or explanations
+        # Confirm NO leak of secret answer keys, explanations, or numerical bounds
         for sec in data["sections"]:
             for q in sec["questions"]:
                 self.assertNotIn("key", q)
                 self.assertNotIn("explanation", q)
+                self.assertNotIn("numerical_min", q)
+                self.assertNotIn("numerical_max", q)
                 if "options" in q:
                     for opt in q["options"]:
                         self.assertNotIn("is_correct", opt)
+
+    def test_delivery_payload_excludes_numerical_bounds_on_start_and_resume(self):
+        # Start via /student/attempts/start/
+        start_res = self.client.post(
+            "/api/v1/student/attempts/start/",
+            {"exam_id": str(self.exam.id)},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(start_res.status_code, status.HTTP_200_OK)
+        attempt_id = start_res.data["attempt_id"]
+
+        start_questions = [q for sec in start_res.data["sections"] for q in sec["questions"]]
+        self.assertTrue(any(str(q["id"]) == str(self.q3.id) for q in start_questions))
+        for q in start_questions:
+            self.assertNotIn("numerical_min", q)
+            self.assertNotIn("numerical_max", q)
+
+        # Resume via /student/attempts/{id}/resume/
+        resume_res = self.client.get(
+            f"/api/v1/student/attempts/{attempt_id}/resume/",
+            **self.tenant_headers,
+        )
+        self.assertEqual(resume_res.status_code, status.HTTP_200_OK)
+        resume_questions = [q for sec in resume_res.data["sections"] for q in sec["questions"]]
+        self.assertTrue(any(str(q["id"]) == str(self.q3.id) for q in resume_questions))
+        for q in resume_questions:
+            self.assertNotIn("numerical_min", q)
+            self.assertNotIn("numerical_max", q)
 
     def test_attempt_start_via_student_generic_endpoint(self):
         url = "/api/v1/student/attempts/start/"

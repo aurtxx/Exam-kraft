@@ -32,8 +32,6 @@ class DeliveryQuestionSerializer(serializers.ModelSerializer):
             'positive_marks',
             'negative_marks',
             'partial_marks',
-            'numerical_min',
-            'numerical_max',
             'coding_language',
             'code_boilerplate',
             'options',
