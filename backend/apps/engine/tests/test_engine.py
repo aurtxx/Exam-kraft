@@ -1,5 +1,7 @@
 import uuid
 from datetime import timedelta
+from asgiref.sync import async_to_sync
+from django.core.handlers.asgi import ASGIHandler
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -408,3 +410,39 @@ class EngineComprehensiveTestCase(TestCase):
         self.assertEqual(att.status, AttemptStatus.AUTO_SUBMITTED)
         self.assertIsNotNone(att.submitted_at)
         self.assertEqual(att.proctoring_logs.count(), 4)
+
+
+class WebSocketRemovalTestCase(TestCase):
+    def test_asgi_application_is_http_only_and_rejects_websocket_scope(self):
+        from config.asgi import application
+
+        self.assertIsInstance(application, ASGIHandler)
+        attempt_id = str(uuid.uuid4())
+        scope = {
+            "type": "websocket",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "scheme": "ws",
+            "path": f"/ws/exam/{attempt_id}/",
+            "raw_path": f"/ws/exam/{attempt_id}/".encode("ascii"),
+            "query_string": b"",
+            "headers": [],
+        }
+        sent_messages = []
+
+        async def receive():
+            return {"type": "websocket.connect"}
+
+        async def send(message):
+            sent_messages.append(message)
+
+        with self.assertRaises(ValueError):
+            async_to_sync(application)(scope, receive, send)
+
+        self.assertEqual(sent_messages, [])
+
+    def test_websocket_routing_and_consumer_removed(self):
+        from apps.engine import consumers, routing
+
+        self.assertEqual(routing.websocket_urlpatterns, [])
+        self.assertFalse(hasattr(consumers, "ExamAttemptConsumer"))
