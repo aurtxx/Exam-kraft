@@ -7,6 +7,7 @@ from .views import (
     StaffPreviewView,
 )
 from apps.engine.views import StartAttemptView
+from apps.analytics.views import EvaluateExaminationView, ExaminationResultsView
 
 urlpatterns = [
     path('', ExaminationListCreateView.as_view(), name='examinations-list-create'),
@@ -15,4 +16,6 @@ urlpatterns = [
     path('<uuid:id>/assign-candidates/', AssignCandidatesView.as_view(), name='examinations-assign-candidates'),
     path('<uuid:id>/publish/', PublishExaminationView.as_view(), name='examinations-publish'),
     path('<uuid:id>/preview/', StaffPreviewView.as_view(), name='examinations-preview'),
+    path('<uuid:exam_id>/evaluate/', EvaluateExaminationView.as_view(), name='examinations-evaluate'),
+    path('<uuid:exam_id>/results/', ExaminationResultsView.as_view(), name='examinations-results'),
 ]

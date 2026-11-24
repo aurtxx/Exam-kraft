@@ -7,6 +7,7 @@ from .views import (
     ResumeAttemptView,
     ProctoringEventView,
 )
+from apps.analytics.views import AttemptReportView
 
 urlpatterns = [
     # Start attempt
@@ -28,4 +29,8 @@ urlpatterns = [
     
     # Proctoring
     path('<uuid:id>/proctoring_event/', ProctoringEventView.as_view(), name='attempt-proctoring-event'),
+    
+    # Reports & Results
+    path('<uuid:id>/report/', AttemptReportView.as_view(), name='attempt-report'),
+    path('<uuid:id>/results/', AttemptReportView.as_view(), name='attempt-results'),
 ]

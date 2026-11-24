@@ -13,6 +13,12 @@ class ExaminationStatus(models.TextChoices):
     EVALUATED = 'EVALUATED', 'Evaluated'
 
 
+class AnswerRevealPolicy(models.TextChoices):
+    IMMEDIATELY = 'IMMEDIATELY', 'Immediately'
+    AFTER_CLOSE = 'AFTER_CLOSE', 'After Close'
+    NEVER = 'NEVER', 'Never'
+
+
 class Examination(BaseTenantModel):
     """Authoritative examination entity defining schedules, questions, and security parameters."""
     name = models.CharField(max_length=255)
@@ -46,6 +52,11 @@ class Examination(BaseTenantModel):
     hide_results = models.BooleanField(default=False)
     hide_rank = models.BooleanField(default=False)
     hide_analytics = models.BooleanField(default=False)
+    answer_reveal_policy = models.CharField(
+        max_length=20,
+        choices=AnswerRevealPolicy.choices,
+        default=AnswerRevealPolicy.IMMEDIATELY,
+    )
     short_url = models.CharField(max_length=255, blank=True, default='')
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

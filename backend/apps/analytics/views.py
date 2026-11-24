@@ -1,4 +1,5 @@
 import csv
+from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import Avg, Count, Max, Min, Q
@@ -12,12 +13,23 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsOrgAdminOrFaculty, IsTenantMember
-from apps.engine.models import AttemptStatus
+from apps.engine.models import AttemptStatus, ExaminationAttempt
 from apps.examinations.models import Examination
 
-from .models import QuestionResponseReview, Result, SectionScore
-from .serializers import RankSerializer, ResultSerializer, ScorecardSerializer
-from .services import FINAL_STATUSES, cohort_results, evaluate_examination
+from .models import QuestionResponseReview, Result, Scorecard, SectionScore
+from .serializers import (
+    QuestionReviewSerializer,
+    RankSerializer,
+    ResultSerializer,
+    ScorecardSerializer,
+    SectionScoreSerializer,
+)
+from .services import (
+    FINAL_STATUSES,
+    build_examination_summary,
+    cohort_results,
+    evaluate_examination,
+)
 
 
 class StudentResultsView(ListAPIView):
@@ -70,7 +82,7 @@ class ScorecardDownloadView(StudentScorecardView):
         ])
         writer.writerow([])
         writer.writerow(['Section', 'Score', 'Maximum score'])
-        for section in data['sections']:
+        for section in data.get('sections', []):
             title = section['title']
             if title.lstrip().startswith(('=', '+', '-', '@')) or title.startswith(('\t', '\r', '\n')):
                 title = "'" + title
@@ -95,7 +107,180 @@ class StaffExaminationView(APIView):
 class EvaluateExaminationView(StaffExaminationView):
     def post(self, request, exam_id):
         exam = self.get_examination(exam_id)
-        return Response({'evaluated_count': evaluate_examination(exam.pk)})
+        count = evaluate_examination(exam.pk)
+        summary = build_examination_summary(exam)
+        return Response({
+            'status': 'SUCCESS',
+            'message': 'Evaluation completed.',
+            'evaluated_count': count,
+            'summary': summary,
+        })
+
+
+class ExaminationResultsView(StaffExaminationView):
+    def get(self, request, exam_id):
+        exam = self.get_examination(exam_id)
+        # Evaluate if there are unevaluated attempts
+        pending = ExaminationAttempt.objects.filter(
+            examination=exam,
+            status__in=FINAL_STATUSES,
+            result__isnull=True,
+        ).exists()
+        if pending:
+            evaluate_examination(exam.pk)
+
+        summary = build_examination_summary(exam)
+        results = cohort_results(exam)
+        distribution = results.values('total_score').annotate(candidates=Count('pk')).order_by('total_score')
+        sections = SectionScore.objects.filter(scorecard__result__in=results).values('title', 'order').annotate(
+            mean=Avg('score'), highest=Max('score'), lowest=Min('score'),
+        ).order_by('order', 'title')
+
+        outcomes = QuestionResponseReview.Outcome
+        questions = QuestionResponseReview.objects.filter(
+            section__scorecard__result__in=results, question__isnull=False,
+        ).values('question_id').annotate(
+            correct=Count('pk', filter=Q(outcome=outcomes.CORRECT)),
+            partial=Count('pk', filter=Q(outcome=outcomes.PARTIAL)),
+            incorrect=Count('pk', filter=Q(outcome=outcomes.INCORRECT)),
+            unanswered=Count('pk', filter=Q(outcome=outcomes.UNANSWERED)),
+            mean_time_seconds=Avg('time_spent_seconds'),
+        ).order_by('question_id')
+
+        return Response({
+            'status': 'SUCCESS',
+            'exam_id': str(exam.pk),
+            'summary': summary,
+            'results': summary,
+            'rankings': summary['rankings'],
+            'score_distribution': list(distribution),
+            'sections': list(sections),
+            'questions': list(questions),
+        })
+
+
+class AttemptReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        queryset = ExaminationAttempt.objects.select_related('examination', 'user__profile')
+        attempt = get_object_or_404(queryset, pk=id)
+
+        # Tenant & user isolation checks
+        is_staff = request.user.is_superadmin or (
+            request.user.role in ('ORG_ADMIN', 'FACULTY') and
+            request.user.organization_id == attempt.examination.organization_id
+        )
+        is_owner = (attempt.user_id == request.user.id)
+
+        if not (is_staff or is_owner):
+            return Response({'status': 'ERROR', 'code': 'FORBIDDEN'}, status=status.HTTP_403_FORBIDDEN)
+
+        if attempt.status not in FINAL_STATUSES:
+            return Response(
+                {'status': 'ERROR', 'code': 'ATTEMPT_NOT_SUBMITTED', 'detail': 'Attempt has not been submitted yet.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        exam = attempt.examination
+        is_student = not is_staff
+
+        if is_student and exam.hide_results:
+            return Response(
+                {'status': 'ERROR', 'code': 'RESULTS_HIDDEN', 'detail': 'Results are hidden by administrator.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Evaluate if result not yet generated
+        if not hasattr(attempt, 'result'):
+            evaluate_examination(exam.pk)
+            attempt.refresh_from_db()
+
+        result = attempt.result
+        scorecard = result.scorecard
+        sections = scorecard.sections.all().prefetch_related('reviews__question__options')
+
+        sec_scores = {}
+        total_correct = 0
+        total_incorrect = 0
+        total_unanswered = 0
+        reviews_list = []
+
+        now = timezone.now()
+        policy = getattr(exam, 'answer_reveal_policy', 'IMMEDIATELY')
+        hide_answers = False
+        if is_student:
+            if policy == 'NEVER':
+                hide_answers = True
+            elif policy == 'AFTER_CLOSE':
+                is_closed = (exam.end_window and now >= exam.end_window) or exam.status in ('CLOSED', 'EVALUATED')
+                if not is_closed:
+                    hide_answers = True
+
+        for sec in sections:
+            sec_scores[sec.title] = {
+                'score': float(sec.score),
+                'maximum_score': float(sec.maximum_score),
+                'order': sec.order,
+            }
+            for rev in sec.reviews.all():
+                is_corr = rev.outcome in (QuestionResponseReview.Outcome.CORRECT, QuestionResponseReview.Outcome.CANCELLED)
+                is_inc = rev.outcome == QuestionResponseReview.Outcome.INCORRECT
+                is_unans = rev.outcome == QuestionResponseReview.Outcome.UNANSWERED
+                if is_corr:
+                    total_correct += 1
+                if is_inc:
+                    total_incorrect += 1
+                if is_unans:
+                    total_unanswered += 1
+
+                reviews_list.append({
+                    'question_id': rev.question_id,
+                    'section': sec.title,
+                    'marks_awarded': float(rev.marks),
+                    'is_correct': is_corr,
+                    'is_attempted': not is_unans,
+                    'outcome': rev.outcome,
+                    'selected_options': rev.selected_options,
+                    'submitted_value': rev.submitted_value,
+                    'answer': [] if hide_answers else rev.answer,
+                    'explanation': '' if hide_answers else rev.explanation,
+                    'time_spent_seconds': rev.time_spent_seconds,
+                })
+
+        user_rank = result.rank if not (is_student and exam.hide_rank) else None
+        user_percentile = float(result.percentile) if result.percentile is not None and not (is_student and exam.hide_rank) else None
+
+        report_summary = {
+            'attempt_id': str(attempt.pk),
+            'candidate_id': str(attempt.user_id),
+            'candidate_name': attempt.user.get_full_name() or attempt.user.username,
+            'total_score': float(result.total_score),
+            'maximum_score': float(result.maximum_score),
+            'penalty': float(result.penalty),
+            'score_percentage': float(scorecard.score_percentage),
+            'passed': scorecard.passed,
+            'rank': user_rank,
+            'percentile': user_percentile,
+            'total_correct': total_correct,
+            'total_incorrect': total_incorrect,
+            'total_unanswered': total_unanswered,
+            'section_scores': sec_scores,
+            'question_reviews': reviews_list,
+        }
+
+        context = {'request': request, 'student': is_student}
+        return Response({
+            'status': 'SUCCESS',
+            'attempt_id': str(attempt.pk),
+            'exam_id': str(exam.pk),
+            'exam_name': exam.name,
+            'report': report_summary,
+            'result': ResultSerializer(result, context=context).data,
+            'scorecard': ScorecardSerializer(scorecard, context=context).data,
+            'sections': SectionScoreSerializer(sections, many=True, context=context).data,
+            'reviews': reviews_list,
+        })
 
 
 class PublishResultsView(StaffExaminationView):
