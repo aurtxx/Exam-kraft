@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'apps.question_bank',
     'apps.examinations',
     'apps.notices',
+    'apps.engine',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'

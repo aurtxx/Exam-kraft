@@ -155,6 +155,24 @@ class QuestionListCreateView(APIView):
     @transaction.atomic
     def post(self, request, paper_id=None):
         data = request.data
+        question_number = None
+        if 'question_number' in data:
+            raw_qnum = data.get('question_number')
+            try:
+                if isinstance(raw_qnum, (bool, float)):
+                    raise ValueError
+                if isinstance(raw_qnum, str) and not raw_qnum.isdigit():
+                    raise ValueError
+                question_number = int(raw_qnum)
+                if not 1 <= question_number <= 2147483647:
+                    raise ValueError
+            except (ValueError, TypeError, OverflowError):
+                return Response({
+                    'status': 'ERROR',
+                    'code': 'INVALID_QUESTION_NUMBER',
+                    'message': 'question_number must be an integer between 1 and 2147483647.',
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         qpid = paper_id or data.get('question_bank_id') or data.get('question_paper_id')
         tenant = require_tenant(request)
         paper = self.get_paper(qpid, tenant)
@@ -252,14 +270,13 @@ class QuestionListCreateView(APIView):
                 created_by=request.user if request.user.is_authenticated else None,
             )
 
-        # Auto-compute question number
-        next_qnum = paper.questions.count() + 1
-        qnum = data.get('question_number', next_qnum)
+        if question_number is None:
+            question_number = paper.questions.count() + 1
 
         question = Question.objects.create(
             question_bank=paper,
             section_name=section_name,
-            question_number=qnum,
+            question_number=question_number,
             question_type=normalized_type,
             content_text=content_text,
             content_html=data.get('content_html', ''),

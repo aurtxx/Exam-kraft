@@ -503,6 +503,8 @@ class StudentBulkImportView(APIView):
                 errors.append(f"Row {row_num}: Student name is empty.")
             if not r_batch_code:
                 errors.append(f"Row {row_num}: Batch code is empty.")
+            if r_pass and len(r_pass) < 6:
+                errors.append(f"Row {row_num}: Password must be at least 6 characters long")
 
             if r_num in seen_rolls:
                 errors.append(f"Row {row_num}: Duplicate roll number '{r_num}' within CSV file.")

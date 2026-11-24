@@ -252,3 +252,92 @@ export interface Notice {
   created_at?: string;
   updated_at?: string;
 }
+
+export type ResponseStatusType =
+  | 'NOT_VISITED'
+  | 'UNANSWERED'
+  | 'ANSWERED'
+  | 'MARKED_FOR_REVIEW'
+  | 'ANSWERED_AND_MARKED';
+
+export type AttemptStatusType =
+  | 'IN_PROGRESS'
+  | 'SUBMITTED'
+  | 'AUTO_SUBMITTED';
+
+export interface PaletteSummary {
+  answered: number;
+  unanswered: number;
+  marked_for_review: number;
+  answered_marked_for_review: number;
+  not_visited: number;
+}
+
+export interface CBTQuestion {
+  id: string | number;
+  section_name?: string;
+  question_number: number;
+  question_type: QuestionTypeValue | string;
+  content_text: string;
+  content_html?: string;
+  image_url?: string | null;
+  difficulty?: string;
+  positive_marks: number;
+  negative_marks: number;
+  partial_marks: number;
+  numerical_min?: number | null;
+  numerical_max?: number | null;
+  coding_language?: string;
+  code_boilerplate?: string;
+  options?: Array<{
+    id?: string;
+    key: string;
+    text: string;
+    content_text?: string;
+    content_html?: string;
+    order?: number;
+  }>;
+}
+
+export interface CBTSection {
+  id: string;
+  name: string;
+  title: string;
+  order: number;
+  total_questions: number;
+  question_ids: (string | number)[];
+  questions: CBTQuestion[];
+}
+
+export interface CBTResponseRecord {
+  question_id: string | number;
+  selected_options: string[];
+  numerical_value?: string | null;
+  status: ResponseStatusType;
+  time_spent_seconds: number;
+  saved_at?: string | null;
+}
+
+export interface CBTAttemptPayload {
+  status: 'SUCCESS' | 'ERROR';
+  attempt_id: string;
+  attempt_token: string;
+  started_at: string;
+  server_deadline: string;
+  remaining_seconds: number;
+  sections: CBTSection[];
+  existing_responses: Record<string, CBTResponseRecord>;
+  palette_summary: PaletteSummary;
+  is_recovered?: boolean;
+  exam?: {
+    id: string;
+    name: string;
+    duration_minutes: number;
+    total_marks: number;
+    instructions?: string;
+    camera_proctoring?: boolean;
+    max_window_switches?: number;
+    allow_section_skip?: boolean;
+  };
+}
+

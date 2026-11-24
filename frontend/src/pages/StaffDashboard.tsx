@@ -22,6 +22,7 @@ export const StaffDashboard: React.FC = () => {
   const [exams, setExams] = useState<Examination[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<ExamStatusFilter>('ALL');
+  const [thisMonthOnly, setThisMonthOnly] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [counts, setCounts] = useState<{
     students: number | null;
@@ -62,10 +63,18 @@ export const StaffDashboard: React.FC = () => {
   }, [organization?.id]);
 
   const query = searchTerm.trim().toLowerCase();
-  const filteredExams = exams.filter(
-    (exam) => (selectedStatus === 'ALL' || exam.status === selectedStatus)
-      && (exam.name.toLowerCase().includes(query) || exam.code?.toLowerCase().includes(query)),
-  );
+  const now = new Date();
+  const filteredExams = exams.filter((exam) => {
+    const matchesStatus = selectedStatus === 'ALL' || exam.status === selectedStatus;
+    const matchesSearch = exam.name.toLowerCase().includes(query) || exam.code?.toLowerCase().includes(query);
+    if (!matchesStatus || !matchesSearch) return false;
+    if (!thisMonthOnly) return true;
+
+    const date = exam.start_window || exam.created_at;
+    if (!date) return false;
+    const examDate = new Date(date);
+    return examDate.getFullYear() === now.getFullYear() && examDate.getMonth() === now.getMonth();
+  });
   const activeExamCount = loadState === 'ready'
     ? exams.filter((exam) => exam.status === 'PUBLISHED' || exam.status === 'SCHEDULED').length
     : '—';
@@ -166,7 +175,14 @@ export const StaffDashboard: React.FC = () => {
             <option value="SCHEDULED">Scheduled</option>
             <option value="CLOSED">Closed</option>
           </select>
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+          <button
+            type="button"
+            aria-pressed={thisMonthOnly}
+            onClick={() => setThisMonthOnly((enabled) => !enabled)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold ${thisMonthOnly
+              ? 'border-primary-300 bg-primary-50 text-primary-700'
+              : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+          >
             <Calendar size={14} />
             <span>This Month</span>
           </button>
