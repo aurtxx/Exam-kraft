@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import UserProfile
 from apps.engine.models import AttemptResponse, AttemptStatus, ExaminationAttempt
-from apps.examinations.models import AnswerRevealPolicy, Examination, ExaminationQuestion, ExaminationSection
+from apps.examinations.models import AnswerRevealPolicy, Examination, ExaminationQuestion, ExaminationSection, ExaminationStatus
 from apps.organizations.models import Organization
 from apps.question_bank.models import Question, QuestionBank, QuestionType
 
@@ -226,12 +226,14 @@ class AnalyticsTests(TestCase):
     def test_answer_reveal_policies(self):
         q = self.question('A')
         att = self.attempt(self.student, {q: ['A']})
+        self.exam.end_window = timezone.now() - timedelta(minutes=5)
+        self.exam.save(update_fields=['end_window'])
         self.client.force_authenticate(self.staff)
-        self.client.post(self.staff_url('evaluate'))
+        self.assertEqual(self.client.post(self.staff_url('publish')).status_code, 200)
 
         report_url = reverse('attempt-report', args=[att.pk])
 
-        # 1. IMMEDIATELY policy: student sees answer and explanation
+        # 1. IMMEDIATELY policy (with published result & closed window): student sees answer and explanation
         self.exam.answer_reveal_policy = AnswerRevealPolicy.IMMEDIATELY
         self.exam.save(update_fields=['answer_reveal_policy'])
         self.client.force_authenticate(self.student)
@@ -251,13 +253,13 @@ class AnalyticsTests(TestCase):
         res_staff = self.client.get(report_url).json()
         self.assertEqual(res_staff['reviews'][0]['answer'], ['A'])
 
-        # 3. AFTER_CLOSE policy: hidden before end window, revealed after
+        # 3. AFTER_CLOSE policy: blocked (403) before end window, revealed after
         self.exam.answer_reveal_policy = AnswerRevealPolicy.AFTER_CLOSE
         self.exam.end_window = timezone.now() + timedelta(hours=2)
         self.exam.save(update_fields=['answer_reveal_policy', 'end_window'])
         self.client.force_authenticate(self.student)
-        res_before = self.client.get(report_url).json()
-        self.assertEqual(res_before['reviews'][0]['answer'], [])
+        res_before = self.client.get(report_url)
+        self.assertEqual(res_before.status_code, 403)
 
         # Window closes
         self.exam.end_window = timezone.now() - timedelta(minutes=5)
@@ -283,10 +285,100 @@ class AnalyticsTests(TestCase):
         self.assertIn('rankings', res_res.json())
         self.assertIn('score_distribution', res_res.json())
 
-        # GET /api/v1/attempts/{id}/report/
+        # GET /api/v1/attempts/{id}/report/ before publish -> 403 for student
+        self.client.force_authenticate(self.student)
+        unpublished_res = self.client.get(f'/api/v1/attempts/{att.pk}/report/')
+        self.assertEqual(unpublished_res.status_code, 403)
+
+        # Publish results after closing window -> 200 for student
+        self.exam.end_window = timezone.now() - timedelta(minutes=1)
+        self.exam.save(update_fields=['end_window'])
+        self.client.force_authenticate(self.staff)
+        pub_res = self.client.post(self.staff_url('publish'))
+        self.assertEqual(pub_res.status_code, 200)
+
         self.client.force_authenticate(self.student)
         rep_res = self.client.get(f'/api/v1/attempts/{att.pk}/report/')
         self.assertEqual(rep_res.status_code, 200)
         self.assertEqual(rep_res.json()['report']['total_score'], 4.0)
         self.assertEqual(rep_res.json()['report']['rank'], 1)
         self.assertEqual(rep_res.json()['report']['percentile'], 100.0)
+
+    def test_cx007_attempt_report_requires_published_result_and_closed_window_for_students(self):
+        q = self.question('A')
+        att = self.attempt(self.student, {q: ['A']})
+        report_url = reverse('attempt-report', args=[att.pk])
+
+        # 1a. Student requests report before Result exists -> 403 Forbidden (and no Result created)
+        self.exam.end_window = timezone.now() - timedelta(minutes=5)
+        self.exam.save(update_fields=['end_window'])
+        self.client.force_authenticate(self.student)
+        res_no_result = self.client.get(report_url)
+        self.assertEqual(res_no_result.status_code, 403)
+        self.assertEqual(res_no_result.json()['error'], 'RESULTS_NOT_PUBLISHED')
+        self.assertFalse(Result.objects.filter(attempt=att).exists())
+
+        # 1b. Student requests report when Result exists with is_published=False -> 403 Forbidden
+        self.client.force_authenticate(self.staff)
+        self.assertEqual(self.client.post(self.staff_url('evaluate')).status_code, 200)
+        self.assertFalse(Result.objects.get(attempt=att).is_published)
+
+        self.client.force_authenticate(self.student)
+        res_unpublished = self.client.get(report_url)
+        self.assertEqual(res_unpublished.status_code, 403)
+        self.assertEqual(res_unpublished.json()['error'], 'RESULTS_NOT_PUBLISHED')
+
+        # 2a. Student requests report when is_published=True but window is still open (future end_window) -> 403
+        Result.objects.filter(attempt=att).update(is_published=True)
+        self.exam.end_window = timezone.now() + timedelta(hours=2)
+        self.exam.status = ExaminationStatus.PUBLISHED
+        self.exam.save(update_fields=['end_window', 'status'])
+
+        res_open_window = self.client.get(report_url)
+        self.assertEqual(res_open_window.status_code, 403)
+        self.assertEqual(res_open_window.json()['error'], 'RESULTS_NOT_PUBLISHED')
+
+        # 2b. Student requests report when is_published=True, end_window=None, status=PUBLISHED -> 403
+        self.exam.end_window = None
+        self.exam.save(update_fields=['end_window'])
+        res_no_end_window = self.client.get(report_url)
+        self.assertEqual(res_no_end_window.status_code, 403)
+
+        # 3a. Student requests report when is_published=True and window is closed (past end_window) -> 200 OK
+        self.exam.end_window = timezone.now() - timedelta(minutes=1)
+        self.exam.save(update_fields=['end_window'])
+        res_closed = self.client.get(report_url)
+        self.assertEqual(res_closed.status_code, 200)
+        self.assertEqual(res_closed.json()['status'], 'SUCCESS')
+
+        # 3b. Student requests report when is_published=True and exam status is CLOSED -> 200 OK
+        self.exam.end_window = timezone.now() + timedelta(hours=2)
+        self.exam.status = ExaminationStatus.CLOSED
+        self.exam.save(update_fields=['end_window', 'status'])
+        res_status_closed = self.client.get(report_url)
+        self.assertEqual(res_status_closed.status_code, 200)
+
+    def test_cx007_staff_retains_attempt_report_access_when_unpublished(self):
+        q = self.question('B')
+        att = self.attempt(self.student, {q: ['B']})
+        report_url = reverse('attempt-report', args=[att.pk])
+
+        # Open window, no Result yet -> staff evaluates on demand and gets 200 OK
+        self.exam.end_window = timezone.now() + timedelta(hours=2)
+        self.exam.status = ExaminationStatus.PUBLISHED
+        self.exam.save(update_fields=['end_window', 'status'])
+
+        users = get_user_model().objects
+        org_admin = users.create_user('org_admin', organization=self.org, role='ORG_ADMIN')
+        superadmin = users.create_user('superadmin', role='SUPERADMIN', is_superuser=True)
+        django_staff = users.create_user('django_staff', organization=self.org, is_staff=True)
+
+        for caller in (self.staff, org_admin, superadmin, django_staff):
+            self.client.force_authenticate(caller)
+            res = self.client.get(report_url)
+            self.assertEqual(res.status_code, 200)
+            self.assertFalse(Result.objects.get(attempt=att).is_published)
+
+        # Cross-tenant staff still denied
+        self.client.force_authenticate(self.outsider)
+        self.assertEqual(self.client.get(report_url).status_code, 403)

@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsOrgAdminOrFaculty, IsTenantMember
 from apps.engine.models import AttemptStatus, ExaminationAttempt
-from apps.examinations.models import Examination
+from apps.examinations.models import Examination, ExaminationStatus
 
 from .models import QuestionResponseReview, Result, Scorecard, SectionScore
 from .serializers import (
@@ -168,7 +168,7 @@ class AttemptReportView(APIView):
 
         # Tenant & user isolation checks
         is_staff = request.user.is_superadmin or (
-            request.user.role in ('ORG_ADMIN', 'FACULTY') and
+            (request.user.is_staff or request.user.role in ('ORG_ADMIN', 'FACULTY')) and
             request.user.organization_id == attempt.examination.organization_id
         )
         is_owner = (attempt.user_id == request.user.id)
@@ -184,19 +184,37 @@ class AttemptReportView(APIView):
 
         exam = attempt.examination
         is_student = not is_staff
+        now = timezone.now()
+        is_window_closed = (
+            (exam.end_window is not None and now >= exam.end_window)
+            or exam.status in (ExaminationStatus.CLOSED, ExaminationStatus.EVALUATED)
+        )
 
-        if is_student and exam.hide_results:
-            return Response(
-                {'status': 'ERROR', 'code': 'RESULTS_HIDDEN', 'detail': 'Results are hidden by administrator.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        if is_student:
+            if exam.hide_results:
+                return Response(
+                    {'status': 'ERROR', 'code': 'RESULTS_HIDDEN', 'detail': 'Results are hidden by administrator.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            result = Result.objects.filter(attempt=attempt).first()
+            if result is None or not result.is_published or not is_window_closed:
+                return Response(
+                    {
+                        'status': 'ERROR',
+                        'code': 'RESULTS_NOT_PUBLISHED',
+                        'error': 'RESULTS_NOT_PUBLISHED',
+                        'detail': 'Examination results have not been published yet.',
+                        'message': 'Examination results have not been published yet.',
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        else:
+            # Evaluate on demand for staff callers if result not yet generated
+            if not hasattr(attempt, 'result'):
+                evaluate_examination(exam.pk)
+                attempt.refresh_from_db()
+            result = attempt.result
 
-        # Evaluate if result not yet generated
-        if not hasattr(attempt, 'result'):
-            evaluate_examination(exam.pk)
-            attempt.refresh_from_db()
-
-        result = attempt.result
         scorecard = result.scorecard
         sections = scorecard.sections.all().prefetch_related('reviews__question__options')
 
@@ -206,15 +224,13 @@ class AttemptReportView(APIView):
         total_unanswered = 0
         reviews_list = []
 
-        now = timezone.now()
         policy = getattr(exam, 'answer_reveal_policy', 'IMMEDIATELY')
         hide_answers = False
         if is_student:
             if policy == 'NEVER':
                 hide_answers = True
             elif policy == 'AFTER_CLOSE':
-                is_closed = (exam.end_window and now >= exam.end_window) or exam.status in ('CLOSED', 'EVALUATED')
-                if not is_closed:
+                if not is_window_closed:
                     hide_answers = True
 
         for sec in sections:
