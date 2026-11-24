@@ -27,6 +27,9 @@ INSTALLED_APPS = [
     # Project Apps
     'apps.accounts',
     'apps.organizations',
+    'apps.question_bank',
+    'apps.examinations',
+    'apps.notices',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'

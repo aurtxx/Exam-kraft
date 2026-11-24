@@ -4,5 +4,11 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/auth/', include('apps.accounts.urls')),
+    path('api/v1/users/', include('apps.accounts.user_urls')),
     path('api/v1/organizations/', include('apps.organizations.urls')),
+    path('api/v1/question-papers/', include('apps.question_bank.urls')),
+    path('api/v1/question-banks/', include('apps.question_bank.urls')),
+    path('api/v1/questions/', include('apps.question_bank.question_urls')),
+    path('api/v1/examinations/', include('apps.examinations.urls')),
+    path('api/v1/notices/', include('apps.notices.urls')),
 ]
