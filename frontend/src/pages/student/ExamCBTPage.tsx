@@ -1,0 +1,760 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Clock,
+  Maximize,
+  Minimize,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Bookmark,
+  CheckCircle,
+  RotateCcw,
+  Send,
+  Camera,
+  ShieldAlert,
+} from 'lucide-react';
+import studentExamApi, { SaveResponsePayload } from '../../services/studentExamApi';
+import {
+  CBTAttemptPayload,
+  CBTSection,
+  CBTQuestion,
+  CBTResponseRecord,
+  ResponseStatusType,
+} from '../../types';
+import QuestionPalette from '../../components/QuestionPalette';
+import VirtualNumpad from '../../components/VirtualNumpad';
+import FinishConfirmationModal from '../../components/FinishConfirmationModal';
+import MathRenderer from '../../components/MathRenderer';
+
+export const ExamCBTPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Attempt Data
+  const [attempt, setAttempt] = useState<CBTAttemptPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Active navigation state
+  const [activeSectionIndex, setActiveSectionIndex] = useState(0);
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+
+  // In-memory responses & visited tracker
+  const [responses, setResponses] = useState<Record<string, CBTResponseRecord>>({});
+  const [visitedQuestionIds, setVisitedQuestionIds] = useState<Set<string | number>>(new Set());
+
+  // Current question inputs
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [numericalValue, setNumericalValue] = useState<string>('');
+  const questionStartTimeRef = useRef<number>(Date.now());
+
+  // Timer & Heartbeat state
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(3600);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Proctoring state
+  const [blurCount, setBlurCount] = useState<number>(0);
+  const [showBlurWarning, setShowBlurWarning] = useState<boolean>(false);
+  const maxBlurSwitches = attempt?.exam?.max_window_switches || 3;
+
+  // Modals & UI controls
+  const [showFinishModal, setShowFinishModal] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  // Candidate info
+  const candidateName = 'Candidate Student';
+  const rollNumber = '2026001';
+
+  // 1. Initial Load / Session Recovery
+  useEffect(() => {
+    const initializeAttempt = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        setError(null);
+
+        let payload: CBTAttemptPayload | null = null;
+        const routerState = location.state as { attemptPayload?: CBTAttemptPayload } | undefined;
+
+        if (routerState?.attemptPayload) {
+          payload = routerState.attemptPayload;
+        } else {
+          // Recover via start/resume endpoint
+          payload = await studentExamApi.startExam(id);
+        }
+
+        if (payload && payload.status === 'SUCCESS') {
+          setAttempt(payload);
+          setRemainingSeconds(payload.remaining_seconds || 3600);
+
+          // Restore responses
+          const initialResponses: Record<string, CBTResponseRecord> = {
+            ...(payload.existing_responses || {}),
+          };
+
+          // Reconcile with localStorage cache
+          const cacheKey = studentExamApi.getCacheKey('student', id);
+          const cached = studentExamApi.loadLocalCache(cacheKey);
+          if (cached) {
+            Object.keys(cached).forEach((qid) => {
+              if (!initialResponses[qid]) {
+                initialResponses[qid] = cached[qid];
+              }
+            });
+          }
+
+          setResponses(initialResponses);
+
+          // Mark already answered questions as visited
+          const visited = new Set<string | number>();
+          Object.keys(initialResponses).forEach((qid) => {
+            visited.add(qid);
+          });
+          setVisitedQuestionIds(visited);
+        } else {
+          setError('Failed to initialize examination session.');
+        }
+      } catch (err: unknown) {
+        const e = err as { response?: { data?: { message?: string; code?: string } } };
+        setError(e.response?.data?.message || 'Could not load examination.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAttempt();
+  }, [id, location.state]);
+
+  // Derived active section and question
+  const currentSection: CBTSection | undefined = attempt?.sections?.[activeSectionIndex];
+  const currentQuestion: CBTQuestion | undefined = currentSection?.questions?.[activeQuestionIndex];
+
+  // 2. Mark current question visited and load response inputs
+  useEffect(() => {
+    if (!currentQuestion) return;
+
+    questionStartTimeRef.current = Date.now();
+    const qidKey = String(currentQuestion.id);
+
+    // Mark visited
+    setVisitedQuestionIds((prev) => {
+      const next = new Set(prev);
+      next.add(currentQuestion.id);
+      next.add(qidKey);
+      return next;
+    });
+
+    // Populate current question inputs from stored responses
+    const existing = responses[qidKey];
+    if (existing) {
+      setSelectedOptions(existing.selected_options || []);
+      setNumericalValue(existing.numerical_value || '');
+    } else {
+      setSelectedOptions([]);
+      setNumericalValue('');
+    }
+  }, [currentQuestion, activeSectionIndex, activeQuestionIndex]);
+
+  // 3. Countdown Timer Engine
+  useEffect(() => {
+    if (loading || !attempt) return;
+
+    timerIntervalRef.current = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerIntervalRef.current!);
+          // Auto submit on timer expiry
+          handleFinalSubmit('AUTO_TIMER_EXPIRY');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    };
+  }, [loading, attempt]);
+
+  // 4. Server-Authoritative Heartbeat Sync (every 20s)
+  useEffect(() => {
+    if (loading || !attempt || !attempt.attempt_id) return;
+
+    heartbeatIntervalRef.current = setInterval(async () => {
+      try {
+        const hb = await studentExamApi.sendHeartbeat(attempt.attempt_id, blurCount);
+        if (hb.status === 'SUCCESS') {
+          // Sync server clock drift
+          setRemainingSeconds(hb.remaining_seconds);
+          if (hb.is_terminated) {
+            handleFinalSubmit('AUTO_TIMER_EXPIRY');
+          }
+        }
+      } catch (err) {
+        console.warn('Heartbeat synchronization failed (offline/retry)', err);
+      }
+    }, 20000);
+
+    return () => {
+      if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+    };
+  }, [loading, attempt, blurCount]);
+
+  // 5. Anti-Cheating & Proctoring Window Switch / Blur Listener
+  useEffect(() => {
+    const handleVisibilityOrBlur = async () => {
+      if (loading || !attempt || isSubmitting) return;
+
+      const newCount = blurCount + 1;
+      setBlurCount(newCount);
+      setShowBlurWarning(true);
+
+      // Report event to backend proctoring log
+      try {
+        await studentExamApi.recordProctoringEvent(attempt.attempt_id, 'WINDOW_BLUR', {
+          switch_index: newCount,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('Failed to record proctoring telemetry', e);
+      }
+
+      // Check max allowed switches
+      if (newCount > maxBlurSwitches) {
+        alert(`You have switched away ${newCount} times, exceeding the allowable limit (${maxBlurSwitches}). Your exam is now being auto-submitted.`);
+        handleFinalSubmit('AUTO_TIMER_EXPIRY');
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleVisibilityOrBlur();
+      }
+    };
+
+    window.addEventListener('blur', handleVisibilityOrBlur);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('blur', handleVisibilityOrBlur);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [loading, attempt, blurCount, isSubmitting, maxBlurSwitches]);
+
+  // Format Remaining Time in HH:MM:SS
+  const formatTime = (totalSeconds: number): string => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+  };
+
+  // 6. Option Toggle Handlers
+  const handleOptionSelect = (optionKey: string) => {
+    if (!currentQuestion) return;
+    const isMulti = currentQuestion.question_type === 'MCQ_MULTI';
+
+    if (isMulti) {
+      setSelectedOptions((prev) =>
+        prev.includes(optionKey) ? prev.filter((k) => k !== optionKey) : [...prev, optionKey]
+      );
+    } else {
+      setSelectedOptions([optionKey]);
+    }
+  };
+
+  // 7. Save Response Core Function
+  const saveCurrentResponse = useCallback(
+    async (targetStatus: ResponseStatusType): Promise<void> => {
+      if (!attempt || !currentQuestion) return;
+
+      const qid = currentQuestion.id;
+      const qidKey = String(qid);
+      const timeSpent = Math.round((Date.now() - questionStartTimeRef.current) / 1000);
+
+      const record: CBTResponseRecord = {
+        question_id: qid,
+        selected_options: selectedOptions,
+        numerical_value: numericalValue || null,
+        status: targetStatus,
+        time_spent_seconds: timeSpent,
+        saved_at: new Date().toISOString(),
+      };
+
+      // 1. Update in-memory state
+      setResponses((prev) => {
+        const next = { ...prev, [qidKey]: record };
+        // 2. Dual-Layer Persistence: save immediately to local cache
+        const cacheKey = studentExamApi.getCacheKey('student', id || 'exam');
+        studentExamApi.saveLocalCache(cacheKey, next);
+        return next;
+      });
+
+      // 3. Debounced / Asynchronous HTTP Persistence
+      try {
+        setSaveStatus('saving');
+        const payload: SaveResponsePayload = {
+          question_id: qid,
+          selected_options: selectedOptions,
+          numerical_value: numericalValue || null,
+          status: targetStatus,
+          time_spent_seconds: timeSpent,
+        };
+        await studentExamApi.saveResponse(attempt.attempt_id, payload);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1500);
+      } catch (err) {
+        console.warn('Autosave backend sync failed, cached locally', err);
+        setSaveStatus('error');
+      }
+    },
+    [attempt, currentQuestion, selectedOptions, numericalValue, id]
+  );
+
+  // Navigation: Advance to next question or section
+  const advanceToNextQuestion = () => {
+    if (!currentSection) return;
+    if (activeQuestionIndex < currentSection.questions.length - 1) {
+      setActiveQuestionIndex((prev) => prev + 1);
+    } else if (attempt?.sections && activeSectionIndex < attempt.sections.length - 1) {
+      setActiveSectionIndex((prev) => prev + 1);
+      setActiveQuestionIndex(0);
+    } else {
+      // Reached end of entire paper -> show submission modal
+      setShowFinishModal(true);
+    }
+  };
+
+  // Navigation: Move to previous question
+  const moveToPreviousQuestion = () => {
+    if (activeQuestionIndex > 0) {
+      setActiveQuestionIndex((prev) => prev - 1);
+    } else if (activeSectionIndex > 0 && attempt?.sections) {
+      const prevSec = attempt.sections[activeSectionIndex - 1];
+      setActiveSectionIndex((prev) => prev - 1);
+      setActiveQuestionIndex(prevSec.questions.length - 1);
+    }
+  };
+
+  // Action Button: Save & Next
+  const handleSaveAndNext = async () => {
+    const hasSelection =
+      selectedOptions.length > 0 || (numericalValue !== '' && numericalValue !== null);
+    const targetStatus: ResponseStatusType = hasSelection ? 'ANSWERED' : 'UNANSWERED';
+    await saveCurrentResponse(targetStatus);
+    advanceToNextQuestion();
+  };
+
+  // Action Button: Mark for Review & Next
+  const handleMarkForReviewAndNext = async () => {
+    const hasSelection =
+      selectedOptions.length > 0 || (numericalValue !== '' && numericalValue !== null);
+    const targetStatus: ResponseStatusType = hasSelection
+      ? 'ANSWERED_AND_MARKED'
+      : 'MARKED_FOR_REVIEW';
+    await saveCurrentResponse(targetStatus);
+    advanceToNextQuestion();
+  };
+
+  // Action Button: Clear Response
+  const handleClearResponse = async () => {
+    setSelectedOptions([]);
+    setNumericalValue('');
+    if (currentQuestion) {
+      const qidKey = String(currentQuestion.id);
+      setResponses((prev) => {
+        const next = { ...prev };
+        delete next[qidKey];
+        return next;
+      });
+    }
+    await saveCurrentResponse('UNANSWERED');
+  };
+
+  // Final Submission
+  const handleFinalSubmit = async (
+    reason: 'MANUAL_SUBMIT' | 'AUTO_TIMER_EXPIRY' = 'MANUAL_SUBMIT'
+  ) => {
+    if (!attempt || isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+      const res = await studentExamApi.submitExam(attempt.attempt_id, reason);
+      // Clear offline cache
+      if (id) {
+        studentExamApi.clearLocalCache(studentExamApi.getCacheKey('student', id));
+      }
+      navigate(`/student/exam/${id}/finish`, {
+        state: { submitResult: res, examName: attempt.exam?.name },
+      });
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      alert(e.response?.data?.message || 'Submission failed. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
+
+  // Fullscreen toggle
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true));
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+        <div className="bg-white p-8 rounded-2xl shadow-md border border-slate-200 flex flex-col items-center gap-4 text-center">
+          <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+          <div>
+            <h2 className="text-base font-bold text-slate-800">Loading Examination Interface...</h2>
+            <p className="text-xs text-slate-500 mt-1">Establishing secure server session & syncing timer</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !attempt) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+        <div className="bg-white p-8 rounded-2xl shadow-md border border-rose-200 max-w-md w-full text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 mx-auto flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800">Examination Error</h2>
+          <p className="text-xs text-slate-600">{error || 'Could not load examination.'}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/staff/exams')}
+            className="px-5 py-2.5 rounded-xl bg-primary-600 text-white font-bold text-xs hover:bg-primary-700 transition-colors"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Timer Warning styling
+  const isTimerCritical = remainingSeconds < 300; // <5 mins: pulsing red
+  const isTimerWarning = remainingSeconds < 600 && !isTimerCritical; // <10 mins: amber
+
+  return (
+    <div className="min-h-screen bg-slate-100 flex flex-col select-none font-sans overflow-hidden h-screen">
+      {/* 1. TOP HEADER BAR */}
+      <header className="bg-white border-b border-slate-200 px-5 py-2.5 shadow-xs flex items-center justify-between z-20">
+        {/* Left: Brand & Exam Title */}
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
+            EZ
+          </div>
+          <div>
+            <h1 className="text-sm font-bold text-slate-800 leading-tight truncate max-w-md">
+              {attempt.exam?.name || 'Examination CBT'}
+            </h1>
+            <div className="text-[11px] text-slate-500 flex items-center gap-2">
+              <span>Section: <strong>{currentSection?.name || 'General'}</strong></span>
+              <span>•</span>
+              <span>Q {activeQuestionIndex + 1} of {currentSection?.questions?.length || 0}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Center: Save Status & Webcam Indicator */}
+        <div className="hidden md:flex items-center gap-3">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+            <Camera className="w-3.5 h-3.5" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Proctored Session
+          </div>
+
+          {saveStatus === 'saving' && (
+            <span className="text-[11px] text-slate-400 flex items-center gap-1">
+              <span className="w-2 h-2 border border-primary-500 border-t-transparent rounded-full animate-spin"></span>
+              Autosaving...
+            </span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" /> Saved
+            </span>
+          )}
+        </div>
+
+        {/* Right: High-Visibility Timer & Fullscreen */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+            title="Toggle Fullscreen"
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          </button>
+
+          {/* Countdown Clock Display */}
+          <div
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border font-mono font-bold text-sm shadow-inner transition-all ${
+              isTimerCritical
+                ? 'bg-rose-50 border-rose-300 text-rose-700 animate-pulse'
+                : isTimerWarning
+                ? 'bg-amber-50 border-amber-300 text-amber-700'
+                : 'bg-slate-50 border-slate-300 text-slate-800'
+            }`}
+          >
+            <Clock className={`w-4 h-4 ${isTimerCritical ? 'text-rose-600' : 'text-primary-600'}`} />
+            <span>{formatTime(remainingSeconds)}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowFinishModal(true)}
+            className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-xs flex items-center gap-1.5"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Submit</span>
+          </button>
+        </div>
+      </header>
+
+      {/* 2. SECTION NAVIGATION TABS */}
+      <div className="bg-white border-b border-slate-200 px-5 py-1 flex items-center gap-2 overflow-x-auto shadow-xs">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">Sections:</span>
+        {attempt.sections?.map((sec, idx) => {
+          const isActive = idx === activeSectionIndex;
+          return (
+            <button
+              key={sec.id || idx}
+              type="button"
+              onClick={() => {
+                setActiveSectionIndex(idx);
+                setActiveQuestionIndex(0);
+              }}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                isActive
+                  ? 'bg-primary-600 text-white shadow-xs'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
+            >
+              <span>{sec.name || sec.title}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                }`}
+              >
+                {sec.questions?.length || sec.total_questions || 0}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 3. MAIN WORKSPACE: QUESTION AREA + QUESTION PALETTE */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Question Canvas */}
+        <div className="flex-1 flex flex-col bg-white overflow-hidden border-r border-slate-200">
+          {/* Question Subheader */}
+          <div className="px-6 py-2.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-3">
+              <span className="font-extrabold text-slate-800 text-sm">
+                Question No. {currentQuestion?.question_number || activeQuestionIndex + 1}
+              </span>
+              <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[11px] font-semibold">
+                {currentQuestion?.question_type === 'NUMERICAL'
+                  ? 'Numerical Value Answer'
+                  : currentQuestion?.question_type === 'MCQ_MULTI'
+                  ? 'Multiple Correct Options'
+                  : 'Single Correct Option'}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-slate-600 font-semibold text-[11px]">
+              <span className="text-emerald-600 font-bold">
+                Marks: +{currentQuestion?.positive_marks || 4.0}
+              </span>
+              <span className="text-rose-600 font-bold">
+                Negative: -{currentQuestion?.negative_marks || 1.0}
+              </span>
+            </div>
+          </div>
+
+          {/* Question Body Scroll Area */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {currentQuestion ? (
+              <>
+                {/* Question Text with Math/LaTeX Rendering */}
+                <div className="text-sm font-medium text-slate-800 leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+                  <MathRenderer content={currentQuestion.content_text} />
+                  {currentQuestion.image_url && (
+                    <div className="mt-4 max-w-lg rounded-xl overflow-hidden border border-slate-200">
+                      <img
+                        src={currentQuestion.image_url}
+                        alt="Question Diagram"
+                        className="w-full object-contain max-h-72"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Option Inputs / Numerical Numpad */}
+                {currentQuestion.question_type === 'NUMERICAL' ? (
+                  <div className="pt-2">
+                    <VirtualNumpad
+                      value={numericalValue}
+                      onChange={(val) => setNumericalValue(val)}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-w-2xl">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {currentQuestion.question_type === 'MCQ_MULTI'
+                        ? 'Select all correct options:'
+                        : 'Select one option:'}
+                    </div>
+                    {currentQuestion.options?.map((opt) => {
+                      const isSelected = selectedOptions.includes(opt.key);
+                      return (
+                        <div
+                          key={opt.key}
+                          onClick={() => handleOptionSelect(opt.key)}
+                          className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all select-none ${
+                            isSelected
+                              ? 'border-[#2d8df1] bg-[#2d8df1]/10 text-slate-900 shadow-xs'
+                              : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 text-slate-700'
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs mt-0.5 flex-shrink-0 transition-colors ${
+                              isSelected
+                                ? 'bg-[#2d8df1] text-white ring-2 ring-[#2d8df1]/30'
+                                : 'border border-slate-300 text-slate-600 bg-white'
+                            }`}
+                          >
+                            {opt.key}
+                          </div>
+                          <div className="text-xs font-medium leading-relaxed pt-0.5">
+                            <MathRenderer content={opt.text || opt.content_text || ''} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12 text-slate-400 text-xs">No question selected</div>
+            )}
+          </div>
+
+          {/* 4. BOTTOM ACTION BAR */}
+          <footer className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between z-10">
+            {/* Left Actions: Review & Clear */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleMarkForReviewAndNext}
+                className="px-3.5 py-2 rounded-xl border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+              >
+                <Bookmark className="w-3.5 h-3.5" />
+                <span>Mark for Review & Next</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearResponse}
+                className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Clear Response</span>
+              </button>
+            </div>
+
+            {/* Right Actions: Previous, Save & Next */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={moveToPreviousQuestion}
+                disabled={activeQuestionIndex === 0 && activeSectionIndex === 0}
+                className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Previous</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveAndNext}
+                className="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <span>Save & Next</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </footer>
+        </div>
+
+        {/* Right: Question Palette Sidebar */}
+        {currentSection && (
+          <QuestionPalette
+            questions={currentSection.questions || []}
+            currentQuestionIndex={activeQuestionIndex}
+            responses={responses}
+            visitedQuestionIds={visitedQuestionIds}
+            onSelectQuestion={(idx) => setActiveQuestionIndex(idx)}
+            candidateName={candidateName}
+            rollNumber={rollNumber}
+          />
+        )}
+      </div>
+
+      {/* 5. FINISH CONFIRMATION MODAL */}
+      <FinishConfirmationModal
+        isOpen={showFinishModal}
+        sections={attempt.sections || []}
+        responses={responses}
+        visitedQuestionIds={visitedQuestionIds}
+        onClose={() => setShowFinishModal(false)}
+        onConfirmSubmit={() => handleFinalSubmit('MANUAL_SUBMIT')}
+        isSubmitting={isSubmitting}
+      />
+
+      {/* 6. TAB SWITCH / BLUR PROCTORING WARNING MODAL */}
+      {showBlurWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-rose-200 text-center space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 mx-auto flex items-center justify-center">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900">
+                Warning: Window Switch Detected!
+              </h3>
+              <p className="text-xs text-rose-700 font-bold mt-1">
+                You have switched outside the exam screen {blurCount} of {maxBlurSwitches} allowable times!
+              </p>
+              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                Navigating away from the examination window is strictly tracked by AI proctoring telemetry. Exceeding the allowable switches will immediately terminate and submit your examination.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowBlurWarning(false)}
+              className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs transition-colors shadow-sm"
+            >
+              I Understand & Return to Exam
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ExamCBTPage;
