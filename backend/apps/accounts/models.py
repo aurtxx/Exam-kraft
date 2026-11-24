@@ -110,3 +110,20 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.full_name} ({self.user.username})"
+
+
+class FacultyProfile(models.Model):
+    """Faculty profile attributes, subjects, departments, and assigned batches/centers."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='faculty_profile')
+    department = models.CharField(max_length=150, blank=True, default='')
+    subjects = models.JSONField(default=list, blank=True)
+    assigned_batches = models.ManyToManyField('organizations.Batch', blank=True, related_name='faculty_members')
+    assigned_centers = models.ManyToManyField('organizations.ExaminationCenter', blank=True, related_name='faculty_members')
+
+    class Meta:
+        db_table = 'accounts_facultyprofile'
+
+    def __str__(self):
+        return f"Faculty Profile of {self.user.username}"
+

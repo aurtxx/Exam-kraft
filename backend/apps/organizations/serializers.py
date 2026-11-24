@@ -45,11 +45,16 @@ class ExaminationCenterSerializer(serializers.ModelSerializer):
         fields = ['id', 'organization', 'name', 'code', 'address', 'capacity', 'is_active', 'created_at', 'updated_at']
         read_only_fields = ['id', 'organization', 'created_at', 'updated_at']
 
+    def validate_capacity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError({"code": "INVALID_CAPACITY", "message": "Center capacity must be greater than zero."})
+        return value
+
 
 class BatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Batch
-        fields = ['id', 'organization', 'name', 'code', 'stream', 'is_active', 'created_at', 'updated_at']
+        fields = ['id', 'organization', 'name', 'code', 'description', 'stream', 'is_active', 'created_at', 'updated_at']
         read_only_fields = ['id', 'organization', 'created_at', 'updated_at']
 
 

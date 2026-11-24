@@ -87,6 +87,7 @@ class Batch(BaseTenantModel):
     """Academic batches, cohorts, or class sections."""
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50)
+    description = models.TextField(null=True, blank=True)
     stream = models.CharField(
         max_length=50,
         choices=BatchStream.choices,

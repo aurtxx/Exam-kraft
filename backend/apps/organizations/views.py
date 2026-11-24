@@ -103,12 +103,80 @@ class ExaminationCenterListCreateView(generics.ListCreateAPIView):
         )
 
     def get_queryset(self):
-        # TenantManager automatically filters by current tenant
         return ExaminationCenter.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'status': 'SUCCESS',
+            'centers': serializer.data,
+        })
+
+    def create(self, request, *args, **kwargs):
+        tenant = get_current_tenant() or getattr(request.user, 'organization', None)
+        capacity = request.data.get('capacity')
+        if capacity is not None:
+            try:
+                if int(capacity) <= 0:
+                    return Response({
+                        'status': 'ERROR',
+                        'code': 'INVALID_CAPACITY',
+                        'message': 'Examination center capacity must be greater than zero.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            except (ValueError, TypeError):
+                return Response({
+                    'status': 'ERROR',
+                    'code': 'INVALID_CAPACITY',
+                    'message': 'Examination center capacity must be a valid integer.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        code = request.data.get('code')
+        if code and tenant:
+            if ExaminationCenter.all_objects.filter(organization=tenant, code=code).exists():
+                return Response({
+                    'status': 'ERROR',
+                    'code': 'DUPLICATE_CODE',
+                    'message': f'Examination center with code {code} already exists in this organization.'
+                }, status=status.HTTP_409_CONFLICT)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
         tenant = get_current_tenant() or self.request.user.organization
         serializer.save(organization=tenant)
+
+
+class ExaminationCenterDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    serializer_class = ExaminationCenterSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        return ExaminationCenter.objects.all()
+
+    def update(self, request, *args, **kwargs):
+        capacity = request.data.get('capacity')
+        if capacity is not None:
+            try:
+                if int(capacity) <= 0:
+                    return Response({
+                        'status': 'ERROR',
+                        'code': 'INVALID_CAPACITY',
+                        'message': 'Examination center capacity must be greater than zero.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            except (ValueError, TypeError):
+                return Response({
+                    'status': 'ERROR',
+                    'code': 'INVALID_CAPACITY',
+                    'message': 'Examination center capacity must be a valid integer.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        return super().update(request, *args, **kwargs)
 
 
 class BatchListCreateView(generics.ListCreateAPIView):
@@ -130,9 +198,43 @@ class BatchListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         return Batch.objects.all()
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'status': 'SUCCESS',
+            'batches': serializer.data,
+        })
+
+    def create(self, request, *args, **kwargs):
+        tenant = get_current_tenant() or getattr(request.user, 'organization', None)
+        code = request.data.get('code')
+        if code and tenant:
+            if Batch.all_objects.filter(organization=tenant, code=code).exists():
+                return Response({
+                    'status': 'ERROR',
+                    'code': 'DUPLICATE_CODE',
+                    'message': f'Batch with code {code} already exists in this organization.'
+                }, status=status.HTTP_409_CONFLICT)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
     def perform_create(self, serializer):
         tenant = get_current_tenant() or self.request.user.organization
         serializer.save(organization=tenant)
+
+
+class BatchDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
+    serializer_class = BatchSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        return Batch.objects.all()
 
 
 class SelectFieldsView(APIView):
