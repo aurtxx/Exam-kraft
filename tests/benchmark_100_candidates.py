@@ -80,7 +80,11 @@ async def benchmark(args, password):
             for section in attempts[number]["sections"]:
                 for question in section["questions"][:3]:
                     choices = question["options"]
-                    answer = {"selected_options": [option["key"] for option in choices[:2 if question["question_type"] == "MCQ_MULTI" else 1]]} if choices else {"numerical_value": "9"}
+                    if choices:
+                        count = 2 if question["question_type"] == "MCQ_MULTI" else 1
+                        answer = {"selected_options": [option["key"] for option in choices[:count]]}
+                    else:
+                        answer = {"numerical_value": "9"}
                     question_id = question["id"]
                     response = await attempt_request(number, "save_response", payload={
                         "question_id": question_id, "time_spent_seconds": 3, **answer,
