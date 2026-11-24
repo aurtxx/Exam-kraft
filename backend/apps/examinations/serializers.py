@@ -1,0 +1,106 @@
+from rest_framework import serializers
+from .models import (
+    Examination,
+    ExaminationSection,
+    ExaminationQuestion,
+    CandidateAssignment,
+    ExaminationStatus,
+)
+from apps.question_bank.serializers import QuestionSerializer
+
+
+class ExaminationSectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExaminationSection
+        fields = [
+            'id',
+            'exam',
+            'title',
+            'order',
+            'total_questions',
+            'marks_per_question',
+            'negative_marks',
+            'partial_marks',
+        ]
+        read_only_fields = ['id']
+
+
+class ExaminationSerializer(serializers.ModelSerializer):
+    sections = ExaminationSectionSerializer(many=True, read_only=True)
+    question_paper_id = serializers.CharField(required=False, write_only=True, allow_null=True)
+    assigned_groups = serializers.SerializerMethodField()
+    assigned_centres = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Examination
+        fields = [
+            'id',
+            'organization',
+            'name',
+            'code',
+            'slug',
+            'question_paper',
+            'question_paper_id',
+            'instructions',
+            'duration_minutes',
+            'total_marks',
+            'passing_marks',
+            'status',
+            'start_window',
+            'end_window',
+            'shuffle_questions',
+            'shuffle_options',
+            'camera_proctoring',
+            'max_window_switches',
+            'allow_section_skip',
+            'practice_mode',
+            'pc_only',
+            'hide_results',
+            'hide_rank',
+            'hide_analytics',
+            'short_url',
+            'sections',
+            'assigned_groups',
+            'assigned_centres',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'organization', 'created_at', 'updated_at']
+
+    def get_assigned_groups(self, obj) -> list[str]:
+        return list(obj.candidate_assignments.filter(batch__isnull=False).values_list('batch__name', flat=True))
+
+    def get_assigned_centres(self, obj) -> list[str]:
+        return list(obj.candidate_assignments.filter(center__isnull=False).values_list('center__name', flat=True))
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if instance.question_paper:
+            ret['question_paper_id'] = str(instance.question_paper_id)
+        # Format start_window and end_window cleanly with ISO format if present
+        if instance.start_window:
+            ret['start_window'] = instance.start_window.strftime('%Y-%m-%dT%H:%M:%SZ')
+        if instance.end_window:
+            ret['end_window'] = instance.end_window.strftime('%Y-%m-%dT%H:%M:%SZ')
+        return ret
+
+
+class CandidateAssignmentSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.profile.full_name', read_only=True)
+    batch_name = serializers.CharField(source='batch.name', read_only=True)
+    center_name = serializers.CharField(source='center.name', read_only=True)
+
+    class Meta:
+        model = CandidateAssignment
+        fields = [
+            'id',
+            'exam',
+            'student',
+            'student_name',
+            'batch',
+            'batch_name',
+            'center',
+            'center_name',
+            'assigned_at',
+        ]
+        read_only_fields = ['id', 'assigned_at']
