@@ -23,7 +23,7 @@ from .serializers import (
     mcq_options_error,
     prepare_options,
 )
-from apps.accounts.permissions import IsActiveTenantMember, IsOrgAdminOrReadOnly, require_tenant
+from apps.accounts.permissions import IsActiveTenantMember, IsOrgAdminOrFaculty, require_tenant
 
 
 def ensure_paper_unlocked(paper):
@@ -36,7 +36,7 @@ def ensure_paper_unlocked(paper):
 
 
 class QuestionBankListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
 
     def get(self, request):
         tenant = require_tenant(request)
@@ -78,7 +78,7 @@ class QuestionBankListCreateView(APIView):
 
 
 class QuestionBankDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
     serializer_class = QuestionBankSerializer
     lookup_field = 'id'
 
@@ -100,7 +100,7 @@ class QuestionBankDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class QuestionListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
 
     def get_paper(self, paper_id, tenant):
         if not paper_id:
@@ -307,7 +307,7 @@ class QuestionListCreateView(APIView):
 
 
 class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
     serializer_class = QuestionSerializer
     queryset = Question.objects.all()
     lookup_field = 'id'
@@ -344,7 +344,7 @@ class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class SectionListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
     serializer_class = SectionSerializer
 
     def get_queryset(self):
@@ -365,7 +365,7 @@ class SectionListCreateView(generics.ListCreateAPIView):
 
 
 class TagListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
     serializer_class = TagSerializer
 
     def get_queryset(self):
