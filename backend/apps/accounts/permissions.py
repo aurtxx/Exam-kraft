@@ -1,4 +1,5 @@
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import BasePermission, SAFE_METHODS
+from apps.organizations.context import set_current_tenant
 from .models import UserRole
 
 
@@ -42,20 +43,52 @@ class IsStudent(BasePermission):
         )
 
 
+class IsOrgAdminOrReadOnly(BasePermission):
+    """
+    Allows read-only access (GET, HEAD, OPTIONS) to authenticated tenant members,
+    but restricts write operations (POST, PUT, PATCH, DELETE) to
+    Organization Admins and Platform Super Admins.
+    """
+    message = "Only organization administrators can create or modify this resource."
+    code = "PERMISSION_DENIED"
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return bool(
+            request.user and
+            request.user.is_authenticated and
+            (request.user.role in (UserRole.SUPERADMIN, UserRole.ORG_ADMIN) or request.user.is_superuser)
+        )
+
+
 class IsTenantMember(BasePermission):
     """
     Enforces that the user belongs to the active tenant organization,
     or is a global SUPERADMIN.
     """
+    message = "User does not belong to the active tenant organization."
+    code = "PERMISSION_DENIED"
+
     def has_permission(self, request, view):
         if not (request.user and request.user.is_authenticated):
             return False
         if request.user.role == UserRole.SUPERADMIN or request.user.is_superuser:
             return True
+
         active_tenant = getattr(request, 'tenant', None)
-        if active_tenant and request.user.organization_id != active_tenant.id:
+        if not active_tenant and getattr(request.user, 'organization', None):
+            active_tenant = request.user.organization
+            request.tenant = active_tenant
+            set_current_tenant(active_tenant)
+
+        if not active_tenant:
             return False
-        return bool(request.user.organization_id)
+
+        if request.user.organization_id != active_tenant.id:
+            return False
+
+        return True
 
     def has_object_permission(self, request, view, obj):
         if request.user.role == UserRole.SUPERADMIN or request.user.is_superuser:

@@ -24,13 +24,12 @@ class Organization(models.Model):
 
 
 class TenantManager(models.Manager):
-    """Manager that automatically filters querysets by the active tenant context."""
+    """Manager that automatically filters querysets by the active tenant context (fails closed)."""
     def get_queryset(self):
-        qs = super().get_queryset()
         tenant = get_current_tenant()
         if tenant:
-            return qs.filter(organization=tenant)
-        return qs
+            return super().get_queryset().filter(organization=tenant)
+        return super().get_queryset().none()
 
 
 class BaseTenantModel(models.Model):

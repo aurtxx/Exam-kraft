@@ -1,8 +1,8 @@
-from rest_framework import status, generics
+from rest_framework import status, generics, exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from apps.accounts.permissions import IsOrgAdmin, IsTenantMember
+from apps.accounts.permissions import IsOrgAdmin, IsTenantMember, IsOrgAdminOrReadOnly
 from .models import Organization, ExaminationCenter, Batch
 from .serializers import (
     OrganizationSerializer,
@@ -87,8 +87,20 @@ class CurrentOrganizationView(APIView):
 
 
 class ExaminationCenterListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember]
+    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = ExaminationCenterSerializer
+
+    def permission_denied(self, request, message=None, code=None):
+        if request.authenticators and not request.successful_authenticator:
+            raise exceptions.NotAuthenticated()
+        raise exceptions.PermissionDenied(
+            detail={
+                'status': 'ERROR',
+                'code': code or 'PERMISSION_DENIED',
+                'message': message or 'Only organization administrators can create or modify examination centers.',
+            },
+            code=code or 'PERMISSION_DENIED'
+        )
 
     def get_queryset(self):
         # TenantManager automatically filters by current tenant
@@ -100,8 +112,20 @@ class ExaminationCenterListCreateView(generics.ListCreateAPIView):
 
 
 class BatchListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated, IsTenantMember]
+    permission_classes = [IsAuthenticated, IsTenantMember, IsOrgAdminOrReadOnly]
     serializer_class = BatchSerializer
+
+    def permission_denied(self, request, message=None, code=None):
+        if request.authenticators and not request.successful_authenticator:
+            raise exceptions.NotAuthenticated()
+        raise exceptions.PermissionDenied(
+            detail={
+                'status': 'ERROR',
+                'code': code or 'PERMISSION_DENIED',
+                'message': message or 'Only organization administrators can create or modify batches.',
+            },
+            code=code or 'PERMISSION_DENIED'
+        )
 
     def get_queryset(self):
         return Batch.objects.all()

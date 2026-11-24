@@ -58,10 +58,22 @@ class TenantIsolationTestCase(TestCase):
         self.assertEqual(centers[0], self.center_b)
         self.assertNotIn(self.center_a, centers)
 
-    def test_tenant_manager_no_active_tenant_returns_all(self):
+    def test_tenant_manager_no_active_tenant_fail_closed(self):
         clear_current_tenant()
+        self.assertEqual(Batch.objects.count(), 0)
+        self.assertEqual(ExaminationCenter.objects.count(), 0)
         batches = list(Batch.objects.all())
-        self.assertEqual(len(batches), 3)
+        centers = list(ExaminationCenter.objects.all())
+        self.assertEqual(len(batches), 0)
+        self.assertEqual(len(centers), 0)
+
+    def test_tenant_isolation_boundary_missing_tenant_context(self):
+        clear_current_tenant()
+        self.assertEqual(Batch.objects.count(), 0)
+        self.assertEqual(ExaminationCenter.objects.count(), 0)
+        # Verify that all_objects remains accessible for platform-level operations
+        self.assertEqual(Batch.all_objects.count(), 3)
+        self.assertEqual(ExaminationCenter.all_objects.count(), 2)
 
     def test_all_objects_manager_bypasses_filter(self):
         set_current_tenant(self.org_a)

@@ -93,3 +93,53 @@ class OrganizationEndpointsTestCase(TestCase):
         self.assertEqual(response.data['classes'][0]['code'], 'C12B')
         self.assertEqual(len(response.data['centres']), 1)
         self.assertEqual(response.data['centres'][0]['code'], 'NH01')
+
+    def test_student_cannot_create_batch(self):
+        self.client.force_authenticate(user=self.student)
+        url = reverse('org-batches')
+        payload = {"name": "Unauthorized Batch", "code": "UB01"}
+        response = self.client.post(url, payload, format='json', HTTP_X_TENANT_ID=str(self.org.id))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['code'], 'PERMISSION_DENIED')
+
+    def test_student_cannot_create_center(self):
+        self.client.force_authenticate(user=self.student)
+        url = reverse('org-centers')
+        payload = {"name": "Unauthorized Center", "code": "UC01", "capacity": 100}
+        response = self.client.post(url, payload, format='json', HTTP_X_TENANT_ID=str(self.org.id))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data['code'], 'PERMISSION_DENIED')
+
+    def test_org_admin_can_create_batch(self):
+        self.client.force_authenticate(user=self.org_admin)
+        url = reverse('org-batches')
+        payload = {"name": "Class 11 A", "code": "C11A", "stream": "JEE_MAIN"}
+        response = self.client.post(url, payload, format='json', HTTP_X_TENANT_ID=str(self.org.id))
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['code'], 'C11A')
+        self.assertEqual(str(response.data['organization']), str(self.org.id))
+
+    def test_org_admin_can_create_center(self):
+        self.client.force_authenticate(user=self.org_admin)
+        url = reverse('org-centers')
+        payload = {"name": "South Wing Lab", "code": "SW01", "capacity": 120}
+        response = self.client.post(url, payload, format='json', HTTP_X_TENANT_ID=str(self.org.id))
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['code'], 'SW01')
+        self.assertEqual(str(response.data['organization']), str(self.org.id))
+
+    def test_student_can_read_batches_and_centers(self):
+        self.client.force_authenticate(user=self.student)
+        url_b = reverse('org-batches')
+        res_b = self.client.get(url_b, HTTP_X_TENANT_ID=str(self.org.id))
+        self.assertEqual(res_b.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(res_b.data) >= 1)
+
+        url_c = reverse('org-centers')
+        res_c = self.client.get(url_c, HTTP_X_TENANT_ID=str(self.org.id))
+        self.assertEqual(res_c.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(res_c.data) >= 1)
