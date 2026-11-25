@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 from django.db import models
 from django.db.models import Q
 from django.conf import settings
@@ -92,7 +93,7 @@ class ExaminationAttempt(models.Model):
 
     @property
     def is_expired(self) -> bool:
-        return timezone.now() > (self.server_deadline + timezone.timedelta(seconds=30))
+        return timezone.now() > (self.server_deadline + timedelta(seconds=30))
 
 
 class AttemptResponse(models.Model):
