@@ -15,12 +15,16 @@ import {
   Sparkles,
 } from 'lucide-react';
 import analyticsApi from '../../services/analyticsApi';
+import { useAuth } from '../../context/AuthContext';
+import { homeForRole } from '../../components/layout/ProtectedRoutes';
 import { ExamReportPayload, QuestionReviewItem, ReviewOutcome } from '../../types';
 import MathRenderer from '../../components/MathRenderer';
 
 export const ExamResultReportPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const dashboardPath = user ? homeForRole(user.role) : '/login';
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -169,7 +173,7 @@ export const ExamResultReportPage: React.FC = () => {
           <h2 className="text-xl font-bold text-slate-900 mb-2">Report Not Available</h2>
           <p className="text-sm text-slate-600 mb-6">{error || 'Unable to retrieve exam evaluation.'}</p>
           <button
-            onClick={() => navigate('/student')}
+            onClick={() => navigate(dashboardPath)}
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-medium text-sm transition"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Dashboard
@@ -188,7 +192,7 @@ export const ExamResultReportPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => (window.history.length > 1 ? navigate(-1) : navigate(dashboardPath))}
               className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
               title="Go back"
             >

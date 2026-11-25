@@ -12,7 +12,7 @@ export const NotFound: React.FC = () => {
         <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">404</h1>
         <h2 className="text-lg font-semibold text-slate-700 mt-2">Page Not Found</h2>
         <p className="text-sm text-slate-500 mt-1 mb-6">
-          The requested page or route does not exist in the EZExam platform.
+          The requested page or route does not exist in the Exam-Kraft platform.
         </p>
         <Link
           to="/"

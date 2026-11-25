@@ -49,9 +49,9 @@ export const Login: React.FC = () => {
         {/* Brand Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-navy-900 to-primary-500 text-white font-extrabold text-2xl shadow-lg mb-3">
-            EZ
+            EK
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">EZExam Portal</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Exam-Kraft Portal</h1>
           <p className="text-sm text-slate-500 mt-1">
             Sign in to access examinations, cohorts, and question banks
           </p>

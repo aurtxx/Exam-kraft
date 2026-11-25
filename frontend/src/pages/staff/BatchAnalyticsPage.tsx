@@ -436,7 +436,7 @@ export const BatchAnalyticsPage: React.FC = () => {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <button
-                        onClick={() => navigate(`/student/exam/${cand.attempt_id}/report`)}
+                        onClick={() => navigate(`/staff/attempts/${cand.attempt_id}/report`)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition"
                         title="View Detailed Student Report"
                       >

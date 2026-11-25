@@ -33,10 +33,10 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           ) : (
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-primary-600 to-primary-400 flex items-center justify-center text-white font-black text-base shadow-sm">
-                EZ
+                EK
               </div>
               <span className="font-bold text-lg text-navy-900 tracking-tight">
-                {organization?.name || 'EZExam'}
+                {organization?.name || 'Exam-Kraft'}
               </span>
             </div>
           )}

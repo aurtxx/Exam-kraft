@@ -479,7 +479,7 @@ export const ExamCBTPage: React.FC = () => {
         {/* Left: Brand & Exam Title */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
-            EZ
+            EK
           </div>
           <div>
             <h1 className="text-sm font-bold text-slate-800 leading-tight truncate max-w-md">

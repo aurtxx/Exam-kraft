@@ -34,10 +34,7 @@ export const App: React.FC = () => {
             <Route path="/student/exam/:id/lobby" element={<ExamLobbyPage />} />
             <Route path="/student/exam/:id/test" element={<ExamCBTPage />} />
             <Route path="/student/exam/:id/finish" element={<ExamFinishPage />} />
-            <Route path="/student/exam/:id/report" element={<ExamResultReportPage />} />
-            <Route path="/student/exam/:id/results" element={<ExamResultReportPage />} />
             <Route path="/student/attempts/:id/report" element={<ExamResultReportPage />} />
-            <Route path="/student/results/:id" element={<ExamResultReportPage />} />
             <Route path="/online-exams/:id" element={<ExamLobbyPage />} />
             <Route path="/online-exams/:id/test" element={<ExamCBTPage />} />
           </Route>
@@ -50,6 +47,7 @@ export const App: React.FC = () => {
               <Route path="/staff/exams/:id/analytics" element={<BatchAnalyticsPage />} />
               <Route path="/staff/examinations/:id/analytics" element={<BatchAnalyticsPage />} />
               <Route path="/staff/analytics/:id" element={<BatchAnalyticsPage />} />
+              <Route path="/staff/attempts/:id/report" element={<ExamResultReportPage />} />
               <Route path="/staff/reports" element={<ExaminationsPage />} />
               <Route path="/staff/question-bank" element={<QuestionBankPage />} />
               <Route path="/staff/students" element={<StudentsPage />} />

@@ -239,7 +239,7 @@ export const ExaminationsPage: React.FC = () => {
           className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm"
         >
           <Plus size={18} />
-          <span>New Examination (#new-exam-modal)</span>
+          <span>New Examination</span>
         </button>
       </div>
 
@@ -285,17 +285,17 @@ export const ExaminationsPage: React.FC = () => {
           No examinations found. Click "New Examination" to author one.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredExams.map((exam) => {
             const isDraft = exam.status === 'DRAFT';
             const isPublished = exam.status === 'PUBLISHED' || exam.status === 'SCHEDULED';
             return (
               <div
                 key={exam.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col justify-between"
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col justify-between min-w-0 overflow-hidden"
               >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <span
                       className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
                         isDraft
@@ -307,20 +307,20 @@ export const ExaminationsPage: React.FC = () => {
                     >
                       {exam.status}
                     </span>
-                    <span className="font-mono text-xs text-slate-400">{exam.code}</span>
+                    <span className="font-mono text-xs text-slate-400 min-w-0 truncate">{exam.code}</span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-slate-800 mt-2 line-clamp-1">{exam.name}</h3>
+                  <h3 className="text-lg font-bold text-slate-800 mt-2 truncate min-w-0">{exam.name}</h3>
 
-                  <div className="space-y-1.5 mt-4 text-xs text-slate-600">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-1.5 mt-4 text-xs text-slate-600 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
                       <Clock size={14} className="text-slate-400 flex-shrink-0" />
-                      <span>Duration: <strong className="text-slate-700">{exam.duration_minutes} minutes</strong></span>
+                      <span className="min-w-0 break-words">Duration: <strong className="text-slate-700">{exam.duration_minutes} minutes</strong></span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <Calendar size={14} className="text-slate-400 flex-shrink-0" />
-                      <span>
+                      <span className="min-w-0 break-words">
                         Window:{' '}
                         {exam.start_window ? (
                           <strong className="text-slate-700">
@@ -332,20 +332,20 @@ export const ExaminationsPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <Shield size={14} className="text-slate-400 flex-shrink-0" />
-                      <span>
+                      <span className="min-w-0 break-words">
                         Security: {exam.max_window_switches} switch limit
                         {exam.camera_proctoring && ' • Webcam required'}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <Users size={14} className="text-slate-400 flex-shrink-0" />
-                      <span>
+                      <span className="min-w-0 break-words">
                         Assigned:{' '}
                         {exam.assigned_groups && exam.assigned_groups.length > 0 ? (
-                          <strong className="text-slate-700">{exam.assigned_groups.join(', ')}</strong>
+                          <strong className="text-slate-700 break-words">{exam.assigned_groups.join(', ')}</strong>
                         ) : (
                           <span className="text-slate-400 italic">No batches assigned</span>
                         )}
@@ -354,7 +354,7 @@ export const ExaminationsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="mt-5 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                   <button
                     onClick={() => openPreviewModal(exam)}
                     className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-primary-600 py-1.5 px-2 rounded-lg hover:bg-slate-50 transition-colors"
@@ -363,7 +363,7 @@ export const ExaminationsPage: React.FC = () => {
                     <span>Preview</span>
                   </button>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => navigate(`/staff/exams/${exam.id}/analytics`)}
                       className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:bg-indigo-50 py-1.5 px-2.5 rounded-lg transition-colors border border-indigo-200"
@@ -557,8 +557,8 @@ export const ExaminationsPage: React.FC = () => {
                     </p>
 
                     <div className="flex items-center justify-between">
-                      <label htmlFor="check-switches" className="text-slate-700 font-medium">
-                        Window Switch Limit (#check-switches)
+                      <label htmlFor="num-switch" className="text-slate-700 font-medium">
+                        Window Switch Limit
                       </label>
                       <input
                         type="number"

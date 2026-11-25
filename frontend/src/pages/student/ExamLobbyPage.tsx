@@ -89,7 +89,7 @@ export const ExamLobbyPage: React.FC = () => {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center text-white font-extrabold text-xl shadow-sm">
-              EZ
+              EK
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-800 leading-tight">

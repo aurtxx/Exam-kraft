@@ -331,7 +331,7 @@ export const QuestionBankPage: React.FC = () => {
                     className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs transition-colors shadow-sm"
                   >
                     <Plus size={16} />
-                    <span>Add Question (#form-addq)</span>
+                    <span>Add Question</span>
                   </button>
                 )}
               </div>
@@ -530,7 +530,7 @@ export const QuestionBankPage: React.FC = () => {
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
                 <BookOpen size={20} className="text-primary-600" />
-                <h2 className="text-lg font-bold text-slate-800">Author Question (#form-addq)</h2>
+                <h2 className="text-lg font-bold text-slate-800">Author Question</h2>
               </div>
               <button
                 onClick={() => setQModalOpen(false)}

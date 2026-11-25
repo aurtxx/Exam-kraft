@@ -224,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         <div className="bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-200 rounded-2xl p-3">
           <div className="flex items-center gap-2 text-amber-800 font-semibold text-xs">
             <Star size={16} className="text-amber-500 fill-amber-500" />
-            <span>EZExam Dedicated</span>
+            <span>Exam-Kraft Dedicated</span>
           </div>
           <p className="text-[11px] text-amber-700 mt-1 leading-snug">
             Support for 500+ concurrent live candidates and dedicated database.

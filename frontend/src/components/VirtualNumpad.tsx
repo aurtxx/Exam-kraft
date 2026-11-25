@@ -18,7 +18,7 @@ export const VirtualNumpad: React.FC<VirtualNumpadProps> = ({
 
   useEffect(() => {
     if (!disabled) {
-      inputRef.current?.focus();
+      inputRef.current?.focus({ preventScroll: true });
     }
   }, [disabled, singleDigit]);
 
