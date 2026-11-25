@@ -1,7 +1,9 @@
+import unittest
 import uuid
 from datetime import timedelta
 from asgiref.sync import async_to_sync
 from django.core.handlers.asgi import ASGIHandler
+from django.db import IntegrityError, connection, transaction
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -446,3 +448,74 @@ class WebSocketRemovalTestCase(TestCase):
 
         self.assertEqual(routing.websocket_urlpatterns, [])
         self.assertFalse(hasattr(consumers, "ExamAttemptConsumer"))
+
+
+class AttemptPartialUniqueConstraintTestCase(TestCase):
+    def setUp(self):
+        self.org = Organization.objects.create(
+            name="Constraint Org",
+            slug="constraint-org",
+            domain="constraint.ezexam.in",
+        )
+        self.student = User.objects.create_user(
+            username="student_d4@constraint.edu",
+            email="student_d4@constraint.edu",
+            password="StudentPassword123!",
+            role=UserRole.STUDENT,
+            organization=self.org,
+        )
+        self.exam = Examination.objects.create(
+            organization=self.org,
+            name="D4 Constraint Exam",
+            duration_minutes=60,
+            total_marks=10.0,
+            status=ExaminationStatus.PUBLISHED,
+        )
+
+    def test_partial_unique_constraint_blocks_duplicate_in_progress_and_allows_after_finalize(self):
+        now = timezone.now()
+        first = ExaminationAttempt.objects.create(
+            user=self.student,
+            examination=self.exam,
+            started_at=now,
+            server_deadline=now + timedelta(minutes=60),
+            status=AttemptStatus.IN_PROGRESS,
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                ExaminationAttempt.objects.create(
+                    user=self.student,
+                    examination=self.exam,
+                    started_at=now,
+                    server_deadline=now + timedelta(minutes=60),
+                    status=AttemptStatus.IN_PROGRESS,
+                )
+
+        # Finalizing the first attempt permits creating a subsequent IN_PROGRESS attempt
+        first.status = AttemptStatus.SUBMITTED
+        first.submitted_at = now
+        first.save(update_fields=["status", "submitted_at"])
+
+        second = ExaminationAttempt.objects.create(
+            user=self.student,
+            examination=self.exam,
+            started_at=now,
+            server_deadline=now + timedelta(minutes=60),
+            status=AttemptStatus.IN_PROGRESS,
+        )
+        self.assertNotEqual(first.id, second.id)
+
+        # Multiple finalized attempts are also permitted by the partial constraint
+        second.status = AttemptStatus.AUTO_SUBMITTED
+        second.submitted_at = now
+        second.save(update_fields=["status", "submitted_at"])
+        third = ExaminationAttempt.objects.create(
+            user=self.student,
+            examination=self.exam,
+            started_at=now,
+            server_deadline=now + timedelta(minutes=60),
+            status=AttemptStatus.SUBMITTED,
+            submitted_at=now,
+        )
+        self.assertEqual(ExaminationAttempt.objects.filter(user=self.student, examination=self.exam).count(), 3)

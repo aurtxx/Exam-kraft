@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.db.models import Q
 from django.conf import settings
 from django.utils import timezone
 
@@ -71,6 +72,13 @@ class ExaminationAttempt(models.Model):
     class Meta:
         db_table = 'engine_examinationattempt'
         ordering = ['-started_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['examination', 'user'],
+                condition=Q(status='IN_PROGRESS'),
+                name='uq_active_candidate_attempt',
+            ),
+        ]
 
     def __str__(self):
         return f"Attempt {self.id} - User {self.user_id} - Exam {self.examination_id} [{self.status}]"
