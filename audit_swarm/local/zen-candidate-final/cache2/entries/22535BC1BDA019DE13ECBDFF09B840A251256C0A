@@ -1,0 +1,499 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/layout/Sidebar.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=314a0332"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=314a0332"; const useState = __vite__cjsImport3_react["useState"];
+import { NavLink } from "/node_modules/.vite/deps/react-router-dom.js?v=314a0332";
+import { useAuth } from "/src/context/AuthContext.tsx";
+import {
+  CheckCircle,
+  Users,
+  Settings,
+  CreditCard,
+  Palette,
+  PlayCircle,
+  UserCheck,
+  Building2,
+  Bell,
+  Star,
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+  Layers
+} from "/node_modules/.vite/deps/lucide-react.js?v=314a0332";
+export const Sidebar = ({ isOpen }) => {
+  _s();
+  const { user } = useAuth();
+  const [isManagementOpen, setIsManagementOpen] = useState(true);
+  if (!isOpen) return null;
+  return /* @__PURE__ */ jsxDEV("aside", { className: "w-64 min-h-[calc(100vh-4rem)] bg-white border-r border-slate-200 flex flex-col flex-shrink-0 select-none", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "bg-gradient-to-r from-navy-900 to-primary-600 p-4 text-white flex items-center gap-3 shadow-inner", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "w-12 h-12 rounded-full border-2 border-white/60 bg-white/20 flex items-center justify-center font-bold text-lg", children: user?.username?.charAt(0).toUpperCase() || "U" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+        lineNumber: 54,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "overflow-hidden", children: [
+        /* @__PURE__ */ jsxDEV("p", { className: "font-semibold text-sm truncate leading-tight", children: user?.profile?.full_name || user?.username || "Staff Member" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 58,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-1 mt-0.5", children: /* @__PURE__ */ jsxDEV("span", { className: "inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/20 text-white", children: user?.role || "Staff" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 62,
+          columnNumber: 13
+        }, this) }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 61,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+        lineNumber: 57,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+      lineNumber: 53,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("nav", { className: "flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar", children: [
+      /* @__PURE__ */ jsxDEV(
+        NavLink,
+        {
+          to: "/staff/exams",
+          className: ({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${isActive ? "bg-primary-50 text-primary-600 font-semibold shadow-sm" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+          children: [
+            /* @__PURE__ */ jsxDEV(CheckCircle, { size: 18 }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 81,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Exams" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 82,
+              columnNumber: 11
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 71,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV(
+        NavLink,
+        {
+          to: "/staff/question-bank",
+          className: ({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${isActive ? "bg-primary-50 text-primary-600 font-semibold shadow-sm" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+          children: [
+            /* @__PURE__ */ jsxDEV(BookOpen, { size: 18 }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 95,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Question Bank" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 96,
+              columnNumber: 11
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 85,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV(
+        NavLink,
+        {
+          to: "/staff/students",
+          className: ({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${isActive ? "bg-primary-50 text-primary-600 font-semibold shadow-sm" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+          children: [
+            /* @__PURE__ */ jsxDEV(Users, { size: 18 }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 109,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Students" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 110,
+              columnNumber: 11
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 99,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV(
+        NavLink,
+        {
+          to: "/staff/settings",
+          className: ({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${isActive ? "bg-primary-50 text-primary-600 font-semibold shadow-sm" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+          children: [
+            /* @__PURE__ */ jsxDEV(Settings, { size: 18 }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 123,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Settings" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 124,
+              columnNumber: 11
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 113,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV(
+        NavLink,
+        {
+          to: "/staff/plans",
+          className: ({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${isActive ? "bg-primary-50 text-primary-600 font-semibold shadow-sm" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+          children: [
+            /* @__PURE__ */ jsxDEV(CreditCard, { size: 18 }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 137,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Payments & Plans" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 138,
+              columnNumber: 11
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 127,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV(
+        NavLink,
+        {
+          to: "/staff/customize",
+          className: ({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${isActive ? "bg-primary-50 text-primary-600 font-semibold shadow-sm" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+          children: [
+            /* @__PURE__ */ jsxDEV(Palette, { size: 18 }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 151,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Customize Site" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 152,
+              columnNumber: 11
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 141,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV(
+        NavLink,
+        {
+          to: "/staff/demo-videos",
+          className: ({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all ${isActive ? "bg-primary-50 text-primary-600 font-semibold shadow-sm" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+          children: [
+            /* @__PURE__ */ jsxDEV(PlayCircle, { size: 18 }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 165,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Demo Videos" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 166,
+              columnNumber: 11
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 155,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV("div", { className: "pt-2", children: [
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => setIsManagementOpen(!isManagementOpen),
+            className: "w-full flex items-center justify-between px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600",
+            children: [
+              /* @__PURE__ */ jsxDEV("span", { children: "Institution Management" }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                lineNumber: 175,
+                columnNumber: 13
+              }, this),
+              isManagementOpen ? /* @__PURE__ */ jsxDEV(ChevronDown, { size: 14 }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                lineNumber: 176,
+                columnNumber: 33
+              }, this) : /* @__PURE__ */ jsxDEV(ChevronRight, { size: 14 }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                lineNumber: 176,
+                columnNumber: 61
+              }, this)
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+            lineNumber: 171,
+            columnNumber: 11
+          },
+          this
+        ),
+        isManagementOpen && /* @__PURE__ */ jsxDEV("div", { className: "mt-1 space-y-1 pl-2", children: [
+          /* @__PURE__ */ jsxDEV(
+            NavLink,
+            {
+              to: "/staff/batches",
+              className: ({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isActive ? "bg-primary-50 text-primary-600 font-semibold" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+              children: [
+                /* @__PURE__ */ jsxDEV(Layers, { size: 16 }, void 0, false, {
+                  fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                  lineNumber: 191,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", { children: "Batches" }, void 0, false, {
+                  fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                  lineNumber: 192,
+                  columnNumber: 17
+                }, this)
+              ]
+            },
+            void 0,
+            true,
+            {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 181,
+              columnNumber: 15
+            },
+            this
+          ),
+          /* @__PURE__ */ jsxDEV(
+            NavLink,
+            {
+              to: "/staff/faculty",
+              className: ({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isActive ? "bg-primary-50 text-primary-600 font-semibold" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+              children: [
+                /* @__PURE__ */ jsxDEV(UserCheck, { size: 16 }, void 0, false, {
+                  fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                  lineNumber: 205,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", { children: "Faculty" }, void 0, false, {
+                  fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                  lineNumber: 206,
+                  columnNumber: 17
+                }, this)
+              ]
+            },
+            void 0,
+            true,
+            {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 195,
+              columnNumber: 15
+            },
+            this
+          ),
+          /* @__PURE__ */ jsxDEV(
+            NavLink,
+            {
+              to: "/staff/centers",
+              className: ({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isActive ? "bg-primary-50 text-primary-600 font-semibold" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+              children: [
+                /* @__PURE__ */ jsxDEV(Building2, { size: 16 }, void 0, false, {
+                  fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                  lineNumber: 219,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", { children: "Centres" }, void 0, false, {
+                  fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                  lineNumber: 220,
+                  columnNumber: 17
+                }, this)
+              ]
+            },
+            void 0,
+            true,
+            {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 209,
+              columnNumber: 15
+            },
+            this
+          ),
+          /* @__PURE__ */ jsxDEV(
+            NavLink,
+            {
+              to: "/staff/notices",
+              className: ({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isActive ? "bg-primary-50 text-primary-600 font-semibold" : "text-slate-600 hover:text-primary-600 hover:bg-slate-50"}`,
+              children: [
+                /* @__PURE__ */ jsxDEV(Bell, { size: 16 }, void 0, false, {
+                  fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                  lineNumber: 233,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", { children: "Notices" }, void 0, false, {
+                  fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+                  lineNumber: 234,
+                  columnNumber: 17
+                }, this)
+              ]
+            },
+            void 0,
+            true,
+            {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+              lineNumber: 223,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 180,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+        lineNumber: 170,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+      lineNumber: 70,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "p-3 border-t border-slate-200", children: /* @__PURE__ */ jsxDEV("div", { className: "bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-200 rounded-2xl p-3", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2 text-amber-800 font-semibold text-xs", children: [
+        /* @__PURE__ */ jsxDEV(Star, { size: 16, className: "text-amber-500 fill-amber-500" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 245,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { children: "EZExam Dedicated" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+          lineNumber: 246,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+        lineNumber: 244,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-[11px] text-amber-700 mt-1 leading-snug", children: "Support for 500+ concurrent live candidates and dedicated database." }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+        lineNumber: 248,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("button", { className: "mt-2.5 w-full bg-accent-gold hover:bg-[#e69b14] text-white py-1.5 px-3 rounded-xl text-xs font-bold transition-colors shadow-sm", children: "Upgrade Plan" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+        lineNumber: 251,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+      lineNumber: 243,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+      lineNumber: 242,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx",
+    lineNumber: 51,
+    columnNumber: 5
+  }, this);
+};
+_s(Sidebar, "eWIoQ+473qInz2fRJdoSNyFjKsM=", false, function() {
+  return [useAuth];
+});
+_c = Sidebar;
+export default Sidebar;
+var _c;
+$RefreshReg$(_c, "Sidebar");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Sidebar.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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LGFBdkRGO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUF3REE7QUFBQSxXQWxFSjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBb0VBO0FBQUEsU0F4S0Y7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQXlLQTtBQUFBLElBR0EsdUJBQUMsU0FBSSxXQUFVLGlDQUNiLGlDQUFDLFNBQUksV0FBVSwyRkFDYjtBQUFBLDZCQUFDLFNBQUksV0FBVSxnRUFDYjtBQUFBLCtCQUFDLFFBQUssTUFBTSxJQUFJLFdBQVUsbUNBQTFCO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFBeUQ7QUFBQSxRQUN6RCx1QkFBQyxVQUFLLGdDQUFOO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFBc0I7QUFBQSxXQUZ4QjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBR0E7QUFBQSxNQUNBLHVCQUFDLE9BQUUsV0FBVSxnREFBOEMsbUZBQTNEO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFFQTtBQUFBLE1BQ0EsdUJBQUMsWUFBTyxXQUFVLG1JQUFpSSw0QkFBbko7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUVBO0FBQUEsU0FWRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBV0EsS0FaRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBYUE7QUFBQSxPQTVNRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBNk1BO0FBRUo7QUFBRVYsR0F0TldGLFNBQStCO0FBQUEsVUFDekJmLE9BQU87QUFBQTtBQUFBLEtBRGJlO0FBd05iLGVBQWVBO0FBQVEsSUFBQWE7QUFBQSxhQUFBQSxJQUFBIiwibmFtZXMiOlsidXNlU3RhdGUiLCJOYXZMaW5rIiwidXNlQXV0aCIsIkNoZWNrQ2lyY2xlIiwiVXNlcnMiLCJTZXR0aW5ncyIsIkNyZWRpdENhcmQiLCJQYWxldHRlIiwiUGxheUNpcmNsZSIsIlVzZXJDaGVjayIsIkJ1aWxkaW5nMiIsIkJlbGwiLCJTdGFyIiwiQ2hldnJvbkRvd24iLCJDaGV2cm9uUmlnaHQiLCJCb29rT3BlbiIsIkxheWVycyIsIlNpZGViYXIiLCJpc09wZW4iLCJfcyIsInVzZXIiLCJpc01hbmFnZW1lbnRPcGVuIiwic2V0SXNNYW5hZ2VtZW50T3BlbiIsInVzZXJuYW1lIiwiY2hhckF0IiwidG9VcHBlckNhc2UiLCJwcm9maWxlIiwiZnVsbF9uYW1lIiwicm9sZSIsImlzQWN0aXZlIiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiU2lkZWJhci50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlIH0gZnJvbSAncmVhY3QnO1xuaW1wb3J0IHsgTmF2TGluayB9IGZyb20gJ3JlYWN0LXJvdXRlci1kb20nO1xuaW1wb3J0IHsgdXNlQXV0aCB9IGZyb20gJy4uLy4uL2NvbnRleHQvQXV0aENvbnRleHQnO1xuaW1wb3J0IHtcbiAgQ2hlY2tDaXJjbGUsXG4gIFVzZXJzLFxuICBTZXR0aW5ncyxcbiAgQ3JlZGl0Q2FyZCxcbiAgUGFsZXR0ZSxcbiAgUGxheUNpcmNsZSxcbiAgVXNlckNoZWNrLFxuICBCdWlsZGluZzIsXG4gIEJlbGwsXG4gIFN0YXIsXG4gIENoZXZyb25Eb3duLFxuICBDaGV2cm9uUmlnaHQsXG4gIEJvb2tPcGVuLFxuICBMYXllcnMsXG59IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XG5cbmludGVyZmFjZSBTaWRlYmFyUHJvcHMge1xuICBpc09wZW46IGJvb2xlYW47XG59XG5cbmV4cG9ydCBjb25zdCBTaWRlYmFyOiBSZWFjdC5GQzxTaWRlYmFyUHJvcHM+ID0gKHsgaXNPcGVuIH0pID0+IHtcbiAgY29uc3QgeyB1c2VyIH0gPSB1c2VBdXRoKCk7XG4gIGNvbnN0IFtpc01hbmFnZW1lbnRPcGVuLCBzZXRJc01hbmFnZW1lbnRPcGVuXSA9IHVzZVN0YXRlKHRydWUpO1xuXG4gIGlmICghaXNPcGVuKSByZXR1cm4gbnVsbDtcblxuICByZXR1cm4gKFxuICAgIDxhc2lkZSBjbGFzc05hbWU9XCJ3LTY0IG1pbi1oLVtjYWxjKDEwMHZoLTRyZW0pXSBiZy13aGl0ZSBib3JkZXItciBib3JkZXItc2xhdGUtMjAwIGZsZXggZmxleC1jb2wgZmxleC1zaHJpbmstMCBzZWxlY3Qtbm9uZVwiPlxuICAgICAgey8qIFVzZXIgUHJvZmlsZSBDYXJkIEJhbm5lciAqL31cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctZ3JhZGllbnQtdG8tciBmcm9tLW5hdnktOTAwIHRvLXByaW1hcnktNjAwIHAtNCB0ZXh0LXdoaXRlIGZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHNoYWRvdy1pbm5lclwiPlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctMTIgaC0xMiByb3VuZGVkLWZ1bGwgYm9yZGVyLTIgYm9yZGVyLXdoaXRlLzYwIGJnLXdoaXRlLzIwIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIGZvbnQtYm9sZCB0ZXh0LWxnXCI+XG4gICAgICAgICAge3VzZXI/LnVzZXJuYW1lPy5jaGFyQXQoMCkudG9VcHBlckNhc2UoKSB8fCAnVSd9XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm92ZXJmbG93LWhpZGRlblwiPlxuICAgICAgICAgIDxwIGNsYXNzTmFtZT1cImZvbnQtc2VtaWJvbGQgdGV4dC1zbSB0cnVuY2F0ZSBsZWFkaW5nLXRpZ2h0XCI+XG4gICAgICAgICAgICB7dXNlcj8ucHJvZmlsZT8uZnVsbF9uYW1lIHx8IHVzZXI/LnVzZXJuYW1lIHx8ICdTdGFmZiBNZW1iZXInfVxuICAgICAgICAgIDwvcD5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0xIG10LTAuNVwiPlxuICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiaW5saW5lLWJsb2NrIHB4LTIgcHktMC41IHJvdW5kZWQgdGV4dC1bMTBweF0gZm9udC1ib2xkIHVwcGVyY2FzZSB0cmFja2luZy13aWRlciBiZy13aGl0ZS8yMCB0ZXh0LXdoaXRlXCI+XG4gICAgICAgICAgICAgIHt1c2VyPy5yb2xlIHx8ICdTdGFmZid9XG4gICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvZGl2PlxuICAgICAgPC9kaXY+XG5cbiAgICAgIHsvKiBNYWluIE5hdmlnYXRpb24gTWVudSAqL31cbiAgICAgIDxuYXYgY2xhc3NOYW1lPVwiZmxleC0xIHB4LTMgcHktNCBzcGFjZS15LTEgb3ZlcmZsb3cteS1hdXRvIGN1c3RvbS1zY3JvbGxiYXJcIj5cbiAgICAgICAgPE5hdkxpbmtcbiAgICAgICAgICB0bz1cIi9zdGFmZi9leGFtc1wiXG4gICAgICAgICAgY2xhc3NOYW1lPXsoeyBpc0FjdGl2ZSB9KSA9PlxuICAgICAgICAgICAgYGZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHB4LTMgcHktMi41IHJvdW5kZWQteGwgZm9udC1tZWRpdW0gdGV4dC1zbSB0cmFuc2l0aW9uLWFsbCAke1xuICAgICAgICAgICAgICBpc0FjdGl2ZVxuICAgICAgICAgICAgICAgID8gJ2JnLXByaW1hcnktNTAgdGV4dC1wcmltYXJ5LTYwMCBmb250LXNlbWlib2xkIHNoYWRvdy1zbSdcbiAgICAgICAgICAgICAgICA6ICd0ZXh0LXNsYXRlLTYwMCBob3Zlcjp0ZXh0LXByaW1hcnktNjAwIGhvdmVyOmJnLXNsYXRlLTUwJ1xuICAgICAgICAgICAgfWBcbiAgICAgICAgICB9XG4gICAgICAgID5cbiAgICAgICAgICA8Q2hlY2tDaXJjbGUgc2l6ZT17MTh9IC8+XG4gICAgICAgICAgPHNwYW4+RXhhbXM8L3NwYW4+XG4gICAgICAgIDwvTmF2TGluaz5cblxuICAgICAgICA8TmF2TGlua1xuICAgICAgICAgIHRvPVwiL3N0YWZmL3F1ZXN0aW9uLWJhbmtcIlxuICAgICAgICAgIGNsYXNzTmFtZT17KHsgaXNBY3RpdmUgfSkgPT5cbiAgICAgICAgICAgIGBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMyBweC0zIHB5LTIuNSByb3VuZGVkLXhsIGZvbnQtbWVkaXVtIHRleHQtc20gdHJhbnNpdGlvbi1hbGwgJHtcbiAgICAgICAgICAgICAgaXNBY3RpdmVcbiAgICAgICAgICAgICAgICA/ICdiZy1wcmltYXJ5LTUwIHRleHQtcHJpbWFyeS02MDAgZm9udC1zZW1pYm9sZCBzaGFkb3ctc20nXG4gICAgICAgICAgICAgICAgOiAndGV4dC1zbGF0ZS02MDAgaG92ZXI6dGV4dC1wcmltYXJ5LTYwMCBob3ZlcjpiZy1zbGF0ZS01MCdcbiAgICAgICAgICAgIH1gXG4gICAgICAgICAgfVxuICAgICAgICA+XG4gICAgICAgICAgPEJvb2tPcGVuIHNpemU9ezE4fSAvPlxuICAgICAgICAgIDxzcGFuPlF1ZXN0aW9uIEJhbms8L3NwYW4+XG4gICAgICAgIDwvTmF2TGluaz5cblxuICAgICAgICA8TmF2TGlua1xuICAgICAgICAgIHRvPVwiL3N0YWZmL3N0dWRlbnRzXCJcbiAgICAgICAgICBjbGFzc05hbWU9eyh7IGlzQWN0aXZlIH0pID0+XG4gICAgICAgICAgICBgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgcHgtMyBweS0yLjUgcm91bmRlZC14bCBmb250LW1lZGl1bSB0ZXh0LXNtIHRyYW5zaXRpb24tYWxsICR7XG4gICAgICAgICAgICAgIGlzQWN0aXZlXG4gICAgICAgICAgICAgICAgPyAnYmctcHJpbWFyeS01MCB0ZXh0LXByaW1hcnktNjAwIGZvbnQtc2VtaWJvbGQgc2hhZG93LXNtJ1xuICAgICAgICAgICAgICAgIDogJ3RleHQtc2xhdGUtNjAwIGhvdmVyOnRleHQtcHJpbWFyeS02MDAgaG92ZXI6Ymctc2xhdGUtNTAnXG4gICAgICAgICAgICB9YFxuICAgICAgICAgIH1cbiAgICAgICAgPlxuICAgICAgICAgIDxVc2VycyBzaXplPXsxOH0gLz5cbiAgICAgICAgICA8c3Bhbj5TdHVkZW50czwvc3Bhbj5cbiAgICAgICAgPC9OYXZMaW5rPlxuXG4gICAgICAgIDxOYXZMaW5rXG4gICAgICAgICAgdG89XCIvc3RhZmYvc2V0dGluZ3NcIlxuICAgICAgICAgIGNsYXNzTmFtZT17KHsgaXNBY3RpdmUgfSkgPT5cbiAgICAgICAgICAgIGBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMyBweC0zIHB5LTIuNSByb3VuZGVkLXhsIGZvbnQtbWVkaXVtIHRleHQtc20gdHJhbnNpdGlvbi1hbGwgJHtcbiAgICAgICAgICAgICAgaXNBY3RpdmVcbiAgICAgICAgICAgICAgICA/ICdiZy1wcmltYXJ5LTUwIHRleHQtcHJpbWFyeS02MDAgZm9udC1zZW1pYm9sZCBzaGFkb3ctc20nXG4gICAgICAgICAgICAgICAgOiAndGV4dC1zbGF0ZS02MDAgaG92ZXI6dGV4dC1wcmltYXJ5LTYwMCBob3ZlcjpiZy1zbGF0ZS01MCdcbiAgICAgICAgICAgIH1gXG4gICAgICAgICAgfVxuICAgICAgICA+XG4gICAgICAgICAgPFNldHRpbmdzIHNpemU9ezE4fSAvPlxuICAgICAgICAgIDxzcGFuPlNldHRpbmdzPC9zcGFuPlxuICAgICAgICA8L05hdkxpbms+XG5cbiAgICAgICAgPE5hdkxpbmtcbiAgICAgICAgICB0bz1cIi9zdGFmZi9wbGFuc1wiXG4gICAgICAgICAgY2xhc3NOYW1lPXsoeyBpc0FjdGl2ZSB9KSA9PlxuICAgICAgICAgICAgYGZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHB4LTMgcHktMi41IHJvdW5kZWQteGwgZm9udC1tZWRpdW0gdGV4dC1zbSB0cmFuc2l0aW9uLWFsbCAke1xuICAgICAgICAgICAgICBpc0FjdGl2ZVxuICAgICAgICAgICAgICAgID8gJ2JnLXByaW1hcnktNTAgdGV4dC1wcmltYXJ5LTYwMCBmb250LXNlbWlib2xkIHNoYWRvdy1zbSdcbiAgICAgICAgICAgICAgICA6ICd0ZXh0LXNsYXRlLTYwMCBob3Zlcjp0ZXh0LXByaW1hcnktNjAwIGhvdmVyOmJnLXNsYXRlLTUwJ1xuICAgICAgICAgICAgfWBcbiAgICAgICAgICB9XG4gICAgICAgID5cbiAgICAgICAgICA8Q3JlZGl0Q2FyZCBzaXplPXsxOH0gLz5cbiAgICAgICAgICA8c3Bhbj5QYXltZW50cyAmIFBsYW5zPC9zcGFuPlxuICAgICAgICA8L05hdkxpbms+XG5cbiAgICAgICAgPE5hdkxpbmtcbiAgICAgICAgICB0bz1cIi9zdGFmZi9jdXN0b21pemVcIlxuICAgICAgICAgIGNsYXNzTmFtZT17KHsgaXNBY3RpdmUgfSkgPT5cbiAgICAgICAgICAgIGBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMyBweC0zIHB5LTIuNSByb3VuZGVkLXhsIGZvbnQtbWVkaXVtIHRleHQtc20gdHJhbnNpdGlvbi1hbGwgJHtcbiAgICAgICAgICAgICAgaXNBY3RpdmVcbiAgICAgICAgICAgICAgICA/ICdiZy1wcmltYXJ5LTUwIHRleHQtcHJpbWFyeS02MDAgZm9udC1zZW1pYm9sZCBzaGFkb3ctc20nXG4gICAgICAgICAgICAgICAgOiAndGV4dC1zbGF0ZS02MDAgaG92ZXI6dGV4dC1wcmltYXJ5LTYwMCBob3ZlcjpiZy1zbGF0ZS01MCdcbiAgICAgICAgICAgIH1gXG4gICAgICAgICAgfVxuICAgICAgICA+XG4gICAgICAgICAgPFBhbGV0dGUgc2l6ZT17MTh9IC8+XG4gICAgICAgICAgPHNwYW4+Q3VzdG9taXplIFNpdGU8L3NwYW4+XG4gICAgICAgIDwvTmF2TGluaz5cblxuICAgICAgICA8TmF2TGlua1xuICAgICAgICAgIHRvPVwiL3N0YWZmL2RlbW8tdmlkZW9zXCJcbiAgICAgICAgICBjbGFzc05hbWU9eyh7IGlzQWN0aXZlIH0pID0+XG4gICAgICAgICAgICBgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgcHgtMyBweS0yLjUgcm91bmRlZC14bCBmb250LW1lZGl1bSB0ZXh0LXNtIHRyYW5zaXRpb24tYWxsICR7XG4gICAgICAgICAgICAgIGlzQWN0aXZlXG4gICAgICAgICAgICAgICAgPyAnYmctcHJpbWFyeS01MCB0ZXh0LXByaW1hcnktNjAwIGZvbnQtc2VtaWJvbGQgc2hhZG93LXNtJ1xuICAgICAgICAgICAgICAgIDogJ3RleHQtc2xhdGUtNjAwIGhvdmVyOnRleHQtcHJpbWFyeS02MDAgaG92ZXI6Ymctc2xhdGUtNTAnXG4gICAgICAgICAgICB9YFxuICAgICAgICAgIH1cbiAgICAgICAgPlxuICAgICAgICAgIDxQbGF5Q2lyY2xlIHNpemU9ezE4fSAvPlxuICAgICAgICAgIDxzcGFuPkRlbW8gVmlkZW9zPC9zcGFuPlxuICAgICAgICA8L05hdkxpbms+XG5cbiAgICAgICAgey8qIEluc3RpdHV0aW9uIE1hbmFnZW1lbnQgQWNjb3JkaW9uICovfVxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInB0LTJcIj5cbiAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRJc01hbmFnZW1lbnRPcGVuKCFpc01hbmFnZW1lbnRPcGVuKX1cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcHgtMyBweS0yIHRleHQteHMgZm9udC1ib2xkIHVwcGVyY2FzZSB0cmFja2luZy13aWRlciB0ZXh0LXNsYXRlLTQwMCBob3Zlcjp0ZXh0LXNsYXRlLTYwMFwiXG4gICAgICAgICAgPlxuICAgICAgICAgICAgPHNwYW4+SW5zdGl0dXRpb24gTWFuYWdlbWVudDwvc3Bhbj5cbiAgICAgICAgICAgIHtpc01hbmFnZW1lbnRPcGVuID8gPENoZXZyb25Eb3duIHNpemU9ezE0fSAvPiA6IDxDaGV2cm9uUmlnaHQgc2l6ZT17MTR9IC8+fVxuICAgICAgICAgIDwvYnV0dG9uPlxuXG4gICAgICAgICAge2lzTWFuYWdlbWVudE9wZW4gJiYgKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtdC0xIHNwYWNlLXktMSBwbC0yXCI+XG4gICAgICAgICAgICAgIDxOYXZMaW5rXG4gICAgICAgICAgICAgICAgdG89XCIvc3RhZmYvYmF0Y2hlc1wiXG4gICAgICAgICAgICAgICAgY2xhc3NOYW1lPXsoeyBpc0FjdGl2ZSB9KSA9PlxuICAgICAgICAgICAgICAgICAgYGZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHB4LTMgcHktMiByb3VuZGVkLXhsIHRleHQtc20gZm9udC1tZWRpdW0gdHJhbnNpdGlvbi1jb2xvcnMgJHtcbiAgICAgICAgICAgICAgICAgICAgaXNBY3RpdmVcbiAgICAgICAgICAgICAgICAgICAgICA/ICdiZy1wcmltYXJ5LTUwIHRleHQtcHJpbWFyeS02MDAgZm9udC1zZW1pYm9sZCdcbiAgICAgICAgICAgICAgICAgICAgICA6ICd0ZXh0LXNsYXRlLTYwMCBob3Zlcjp0ZXh0LXByaW1hcnktNjAwIGhvdmVyOmJnLXNsYXRlLTUwJ1xuICAgICAgICAgICAgICAgICAgfWBcbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICA8TGF5ZXJzIHNpemU9ezE2fSAvPlxuICAgICAgICAgICAgICAgIDxzcGFuPkJhdGNoZXM8L3NwYW4+XG4gICAgICAgICAgICAgIDwvTmF2TGluaz5cblxuICAgICAgICAgICAgICA8TmF2TGlua1xuICAgICAgICAgICAgICAgIHRvPVwiL3N0YWZmL2ZhY3VsdHlcIlxuICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17KHsgaXNBY3RpdmUgfSkgPT5cbiAgICAgICAgICAgICAgICAgIGBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMyBweC0zIHB5LTIgcm91bmRlZC14bCB0ZXh0LXNtIGZvbnQtbWVkaXVtIHRyYW5zaXRpb24tY29sb3JzICR7XG4gICAgICAgICAgICAgICAgICAgIGlzQWN0aXZlXG4gICAgICAgICAgICAgICAgICAgICAgPyAnYmctcHJpbWFyeS01MCB0ZXh0LXByaW1hcnktNjAwIGZvbnQtc2VtaWJvbGQnXG4gICAgICAgICAgICAgICAgICAgICAgOiAndGV4dC1zbGF0ZS02MDAgaG92ZXI6dGV4dC1wcmltYXJ5LTYwMCBob3ZlcjpiZy1zbGF0ZS01MCdcbiAgICAgICAgICAgICAgICAgIH1gXG4gICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgPFVzZXJDaGVjayBzaXplPXsxNn0gLz5cbiAgICAgICAgICAgICAgICA8c3Bhbj5GYWN1bHR5PC9zcGFuPlxuICAgICAgICAgICAgICA8L05hdkxpbms+XG5cbiAgICAgICAgICAgICAgPE5hdkxpbmtcbiAgICAgICAgICAgICAgICB0bz1cIi9zdGFmZi9jZW50ZXJzXCJcbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9eyh7IGlzQWN0aXZlIH0pID0+XG4gICAgICAgICAgICAgICAgICBgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgcHgtMyBweS0yIHJvdW5kZWQteGwgdGV4dC1zbSBmb250LW1lZGl1bSB0cmFuc2l0aW9uLWNvbG9ycyAke1xuICAgICAgICAgICAgICAgICAgICBpc0FjdGl2ZVxuICAgICAgICAgICAgICAgICAgICAgID8gJ2JnLXByaW1hcnktNTAgdGV4dC1wcmltYXJ5LTYwMCBmb250LXNlbWlib2xkJ1xuICAgICAgICAgICAgICAgICAgICAgIDogJ3RleHQtc2xhdGUtNjAwIGhvdmVyOnRleHQtcHJpbWFyeS02MDAgaG92ZXI6Ymctc2xhdGUtNTAnXG4gICAgICAgICAgICAgICAgICB9YFxuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgIDxCdWlsZGluZzIgc2l6ZT17MTZ9IC8+XG4gICAgICAgICAgICAgICAgPHNwYW4+Q2VudHJlczwvc3Bhbj5cbiAgICAgICAgICAgICAgPC9OYXZMaW5rPlxuXG4gICAgICAgICAgICAgIDxOYXZMaW5rXG4gICAgICAgICAgICAgICAgdG89XCIvc3RhZmYvbm90aWNlc1wiXG4gICAgICAgICAgICAgICAgY2xhc3NOYW1lPXsoeyBpc0FjdGl2ZSB9KSA9PlxuICAgICAgICAgICAgICAgICAgYGZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHB4LTMgcHktMiByb3VuZGVkLXhsIHRleHQtc20gZm9udC1tZWRpdW0gdHJhbnNpdGlvbi1jb2xvcnMgJHtcbiAgICAgICAgICAgICAgICAgICAgaXNBY3RpdmVcbiAgICAgICAgICAgICAgICAgICAgICA/ICdiZy1wcmltYXJ5LTUwIHRleHQtcHJpbWFyeS02MDAgZm9udC1zZW1pYm9sZCdcbiAgICAgICAgICAgICAgICAgICAgICA6ICd0ZXh0LXNsYXRlLTYwMCBob3Zlcjp0ZXh0LXByaW1hcnktNjAwIGhvdmVyOmJnLXNsYXRlLTUwJ1xuICAgICAgICAgICAgICAgICAgfWBcbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICA8QmVsbCBzaXplPXsxNn0gLz5cbiAgICAgICAgICAgICAgICA8c3Bhbj5Ob3RpY2VzPC9zcGFuPlxuICAgICAgICAgICAgICA8L05hdkxpbms+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApfVxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvbmF2PlxuXG4gICAgICB7LyogQm90dG9tIFVwZ3JhZGUgQ1RBICovfVxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTMgYm9yZGVyLXQgYm9yZGVyLXNsYXRlLTIwMFwiPlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLWdyYWRpZW50LXRvLWJyIGZyb20tYW1iZXItNTAgdG8tYW1iZXItMTAwLzYwIGJvcmRlciBib3JkZXItYW1iZXItMjAwIHJvdW5kZWQtMnhsIHAtM1wiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgdGV4dC1hbWJlci04MDAgZm9udC1zZW1pYm9sZCB0ZXh0LXhzXCI+XG4gICAgICAgICAgICA8U3RhciBzaXplPXsxNn0gY2xhc3NOYW1lPVwidGV4dC1hbWJlci01MDAgZmlsbC1hbWJlci01MDBcIiAvPlxuICAgICAgICAgICAgPHNwYW4+RVpFeGFtIERlZGljYXRlZDwvc3Bhbj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LVsxMXB4XSB0ZXh0LWFtYmVyLTcwMCBtdC0xIGxlYWRpbmctc251Z1wiPlxuICAgICAgICAgICAgU3VwcG9ydCBmb3IgNTAwKyBjb25jdXJyZW50IGxpdmUgY2FuZGlkYXRlcyBhbmQgZGVkaWNhdGVkIGRhdGFiYXNlLlxuICAgICAgICAgIDwvcD5cbiAgICAgICAgICA8YnV0dG9uIGNsYXNzTmFtZT1cIm10LTIuNSB3LWZ1bGwgYmctYWNjZW50LWdvbGQgaG92ZXI6YmctWyNlNjliMTRdIHRleHQtd2hpdGUgcHktMS41IHB4LTMgcm91bmRlZC14bCB0ZXh0LXhzIGZvbnQtYm9sZCB0cmFuc2l0aW9uLWNvbG9ycyBzaGFkb3ctc21cIj5cbiAgICAgICAgICAgIFVwZ3JhZGUgUGxhblxuICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvZGl2PlxuICAgIDwvYXNpZGU+XG4gICk7XG59O1xuXG5leHBvcnQgZGVmYXVsdCBTaWRlYmFyO1xuIl0sImZpbGUiOiIvVXNlcnMvYXVydHgvdGVhbXdvcmtfcHJvamVjdHMvZXpleGFtX3JlY29uc3RydWN0aW9uL2Zyb250ZW5kL3NyYy9jb21wb25lbnRzL2xheW91dC9TaWRlYmFyLnRzeCJ9Ë¿™‡@=      kêGkêGJ/<≤       ^    O^partitionKey=%28http%2C127.0.0.1%29,:http://127.0.0.1:5173/src/components/layout/Sidebar.tsx strongly-framed 1 request-method GET response-head HTTP/1.1 200 OK
+Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"5c75-nlFlE9FMB9MqjK9R5l1XiJZGZ28"
+Date: Wed, 25 Nov 2026 07:37:43 GMT
+Content-Length: 43416
+ original-response-headers Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"5c75-nlFlE9FMB9MqjK9R5l1XiJZGZ28"
+Date: Wed, 25 Nov 2026 07:37:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Content-Length: 43416
+ ctid 2 net-response-time-onstart 24 net-response-time-onstop 25      ©ò

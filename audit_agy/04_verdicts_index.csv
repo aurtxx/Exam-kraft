@@ -1,0 +1,37 @@
+ID,Codex_Severity,Agy_Verdict,Agy_Severity,Severity_Agreement,Effort,Fix_Risk,Needs_Dynamic_Check
+CX-001,Critical,VALID,Critical,Yes,S,Low,No
+CX-002,Critical,VALID,Critical,Yes,S,Low,No
+CX-003,High,VALID,High,Yes,M,Low,No
+CX-004,High,VALID,High,Yes,S,Low,Yes
+CX-005,High,VALID,High,Yes,S,Low,Yes
+CX-006,High,VALID-ADJUSTED,Medium,No,S,Low,No
+CX-007,High,VALID,High,Yes,S,Low,No
+CX-008,High,VALID,High,Yes,M,Medium,No
+CX-009,High,VALID-ADJUSTED,Medium,No,S,Low,No
+CX-010,High,VALID,High,Yes,S,Low,Yes
+CX-011,High,VALID,High,Yes,M,Low,No
+CX-012,Medium,VALID,Medium,Yes,S,Low,No
+CX-013,Medium,VALID,Medium,Yes,S,Low,No
+CX-014,Medium,VALID,Medium,Yes,S,Low,No
+CX-015,Medium,VALID,Medium,Yes,S,Low,No
+CX-016,Medium,VALID,Medium,Yes,S,Low,No
+CX-017,Medium,BY DESIGN - RISKY,Low,No,M,Medium,No
+CX-018,Medium,VALID,Medium,Yes,S,Low,Yes
+CX-019,Medium,VALID,Medium,Yes,S,Low,Yes
+CX-020,Medium,BY DESIGN - RISKY,Low,No,S,Low,No
+CX-021,Medium,VALID,Medium,Yes,S,Low,No
+CX-022,Medium,VALID,Medium,Yes,M,Low,No
+CX-023,Low,VALID,Low,Yes,S,Low,No
+CX-024,Low,VALID,Low,Yes,S,Low,No
+CX-025,Low,VALID-ADJUSTED,Info,No,S,None,No
+CX-026,Low,VALID,Low,Yes,S,Low,No
+CX-027,Info,ALREADY HANDLED,None,No,S,None,No
+CX-028,Info,VALID-ADJUSTED,Info,Yes,S,Low,No
+AGY-001,High,VALID,High,Yes,S,Low,No
+AGY-002,Medium,VALID,Medium,Yes,S,Low,No
+AGY-003,Medium,VALID,Medium,Yes,S,Low,No
+AGY-004,Medium,VALID,Medium,Yes,S,Low,No
+AGY-005,Low,VALID,Low,Yes,S,Low,No
+AGY-006,Low,VALID,Low,Yes,S,Low,No
+AGY-007,Low,VALID,Low,Yes,S,Low,No
+AGY-008,Low,VALID,Low,Yes,S,Low,No

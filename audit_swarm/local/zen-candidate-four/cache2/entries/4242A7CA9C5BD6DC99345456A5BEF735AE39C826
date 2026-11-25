@@ -1,0 +1,394 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/App.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=314a0332"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import { BrowserRouter, Routes, Route, Navigate } from "/node_modules/.vite/deps/react-router-dom.js?v=314a0332";
+import { AuthProvider } from "/src/context/AuthContext.tsx";
+import ProtectedRoutes, { RoleHome } from "/src/components/layout/ProtectedRoutes.tsx";
+import CandidatePortal from "/src/pages/student/CandidatePortal.tsx";
+import Shell from "/src/components/layout/Shell.tsx";
+import Login from "/src/pages/Login.tsx";
+import StaffDashboard from "/src/pages/StaffDashboard.tsx";
+import BatchesPage from "/src/pages/staff/BatchesPage.tsx";
+import CentersPage from "/src/pages/staff/CentersPage.tsx";
+import FacultyPage from "/src/pages/staff/FacultyPage.tsx";
+import StudentsPage from "/src/pages/staff/StudentsPage.tsx";
+import QuestionBankPage from "/src/pages/staff/QuestionBankPage.tsx";
+import ExaminationsPage from "/src/pages/staff/ExaminationsPage.tsx";
+import NoticesPage from "/src/pages/staff/NoticesPage.tsx";
+import ExamLobbyPage from "/src/pages/student/ExamLobbyPage.tsx";
+import ExamCBTPage from "/src/pages/student/ExamCBTPage.tsx";
+import ExamFinishPage from "/src/pages/student/ExamFinishPage.tsx";
+import ExamResultReportPage from "/src/pages/student/ExamResultReportPage.tsx";
+import BatchAnalyticsPage from "/src/pages/staff/BatchAnalyticsPage.tsx";
+import NotFound from "/src/pages/NotFound.tsx";
+export const App = () => {
+  return /* @__PURE__ */ jsxDEV(BrowserRouter, { children: /* @__PURE__ */ jsxDEV(AuthProvider, { children: /* @__PURE__ */ jsxDEV(Routes, { children: [
+    /* @__PURE__ */ jsxDEV(Route, { path: "/login", element: /* @__PURE__ */ jsxDEV(Login, {}, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 47,
+      columnNumber: 41
+    }, this) }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 47,
+      columnNumber: 11
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { path: "/", element: /* @__PURE__ */ jsxDEV(RoleHome, {}, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 48,
+      columnNumber: 36
+    }, this) }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 48,
+      columnNumber: 11
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { element: /* @__PURE__ */ jsxDEV(ProtectedRoutes, { student: true }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 51,
+      columnNumber: 27
+    }, this), children: [
+      /* @__PURE__ */ jsxDEV(Route, { path: "/student", element: /* @__PURE__ */ jsxDEV(CandidatePortal, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 52,
+        columnNumber: 45
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 52,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/student/exam/:id/lobby", element: /* @__PURE__ */ jsxDEV(ExamLobbyPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 53,
+        columnNumber: 60
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 53,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/student/exam/:id/test", element: /* @__PURE__ */ jsxDEV(ExamCBTPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 54,
+        columnNumber: 59
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 54,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/student/exam/:id/finish", element: /* @__PURE__ */ jsxDEV(ExamFinishPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 55,
+        columnNumber: 61
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 55,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/student/exam/:id/report", element: /* @__PURE__ */ jsxDEV(ExamResultReportPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 56,
+        columnNumber: 61
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 56,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/student/exam/:id/results", element: /* @__PURE__ */ jsxDEV(ExamResultReportPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 57,
+        columnNumber: 62
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 57,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/student/attempts/:id/report", element: /* @__PURE__ */ jsxDEV(ExamResultReportPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 58,
+        columnNumber: 65
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 58,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/student/results/:id", element: /* @__PURE__ */ jsxDEV(ExamResultReportPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 59,
+        columnNumber: 57
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 59,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/online-exams/:id", element: /* @__PURE__ */ jsxDEV(ExamLobbyPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 60,
+        columnNumber: 54
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 60,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/online-exams/:id/test", element: /* @__PURE__ */ jsxDEV(ExamCBTPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 61,
+        columnNumber: 59
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 61,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 51,
+      columnNumber: 11
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { element: /* @__PURE__ */ jsxDEV(ProtectedRoutes, {}, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 64,
+      columnNumber: 27
+    }, this), children: /* @__PURE__ */ jsxDEV(Route, { element: /* @__PURE__ */ jsxDEV(Shell, {}, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 65,
+      columnNumber: 29
+    }, this), children: [
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff", element: /* @__PURE__ */ jsxDEV(Navigate, { to: "/staff/exams", replace: true }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 66,
+        columnNumber: 45
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 66,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/exams", element: /* @__PURE__ */ jsxDEV(ExaminationsPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 67,
+        columnNumber: 51
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 67,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/examinations", element: /* @__PURE__ */ jsxDEV(ExaminationsPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 68,
+        columnNumber: 58
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 68,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/exams/:id/analytics", element: /* @__PURE__ */ jsxDEV(BatchAnalyticsPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 69,
+        columnNumber: 65
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 69,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/examinations/:id/analytics", element: /* @__PURE__ */ jsxDEV(BatchAnalyticsPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 70,
+        columnNumber: 72
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 70,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/analytics/:id", element: /* @__PURE__ */ jsxDEV(BatchAnalyticsPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 71,
+        columnNumber: 59
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 71,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/reports", element: /* @__PURE__ */ jsxDEV(ExaminationsPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 72,
+        columnNumber: 53
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 72,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/question-bank", element: /* @__PURE__ */ jsxDEV(QuestionBankPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 73,
+        columnNumber: 59
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 73,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/students", element: /* @__PURE__ */ jsxDEV(StudentsPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 74,
+        columnNumber: 54
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 74,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/batches", element: /* @__PURE__ */ jsxDEV(BatchesPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 75,
+        columnNumber: 53
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 75,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/centers", element: /* @__PURE__ */ jsxDEV(CentersPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 76,
+        columnNumber: 53
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 76,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/faculty", element: /* @__PURE__ */ jsxDEV(FacultyPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 77,
+        columnNumber: 53
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 77,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/notices", element: /* @__PURE__ */ jsxDEV(NoticesPage, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 78,
+        columnNumber: 53
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 78,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/settings", element: /* @__PURE__ */ jsxDEV(StaffDashboard, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 79,
+        columnNumber: 54
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 79,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/plans", element: /* @__PURE__ */ jsxDEV(StaffDashboard, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 80,
+        columnNumber: 51
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 80,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/customize", element: /* @__PURE__ */ jsxDEV(StaffDashboard, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 81,
+        columnNumber: 55
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 81,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/demo-videos", element: /* @__PURE__ */ jsxDEV(StaffDashboard, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 82,
+        columnNumber: 57
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 82,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/staff/*", element: /* @__PURE__ */ jsxDEV(NotFound, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 83,
+        columnNumber: 47
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+        lineNumber: 83,
+        columnNumber: 15
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 65,
+      columnNumber: 13
+    }, this) }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 64,
+      columnNumber: 11
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { path: "*", element: /* @__PURE__ */ jsxDEV(NotFound, {}, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 86,
+      columnNumber: 36
+    }, this) }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+      lineNumber: 86,
+      columnNumber: 11
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+    lineNumber: 46,
+    columnNumber: 9
+  }, this) }, void 0, false, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+    lineNumber: 45,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx",
+    lineNumber: 44,
+    columnNumber: 5
+  }, this);
+};
+_c = App;
+export default App;
+var _c;
+$RefreshReg$(_c, "App");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/App.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFLLGdCQUFlLFNBQVMsdUJBQUMsb0JBQUQ7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUFlLEtBQW5EO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBdUQ7QUFBQSxNQUN2RCx1QkFBQyxTQUFNLE1BQUssb0JBQW1CLFNBQVMsdUJBQUMsb0JBQUQ7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUFlLEtBQXZEO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBMkQ7QUFBQSxNQUMzRCx1QkFBQyxTQUFNLE1BQUssc0JBQXFCLFNBQVMsdUJBQUMsb0JBQUQ7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUFlLEtBQXpEO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBNkQ7QUFBQSxNQUM3RCx1QkFBQyxTQUFNLE1BQUssWUFBVyxTQUFTLHVCQUFDLGNBQUQ7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUFTLEtBQXpDO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBNkM7QUFBQSxTQWxCL0M7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQW1CQSxLQXBCRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBcUJBO0FBQUEsSUFDQSx1QkFBQyxTQUFNLE1BQUssS0FBSSxTQUFTLHVCQUFDLGNBQUQ7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQUFTLEtBQWxDO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FBc0M7QUFBQSxPQXhDeEM7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQXlDQSxLQTFDRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBMkNBLEtBNUNGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0E2Q0E7QUFFSjtBQUFFQyxLQWpEV0Q7QUFtRGIsZUFBZUE7QUFBSSxJQUFBQztBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJCcm93c2VyUm91dGVyIiwiUm91dGVzIiwiUm91dGUiLCJOYXZpZ2F0ZSIsIkF1dGhQcm92aWRlciIsIlByb3RlY3RlZFJvdXRlcyIsIlJvbGVIb21lIiwiQ2FuZGlkYXRlUG9ydGFsIiwiU2hlbGwiLCJMb2dpbiIsIlN0YWZmRGFzaGJvYXJkIiwiQmF0Y2hlc1BhZ2UiLCJDZW50ZXJzUGFnZSIsIkZhY3VsdHlQYWdlIiwiU3R1ZGVudHNQYWdlIiwiUXVlc3Rpb25CYW5rUGFnZSIsIkV4YW1pbmF0aW9uc1BhZ2UiLCJOb3RpY2VzUGFnZSIsIkV4YW1Mb2JieVBhZ2UiLCJFeGFtQ0JUUGFnZSIsIkV4YW1GaW5pc2hQYWdlIiwiRXhhbVJlc3VsdFJlcG9ydFBhZ2UiLCJCYXRjaEFuYWx5dGljc1BhZ2UiLCJOb3RGb3VuZCIsIkFwcCIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIkFwcC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0IGZyb20gJ3JlYWN0JztcbmltcG9ydCB7IEJyb3dzZXJSb3V0ZXIsIFJvdXRlcywgUm91dGUsIE5hdmlnYXRlIH0gZnJvbSAncmVhY3Qtcm91dGVyLWRvbSc7XG5pbXBvcnQgeyBBdXRoUHJvdmlkZXIgfSBmcm9tICcuL2NvbnRleHQvQXV0aENvbnRleHQnO1xuaW1wb3J0IFByb3RlY3RlZFJvdXRlcywgeyBSb2xlSG9tZSB9IGZyb20gJy4vY29tcG9uZW50cy9sYXlvdXQvUHJvdGVjdGVkUm91dGVzJztcbmltcG9ydCBDYW5kaWRhdGVQb3J0YWwgZnJvbSAnLi9wYWdlcy9zdHVkZW50L0NhbmRpZGF0ZVBvcnRhbCc7XG5pbXBvcnQgU2hlbGwgZnJvbSAnLi9jb21wb25lbnRzL2xheW91dC9TaGVsbCc7XG5pbXBvcnQgTG9naW4gZnJvbSAnLi9wYWdlcy9Mb2dpbic7XG5pbXBvcnQgU3RhZmZEYXNoYm9hcmQgZnJvbSAnLi9wYWdlcy9TdGFmZkRhc2hib2FyZCc7XG5pbXBvcnQgQmF0Y2hlc1BhZ2UgZnJvbSAnLi9wYWdlcy9zdGFmZi9CYXRjaGVzUGFnZSc7XG5pbXBvcnQgQ2VudGVyc1BhZ2UgZnJvbSAnLi9wYWdlcy9zdGFmZi9DZW50ZXJzUGFnZSc7XG5pbXBvcnQgRmFjdWx0eVBhZ2UgZnJvbSAnLi9wYWdlcy9zdGFmZi9GYWN1bHR5UGFnZSc7XG5pbXBvcnQgU3R1ZGVudHNQYWdlIGZyb20gJy4vcGFnZXMvc3RhZmYvU3R1ZGVudHNQYWdlJztcbmltcG9ydCBRdWVzdGlvbkJhbmtQYWdlIGZyb20gJy4vcGFnZXMvc3RhZmYvUXVlc3Rpb25CYW5rUGFnZSc7XG5pbXBvcnQgRXhhbWluYXRpb25zUGFnZSBmcm9tICcuL3BhZ2VzL3N0YWZmL0V4YW1pbmF0aW9uc1BhZ2UnO1xuaW1wb3J0IE5vdGljZXNQYWdlIGZyb20gJy4vcGFnZXMvc3RhZmYvTm90aWNlc1BhZ2UnO1xuaW1wb3J0IEV4YW1Mb2JieVBhZ2UgZnJvbSAnLi9wYWdlcy9zdHVkZW50L0V4YW1Mb2JieVBhZ2UnO1xuaW1wb3J0IEV4YW1DQlRQYWdlIGZyb20gJy4vcGFnZXMvc3R1ZGVudC9FeGFtQ0JUUGFnZSc7XG5pbXBvcnQgRXhhbUZpbmlzaFBhZ2UgZnJvbSAnLi9wYWdlcy9zdHVkZW50L0V4YW1GaW5pc2hQYWdlJztcbmltcG9ydCBFeGFtUmVzdWx0UmVwb3J0UGFnZSBmcm9tICcuL3BhZ2VzL3N0dWRlbnQvRXhhbVJlc3VsdFJlcG9ydFBhZ2UnO1xuaW1wb3J0IEJhdGNoQW5hbHl0aWNzUGFnZSBmcm9tICcuL3BhZ2VzL3N0YWZmL0JhdGNoQW5hbHl0aWNzUGFnZSc7XG5pbXBvcnQgTm90Rm91bmQgZnJvbSAnLi9wYWdlcy9Ob3RGb3VuZCc7XG5cbmV4cG9ydCBjb25zdCBBcHA6IFJlYWN0LkZDID0gKCkgPT4ge1xuICByZXR1cm4gKFxuICAgIDxCcm93c2VyUm91dGVyPlxuICAgICAgPEF1dGhQcm92aWRlcj5cbiAgICAgICAgPFJvdXRlcz5cbiAgICAgICAgICA8Um91dGUgcGF0aD1cIi9sb2dpblwiIGVsZW1lbnQ9ezxMb2dpbiAvPn0gLz5cbiAgICAgICAgICA8Um91dGUgcGF0aD1cIi9cIiBlbGVtZW50PXs8Um9sZUhvbWUgLz59IC8+XG5cbiAgICAgICAgICB7LyogU3R1ZGVudCBDQlQgRXhhbWluYXRpb24gRW5naW5lIFJvdXRlcyAqL31cbiAgICAgICAgICA8Um91dGUgZWxlbWVudD17PFByb3RlY3RlZFJvdXRlcyBzdHVkZW50IC8+fT5cbiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3N0dWRlbnRcIiBlbGVtZW50PXs8Q2FuZGlkYXRlUG9ydGFsIC8+fSAvPlxuICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3R1ZGVudC9leGFtLzppZC9sb2JieVwiIGVsZW1lbnQ9ezxFeGFtTG9iYnlQYWdlIC8+fSAvPlxuICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3R1ZGVudC9leGFtLzppZC90ZXN0XCIgZWxlbWVudD17PEV4YW1DQlRQYWdlIC8+fSAvPlxuICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3R1ZGVudC9leGFtLzppZC9maW5pc2hcIiBlbGVtZW50PXs8RXhhbUZpbmlzaFBhZ2UgLz59IC8+XG4gICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9zdHVkZW50L2V4YW0vOmlkL3JlcG9ydFwiIGVsZW1lbnQ9ezxFeGFtUmVzdWx0UmVwb3J0UGFnZSAvPn0gLz5cbiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3N0dWRlbnQvZXhhbS86aWQvcmVzdWx0c1wiIGVsZW1lbnQ9ezxFeGFtUmVzdWx0UmVwb3J0UGFnZSAvPn0gLz5cbiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3N0dWRlbnQvYXR0ZW1wdHMvOmlkL3JlcG9ydFwiIGVsZW1lbnQ9ezxFeGFtUmVzdWx0UmVwb3J0UGFnZSAvPn0gLz5cbiAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3N0dWRlbnQvcmVzdWx0cy86aWRcIiBlbGVtZW50PXs8RXhhbVJlc3VsdFJlcG9ydFBhZ2UgLz59IC8+XG4gICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9vbmxpbmUtZXhhbXMvOmlkXCIgZWxlbWVudD17PEV4YW1Mb2JieVBhZ2UgLz59IC8+XG4gICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9vbmxpbmUtZXhhbXMvOmlkL3Rlc3RcIiBlbGVtZW50PXs8RXhhbUNCVFBhZ2UgLz59IC8+XG4gICAgICAgICAgPC9Sb3V0ZT5cblxuICAgICAgICAgIDxSb3V0ZSBlbGVtZW50PXs8UHJvdGVjdGVkUm91dGVzIC8+fT5cbiAgICAgICAgICAgIDxSb3V0ZSBlbGVtZW50PXs8U2hlbGwgLz59PlxuICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9zdGFmZlwiIGVsZW1lbnQ9ezxOYXZpZ2F0ZSB0bz1cIi9zdGFmZi9leGFtc1wiIHJlcGxhY2UgLz59IC8+XG4gICAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3N0YWZmL2V4YW1zXCIgZWxlbWVudD17PEV4YW1pbmF0aW9uc1BhZ2UgLz59IC8+XG4gICAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3N0YWZmL2V4YW1pbmF0aW9uc1wiIGVsZW1lbnQ9ezxFeGFtaW5hdGlvbnNQYWdlIC8+fSAvPlxuICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9zdGFmZi9leGFtcy86aWQvYW5hbHl0aWNzXCIgZWxlbWVudD17PEJhdGNoQW5hbHl0aWNzUGFnZSAvPn0gLz5cbiAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3RhZmYvZXhhbWluYXRpb25zLzppZC9hbmFseXRpY3NcIiBlbGVtZW50PXs8QmF0Y2hBbmFseXRpY3NQYWdlIC8+fSAvPlxuICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9zdGFmZi9hbmFseXRpY3MvOmlkXCIgZWxlbWVudD17PEJhdGNoQW5hbHl0aWNzUGFnZSAvPn0gLz5cbiAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3RhZmYvcmVwb3J0c1wiIGVsZW1lbnQ9ezxFeGFtaW5hdGlvbnNQYWdlIC8+fSAvPlxuICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9zdGFmZi9xdWVzdGlvbi1iYW5rXCIgZWxlbWVudD17PFF1ZXN0aW9uQmFua1BhZ2UgLz59IC8+XG4gICAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3N0YWZmL3N0dWRlbnRzXCIgZWxlbWVudD17PFN0dWRlbnRzUGFnZSAvPn0gLz5cbiAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3RhZmYvYmF0Y2hlc1wiIGVsZW1lbnQ9ezxCYXRjaGVzUGFnZSAvPn0gLz5cbiAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3RhZmYvY2VudGVyc1wiIGVsZW1lbnQ9ezxDZW50ZXJzUGFnZSAvPn0gLz5cbiAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3RhZmYvZmFjdWx0eVwiIGVsZW1lbnQ9ezxGYWN1bHR5UGFnZSAvPn0gLz5cbiAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3RhZmYvbm90aWNlc1wiIGVsZW1lbnQ9ezxOb3RpY2VzUGFnZSAvPn0gLz5cbiAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3RhZmYvc2V0dGluZ3NcIiBlbGVtZW50PXs8U3RhZmZEYXNoYm9hcmQgLz59IC8+XG4gICAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3N0YWZmL3BsYW5zXCIgZWxlbWVudD17PFN0YWZmRGFzaGJvYXJkIC8+fSAvPlxuICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9zdGFmZi9jdXN0b21pemVcIiBlbGVtZW50PXs8U3RhZmZEYXNoYm9hcmQgLz59IC8+XG4gICAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3N0YWZmL2RlbW8tdmlkZW9zXCIgZWxlbWVudD17PFN0YWZmRGFzaGJvYXJkIC8+fSAvPlxuICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9zdGFmZi8qXCIgZWxlbWVudD17PE5vdEZvdW5kIC8+fSAvPlxuICAgICAgICAgICAgPC9Sb3V0ZT5cbiAgICAgICAgICA8L1JvdXRlPlxuICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiKlwiIGVsZW1lbnQ9ezxOb3RGb3VuZCAvPn0gLz5cbiAgICAgICAgPC9Sb3V0ZXM+XG4gICAgICA8L0F1dGhQcm92aWRlcj5cbiAgICA8L0Jyb3dzZXJSb3V0ZXI+XG4gICk7XG59O1xuXG5leHBvcnQgZGVmYXVsdCBBcHA7XG4iXSwiZmlsZSI6Ii9Vc2Vycy9hdXJ0eC90ZWFtd29ya19wcm9qZWN0cy9lemV4YW1fcmVjb25zdHJ1Y3Rpb24vZnJvbnRlbmQvc3JjL0FwcC50c3gifQ==I^u„–      kêdkêdJ/<«       H    O^partitionKey=%28http%2C127.0.0.1%29,:http://127.0.0.1:5173/src/App.tsx strongly-framed 1 request-method GET response-head HTTP/1.1 200 OK
+Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"4d0c-kYBtTy81uLdU6DOQZ/+poS3RCRI"
+Date: Wed, 25 Nov 2026 07:38:12 GMT
+Content-Length: 31803
+ original-response-headers Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"4d0c-kYBtTy81uLdU6DOQZ/+poS3RCRI"
+Date: Wed, 25 Nov 2026 07:38:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Content-Length: 31803
+ ctid 2 net-response-time-onstart 9 net-response-time-onstop 9      |;

@@ -1,0 +1,21 @@
+{
+  "organization": "exam-kraft-swarm",
+  "batches": {
+    "11-PCM": "f9b4c378-e97e-46a5-a690-6a075b2c1cb9",
+    "11-PCB": "f376dd9b-5475-49c2-a22d-d89b5a78f7fd",
+    "12-PCM": "fd336918-fa44-4101-8708-5f31cb35cae2",
+    "12-PCB": "3c4de5ef-d33d-4cbc-88a9-e6f29edf8ef1"
+  },
+  "papers": {
+    "11-PCM": "27a0eefb-1cd2-4683-85a8-58fbd129ac19",
+    "11-PCB": "6c6cfdf8-7a5d-4d6a-b307-5656f9327936",
+    "12-PCM": "909166db-6992-4030-8f58-42859da7ef50",
+    "12-PCB": "06b02c04-6886-4edc-a502-13d83a010e9a"
+  },
+  "exams": {
+    "11-PCM": "66eb7feb-e4bd-42f4-b866-5eb94ab71b2c",
+    "11-PCB": "cc581bfc-bc3b-48df-8fe4-180c26bf0e93",
+    "12-PCM": "1953bc0a-5fbd-4eae-bbbd-90ea990a6ac5",
+    "12-PCB": "c0e1827b-b4bc-4a49-b19c-b54c496eb534"
+  }
+}

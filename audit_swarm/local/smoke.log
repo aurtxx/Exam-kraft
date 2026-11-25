@@ -1,0 +1,2 @@
+PASS: seeded candidate signed in and reached a dashboard displaying exam content.
+200 http://127.0.0.1:5173/api/v1/auth/login/

@@ -1,0 +1,2 @@
+Content-Security-Policy: The page’s settings blocked the loading of a resource (connect-src) at http://127.0.0.1:5173/api/v1/auth/login/ because it violates the following directive: “default-src 'none
+Content-Security-Policy: The page’s settings blocked the loading of a resource (connect-src) at http://127.0.0.1:5173/api/v1/auth/login/ because it violates the following directive: “default-src 'none

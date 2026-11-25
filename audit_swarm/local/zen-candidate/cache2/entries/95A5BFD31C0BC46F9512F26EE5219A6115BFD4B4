@@ -1,0 +1,160 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/student/CandidatePortal.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=314a0332"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime["Fragment"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=314a0332"; const useEffect = __vite__cjsImport3_react["useEffect"]; const useState = __vite__cjsImport3_react["useState"];
+import { Link } from "/node_modules/.vite/deps/react-router-dom.js?v=314a0332";
+import { useAuth } from "/src/context/AuthContext.tsx";
+import studentExamApi from "/src/services/studentExamApi.ts";
+export default function CandidatePortal() {
+  _s();
+  const { user, logout } = useAuth();
+  const [exams, setExams] = useState(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    studentExamApi.listExaminations().then(
+      (items) => {
+        if (active) setExams(items);
+      },
+      () => {
+        if (active) setFailed(true);
+      }
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+  return /* @__PURE__ */ jsxDEV("main", { className: "mx-auto max-w-3xl space-y-5 p-6", children: [
+    /* @__PURE__ */ jsxDEV("header", { className: "flex items-start justify-between gap-4", children: [
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("h1", { className: "text-2xl font-bold text-slate-900", children: "My Examinations" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+          lineNumber: 43,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-slate-600", children: user?.profile?.full_name || user?.username }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+          lineNumber: 44,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+        lineNumber: 42,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("button", { className: "text-sm font-semibold text-primary-700", onClick: () => void logout(), children: "Sign out" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+        lineNumber: 46,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+      lineNumber: 41,
+      columnNumber: 7
+    }, this),
+    failed && /* @__PURE__ */ jsxDEV("p", { role: "alert", children: "Could not load examinations. Refresh the page to try again." }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+      lineNumber: 48,
+      columnNumber: 18
+    }, this),
+    !failed && exams === null && /* @__PURE__ */ jsxDEV("p", { role: "status", children: "Loading examinations‚Ä¶" }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+      lineNumber: 49,
+      columnNumber: 37
+    }, this),
+    exams?.length === 0 && /* @__PURE__ */ jsxDEV("p", { children: "No current or upcoming examinations." }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+      lineNumber: 50,
+      columnNumber: 31
+    }, this),
+    exams?.map(
+      (exam) => /* @__PURE__ */ jsxDEV("article", { className: "rounded-xl border border-slate-200 bg-white p-5", children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "font-semibold text-slate-900", children: exam.name }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+          lineNumber: 53,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "my-2 text-sm text-slate-600", children: [
+          exam.duration_minutes,
+          " minutes",
+          exam.start_window && /* @__PURE__ */ jsxDEV(Fragment, { children: [
+            " ¬∑ Opens ",
+            new Date(exam.start_window).toLocaleString()
+          ] }, void 0, true, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+            lineNumber: 56,
+            columnNumber: 35
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+          lineNumber: 54,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV(Link, { className: "font-semibold text-primary-700", to: `/student/exam/${exam.id}/lobby`, children: "Open lobby" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+          lineNumber: 58,
+          columnNumber: 11
+        }, this)
+      ] }, exam.id, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+        lineNumber: 52,
+        columnNumber: 7
+      }, this)
+    )
+  ] }, void 0, true, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx",
+    lineNumber: 40,
+    columnNumber: 5
+  }, this);
+}
+_s(CandidatePortal, "OE7FIXYQhJglkih6APbqbh0aYP0=", false, function() {
+  return [useAuth];
+});
+_c = CandidatePortal;
+var _c;
+$RefreshReg$(_c, "CandidatePortal");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/student/CandidatePortal.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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dXNlU3RhdGUiLCJMaW5rIiwidXNlQXV0aCIsInN0dWRlbnRFeGFtQXBpIiwiQ2FuZGlkYXRlUG9ydGFsIiwiX3MiLCJ1c2VyIiwibG9nb3V0IiwiZXhhbXMiLCJzZXRFeGFtcyIsImZhaWxlZCIsInNldEZhaWxlZCIsImFjdGl2ZSIsImxpc3RFeGFtaW5hdGlvbnMiLCJ0aGVuIiwiaXRlbXMiLCJwcm9maWxlIiwiZnVsbF9uYW1lIiwidXNlcm5hbWUiLCJsZW5ndGgiLCJtYXAiLCJleGFtIiwibmFtZSIsImR1cmF0aW9uX21pbnV0ZXMiLCJzdGFydF93aW5kb3ciLCJEYXRlIiwidG9Mb2NhbGVTdHJpbmciLCJpZCIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIkNhbmRpZGF0ZVBvcnRhbC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlRWZmZWN0LCB1c2VTdGF0ZSB9IGZyb20gJ3JlYWN0JztcbmltcG9ydCB7IExpbmsgfSBmcm9tICdyZWFjdC1yb3V0ZXItZG9tJztcbmltcG9ydCB7IHVzZUF1dGggfSBmcm9tICcuLi8uLi9jb250ZXh0L0F1dGhDb250ZXh0JztcbmltcG9ydCBzdHVkZW50RXhhbUFwaSwgeyBDYW5kaWRhdGVFeGFtaW5hdGlvbiB9IGZyb20gJy4uLy4uL3NlcnZpY2VzL3N0dWRlbnRFeGFtQXBpJztcblxuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gQ2FuZGlkYXRlUG9ydGFsKCkge1xuICBjb25zdCB7IHVzZXIsIGxvZ291dCB9ID0gdXNlQXV0aCgpO1xuICBjb25zdCBbZXhhbXMsIHNldEV4YW1zXSA9IHVzZVN0YXRlPENhbmRpZGF0ZUV4YW1pbmF0aW9uW10gfCBudWxsPihudWxsKTtcbiAgY29uc3QgW2ZhaWxlZCwgc2V0RmFpbGVkXSA9IHVzZVN0YXRlKGZhbHNlKTtcblxuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIGxldCBhY3RpdmUgPSB0cnVlO1xuICAgIHN0dWRlbnRFeGFtQXBpLmxpc3RFeGFtaW5hdGlvbnMoKS50aGVuKFxuICAgICAgKGl0ZW1zKSA9PiB7IGlmIChhY3RpdmUpIHNldEV4YW1zKGl0ZW1zKTsgfSxcbiAgICAgICgpID0+IHsgaWYgKGFjdGl2ZSkgc2V0RmFpbGVkKHRydWUpOyB9LFxuICAgICk7XG4gICAgcmV0dXJuICgpID0+IHsgYWN0aXZlID0gZmFsc2U7IH07XG4gIH0sIFtdKTtcblxuICByZXR1cm4gKFxuICAgIDxtYWluIGNsYXNzTmFtZT1cIm14LWF1dG8gbWF4LXctM3hsIHNwYWNlLXktNSBwLTZcIj5cbiAgICAgIDxoZWFkZXIgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1zdGFydCBqdXN0aWZ5LWJldHdlZW4gZ2FwLTRcIj5cbiAgICAgICAgPGRpdj5cbiAgICAgICAgICA8aDEgY2xhc3NOYW1lPVwidGV4dC0yeGwgZm9udC1ib2xkIHRleHQtc2xhdGUtOTAwXCI+TXkgRXhhbWluYXRpb25zPC9oMT5cbiAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtc2xhdGUtNjAwXCI+e3VzZXI/LnByb2ZpbGU/LmZ1bGxfbmFtZSB8fCB1c2VyPy51c2VybmFtZX08L3A+XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8YnV0dG9uIGNsYXNzTmFtZT1cInRleHQtc20gZm9udC1zZW1pYm9sZCB0ZXh0LXByaW1hcnktNzAwXCIgb25DbGljaz17KCkgPT4gdm9pZCBsb2dvdXQoKX0+U2lnbiBvdXQ8L2J1dHRvbj5cbiAgICAgIDwvaGVhZGVyPlxuICAgICAge2ZhaWxlZCAmJiA8cCByb2xlPVwiYWxlcnRcIj5Db3VsZCBub3QgbG9hZCBleGFtaW5hdGlvbnMuIFJlZnJlc2ggdGhlIHBhZ2UgdG8gdHJ5IGFnYWluLjwvcD59XG4gICAgICB7IWZhaWxlZCAmJiBleGFtcyA9PT0gbnVsbCAmJiA8cCByb2xlPVwic3RhdHVzXCI+TG9hZGluZyBleGFtaW5hdGlvbnPigKY8L3A+fVxuICAgICAge2V4YW1zPy5sZW5ndGggPT09IDAgJiYgPHA+Tm8gY3VycmVudCBvciB1cGNvbWluZyBleGFtaW5hdGlvbnMuPC9wPn1cbiAgICAgIHtleGFtcz8ubWFwKChleGFtKSA9PiAoXG4gICAgICAgIDxhcnRpY2xlIGtleT17ZXhhbS5pZH0gY2xhc3NOYW1lPVwicm91bmRlZC14bCBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBiZy13aGl0ZSBwLTVcIj5cbiAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwiZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTkwMFwiPntleGFtLm5hbWV9PC9oMj5cbiAgICAgICAgICA8cCBjbGFzc05hbWU9XCJteS0yIHRleHQtc20gdGV4dC1zbGF0ZS02MDBcIj5cbiAgICAgICAgICAgIHtleGFtLmR1cmF0aW9uX21pbnV0ZXN9IG1pbnV0ZXNcbiAgICAgICAgICAgIHtleGFtLnN0YXJ0X3dpbmRvdyAmJiA8PiDCtyBPcGVucyB7bmV3IERhdGUoZXhhbS5zdGFydF93aW5kb3cpLnRvTG9jYWxlU3RyaW5nKCl9PC8+fVxuICAgICAgICAgIDwvcD5cbiAgICAgICAgICA8TGluayBjbGFzc05hbWU9XCJmb250LXNlbWlib2xkIHRleHQtcHJpbWFyeS03MDBcIiB0bz17YC9zdHVkZW50L2V4YW0vJHtleGFtLmlkfS9sb2JieWB9PlxuICAgICAgICAgICAgT3BlbiBsb2JieVxuICAgICAgICAgIDwvTGluaz5cbiAgICAgICAgPC9hcnRpY2xlPlxuICAgICAgKSl9XG4gICAgPC9tYWluPlxuICApO1xufVxuIl0sImZpbGUiOiIvVXNlcnMvYXVydHgvdGVhbXdvcmtfcHJvamVjdHMvZXpleGFtX3JlY29uc3RydWN0aW9uL2Zyb250ZW5kL3NyYy9wYWdlcy9zdHVkZW50L0NhbmRpZGF0ZVBvcnRhbC50c3gifQ==€ø©åí      kè⁄kè€J/<g       b    O^partitionKey=%28http%2C127.0.0.1%29,:http://127.0.0.1:5173/src/pages/student/CandidatePortal.tsx strongly-framed 1 request-method GET response-head HTTP/1.1 200 OK
+Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"1d7b-2CIkj62s14bbM5fqmBcK5AtvRmY"
+Date: Wed, 25 Nov 2026 07:35:55 GMT
+Content-Length: 13378
+ original-response-headers Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"1d7b-2CIkj62s14bbM5fqmBcK5AtvRmY"
+Date: Wed, 25 Nov 2026 07:35:55 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Content-Length: 13378
+ ctid 2 net-response-time-onstart 954 net-response-time-onstop 956      4B

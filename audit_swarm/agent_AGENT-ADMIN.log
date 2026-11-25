@@ -1,0 +1,66 @@
+2026-11-25T07:46:10.569025+00:00 | AGENT-ADMIN | DJANGO_ADMIN_LOGIN | PASS | 200 | /admin/
+2026-11-25T07:46:10.736169+00:00 | AGENT-ADMIN | CREATE_ORGANIZATION | FAIL | 500 | /admin/organizations/organization/add/ Missing CSRF form field
+2026-11-25T07:48:40.714124+00:00 | AGENT-ADMIN | DJANGO_ADMIN_LOGIN | PASS | 200 | /admin/
+2026-11-25T07:48:40.813042+00:00 | AGENT-ADMIN | CREATE_ORGANIZATION | PASS | 200 | /admin/organizations/organization/
+2026-11-25T07:48:41.039389+00:00 | AGENT-ADMIN | ADMIN_API_LOGIN | PASS | 200 | authenticated
+2026-11-25T07:48:41.054996+00:00 | AGENT-ADMIN | CREATE_BATCH-11-PCM | PASS | 201 | {"id": "f9b4c378-e97e-46a5-a690-6a075b2c1cb9", "code": "BATCH-11-PCM"}
+2026-11-25T07:48:41.225045+00:00 | AGENT-ADMIN | CREATE_AGENT-S-01 | PASS | 201 | {"status": "SUCCESS", "id": "5ffd8d73-0554-4f36-9051-423977149773", "message": "Student created successfully."}
+2026-11-25T07:48:41.384276+00:00 | AGENT-ADMIN | CREATE_AGENT-S-02 | PASS | 201 | {"status": "SUCCESS", "id": "926d8385-d184-4a5c-82a8-89b405a0b65b", "message": "Student created successfully."}
+2026-11-25T07:48:41.553742+00:00 | AGENT-ADMIN | CREATE_AGENT-S-03 | PASS | 201 | {"status": "SUCCESS", "id": "5962f155-e538-4307-bb22-f961ebd64865", "message": "Student created successfully."}
+2026-11-25T07:48:41.567560+00:00 | AGENT-ADMIN | CREATE_BATCH-11-PCB | PASS | 201 | {"id": "f376dd9b-5475-49c2-a22d-d89b5a78f7fd", "code": "BATCH-11-PCB"}
+2026-11-25T07:48:41.734412+00:00 | AGENT-ADMIN | CREATE_AGENT-S-04 | PASS | 201 | {"status": "SUCCESS", "id": "49280ec6-3e2d-46e0-b2dd-83dffbb36e8f", "message": "Student created successfully."}
+2026-11-25T07:48:41.911588+00:00 | AGENT-ADMIN | CREATE_AGENT-S-05 | PASS | 201 | {"status": "SUCCESS", "id": "9efe8c6d-6c3d-43b0-b0e3-5714fd171e3e", "message": "Student created successfully."}
+2026-11-25T07:48:42.119919+00:00 | AGENT-ADMIN | CREATE_AGENT-S-06 | PASS | 201 | {"status": "SUCCESS", "id": "bff69971-b610-45ef-95c0-cbfd323380bf", "message": "Student created successfully."}
+2026-11-25T07:48:42.132661+00:00 | AGENT-ADMIN | CREATE_BATCH-12-PCM | PASS | 201 | {"id": "fd336918-fa44-4101-8708-5f31cb35cae2", "code": "BATCH-12-PCM"}
+2026-11-25T07:48:42.302664+00:00 | AGENT-ADMIN | CREATE_AGENT-S-07 | PASS | 201 | {"status": "SUCCESS", "id": "b15fc6af-7f80-4cd6-b2b3-0ac0fd3e2956", "message": "Student created successfully."}
+2026-11-25T07:48:42.475749+00:00 | AGENT-ADMIN | CREATE_AGENT-S-08 | PASS | 201 | {"status": "SUCCESS", "id": "3370ac82-e001-4794-8f9b-d53bf4674478", "message": "Student created successfully."}
+2026-11-25T07:48:42.490933+00:00 | AGENT-ADMIN | CREATE_BATCH-12-PCB | PASS | 201 | {"id": "3c4de5ef-d33d-4cbc-88a9-e6f29edf8ef1", "code": "BATCH-12-PCB"}
+2026-11-25T07:48:42.745120+00:00 | AGENT-ADMIN | CREATE_AGENT-S-09 | PASS | 201 | {"status": "SUCCESS", "id": "29f8b9e5-f09a-4f02-ab78-15d7f8a7f736", "message": "Student created successfully."}
+2026-11-25T07:48:42.940068+00:00 | AGENT-ADMIN | CREATE_AGENT-S-10 | PASS | 201 | {"status": "SUCCESS", "id": "436eb6cf-122f-4cec-8ac5-2658f6746b28", "message": "Student created successfully."}
+2026-11-25T07:48:43.174160+00:00 | AGENT-ADMIN | CREATE_AGENT-TEACHER-PHY | PASS | 201 | {"status": "SUCCESS", "id": "38c64fad-1488-4743-868d-c44eae1b0108"}
+2026-11-25T07:48:43.331314+00:00 | AGENT-ADMIN | CREATE_AGENT-TEACHER-CHEM | PASS | 201 | {"status": "SUCCESS", "id": "cf9f7ca7-c37e-4e65-8f10-a202bfceda0d"}
+2026-11-25T07:48:43.487946+00:00 | AGENT-ADMIN | CREATE_AGENT-TEACHER-BIO | PASS | 201 | {"status": "SUCCESS", "id": "18ee735f-15c3-43cd-995e-f7122a928634"}
+2026-11-25T07:48:43.499354+00:00 | AGENT-ADMIN | CREATE_QP-11-PCM | PASS | 201 | {"status": "SUCCESS", "id": "27a0eefb-1cd2-4683-85a8-58fbd129ac19", "message": "Question paper initialized."}
+2026-11-25T07:48:43.526173+00:00 | AGENT-ADMIN | CREATE_EXAM-11-PCM | PASS | 201 | {"status": "SUCCESS", "id": "66eb7feb-e4bd-42f4-b866-5eb94ab71b2c", "message": "Examination created successfully."}
+2026-11-25T07:48:43.538477+00:00 | AGENT-ADMIN | CREATE_QP-11-PCB | PASS | 201 | {"status": "SUCCESS", "id": "6c6cfdf8-7a5d-4d6a-b307-5656f9327936", "message": "Question paper initialized."}
+2026-11-25T07:48:43.553494+00:00 | AGENT-ADMIN | CREATE_EXAM-11-PCB | PASS | 201 | {"status": "SUCCESS", "id": "cc581bfc-bc3b-48df-8fe4-180c26bf0e93", "message": "Examination created successfully."}
+2026-11-25T07:48:43.582337+00:00 | AGENT-ADMIN | CREATE_QP-12-PCM | PASS | 201 | {"status": "SUCCESS", "id": "909166db-6992-4030-8f58-42859da7ef50", "message": "Question paper initialized."}
+2026-11-25T07:48:43.599427+00:00 | AGENT-ADMIN | CREATE_EXAM-12-PCM | PASS | 201 | {"status": "SUCCESS", "id": "1953bc0a-5fbd-4eae-bbbd-90ea990a6ac5", "message": "Examination created successfully."}
+2026-11-25T07:48:43.621135+00:00 | AGENT-ADMIN | CREATE_QP-12-PCB | PASS | 201 | {"status": "SUCCESS", "id": "06b02c04-6886-4edc-a502-13d83a010e9a", "message": "Question paper initialized."}
+2026-11-25T07:48:43.638315+00:00 | AGENT-ADMIN | CREATE_EXAM-12-PCB | PASS | 201 | {"status": "SUCCESS", "id": "c0e1827b-b4bc-4a49-b19c-b54c496eb534", "message": "Examination created successfully."}
+2026-11-25T07:54:12.023198+00:00 | AGENT-ADMIN | VERIFY-QP-11-PCM | PASS | 200 | {"id": "27a0eefb-1cd2-4683-85a8-58fbd129ac19"}
+2026-11-25T07:54:12.053674+00:00 | AGENT-ADMIN | VERIFY-QP-11-PCB | PASS | 200 | {"id": "6c6cfdf8-7a5d-4d6a-b307-5656f9327936"}
+2026-11-25T07:54:12.066079+00:00 | AGENT-ADMIN | VERIFY-QP-12-PCM | PASS | 200 | {"id": "909166db-6992-4030-8f58-42859da7ef50"}
+2026-11-25T07:54:12.085058+00:00 | AGENT-ADMIN | VERIFY-QP-12-PCB | PASS | 200 | {"id": "06b02c04-6886-4edc-a502-13d83a010e9a"}
+2026-11-25T07:56:58.732169+00:00 | AGENT-ADMIN | VERIFY-DRAFT-EXAM-11-PCM | PASS | 200 | {"status": "DRAFT", "id": "66eb7feb-e4bd-42f4-b866-5eb94ab71b2c", "code": "EXAM-11-PCM"}
+2026-11-25T07:56:58.749998+00:00 | AGENT-ADMIN | VERIFY-DRAFT-EXAM-11-PCB | PASS | 200 | {"status": "DRAFT", "id": "cc581bfc-bc3b-48df-8fe4-180c26bf0e93", "code": "EXAM-11-PCB"}
+2026-11-25T07:56:58.765675+00:00 | AGENT-ADMIN | VERIFY-DRAFT-EXAM-12-PCM | PASS | 200 | {"status": "DRAFT", "id": "1953bc0a-5fbd-4eae-bbbd-90ea990a6ac5", "code": "EXAM-12-PCM"}
+2026-11-25T07:56:58.785678+00:00 | AGENT-ADMIN | VERIFY-DRAFT-EXAM-12-PCB | PASS | 200 | {"status": "DRAFT", "id": "c0e1827b-b4bc-4a49-b19c-b54c496eb534", "code": "EXAM-12-PCB"}
+2026-11-25T07:57:16.194481+00:00 | AGENT-ADMIN | VERIFY-DRAFT-EXAM-11-PCM | PASS | 200 | {"status": "DRAFT", "id": "66eb7feb-e4bd-42f4-b866-5eb94ab71b2c", "code": "EXAM-11-PCM"}
+2026-11-25T07:57:16.215477+00:00 | AGENT-ADMIN | VERIFY-DRAFT-EXAM-11-PCB | PASS | 200 | {"status": "DRAFT", "id": "cc581bfc-bc3b-48df-8fe4-180c26bf0e93", "code": "EXAM-11-PCB"}
+2026-11-25T07:57:16.242626+00:00 | AGENT-ADMIN | VERIFY-DRAFT-EXAM-12-PCM | PASS | 200 | {"status": "DRAFT", "id": "1953bc0a-5fbd-4eae-bbbd-90ea990a6ac5", "code": "EXAM-12-PCM"}
+2026-11-25T07:57:16.264336+00:00 | AGENT-ADMIN | VERIFY-DRAFT-EXAM-12-PCB | PASS | 200 | {"status": "DRAFT", "id": "c0e1827b-b4bc-4a49-b19c-b54c496eb534", "code": "EXAM-12-PCB"}
+2026-11-25T07:57:16.288749+00:00 | AGENT-ADMIN | SCHEDULE-EXAM-11-PCM | PASS | 200 | {"status": "DRAFT", "id": "66eb7feb-e4bd-42f4-b866-5eb94ab71b2c", "code": "EXAM-11-PCM"}
+2026-11-25T07:57:16.315823+00:00 | AGENT-ADMIN | SCHEDULE-EXAM-11-PCB | PASS | 200 | {"status": "DRAFT", "id": "cc581bfc-bc3b-48df-8fe4-180c26bf0e93", "code": "EXAM-11-PCB"}
+2026-11-25T07:57:16.338672+00:00 | AGENT-ADMIN | SCHEDULE-EXAM-12-PCM | PASS | 200 | {"status": "DRAFT", "id": "1953bc0a-5fbd-4eae-bbbd-90ea990a6ac5", "code": "EXAM-12-PCM"}
+2026-11-25T07:57:16.361490+00:00 | AGENT-ADMIN | SCHEDULE-EXAM-12-PCB | PASS | 200 | {"status": "DRAFT", "id": "c0e1827b-b4bc-4a49-b19c-b54c496eb534", "code": "EXAM-12-PCB"}
+2026-11-25T07:57:16.374954+00:00 | AGENT-ADMIN | PUBLISH-EXAM-11-PCM | PASS | 200 | {"status": "PUBLISHED", "message": "Examination published successfully."}
+2026-11-25T07:57:16.390594+00:00 | AGENT-ADMIN | PUBLISH-EXAM-11-PCB | PASS | 200 | {"status": "PUBLISHED", "message": "Examination published successfully."}
+2026-11-25T07:57:16.411780+00:00 | AGENT-ADMIN | PUBLISH-EXAM-12-PCM | PASS | 200 | {"status": "PUBLISHED", "message": "Examination published successfully."}
+2026-11-25T07:57:16.428644+00:00 | AGENT-ADMIN | PUBLISH-EXAM-12-PCB | PASS | 200 | {"status": "PUBLISHED", "message": "Examination published successfully."}
+2026-11-25T07:58:26.694795+00:00 | AGENT-ADMIN | MONITOR-EXAM-11-PCM | PENDING | 200 | window_closed=False final=0/3 total=0
+2026-11-25T07:58:26.797832+00:00 | AGENT-ADMIN | MONITOR-EXAM-11-PCB | PENDING | 200 | window_closed=False final=0/3 total=0
+2026-11-25T07:58:26.867563+00:00 | AGENT-ADMIN | MONITOR-EXAM-12-PCM | PENDING | 200 | window_closed=False final=0/2 total=0
+2026-11-25T07:58:26.995229+00:00 | AGENT-ADMIN | MONITOR-EXAM-12-PCB | PENDING | 200 | window_closed=False final=0/2 total=0
+2026-11-25T08:08:55.713719+00:00 | AGENT-ADMIN | MONITOR-EXAM-11-PCM | PENDING | 200 | window_closed=False final=3/3 total=3
+2026-11-25T08:08:55.753822+00:00 | AGENT-ADMIN | MONITOR-EXAM-11-PCB | PENDING | 200 | window_closed=False final=3/3 total=3
+2026-11-25T08:08:55.788230+00:00 | AGENT-ADMIN | MONITOR-EXAM-12-PCM | PENDING | 200 | window_closed=False final=2/2 total=2
+2026-11-25T08:08:55.811843+00:00 | AGENT-ADMIN | MONITOR-EXAM-12-PCB | PENDING | 200 | window_closed=False final=2/2 total=2
+2026-11-25T09:02:21.549119+00:00 | AGENT-ADMIN | MONITOR-EXAM-11-PCM | PASS | 200 | window_closed=True final=3/3 total=3
+2026-11-25T09:02:21.586922+00:00 | AGENT-ADMIN | MONITOR-EXAM-11-PCB | PASS | 200 | window_closed=True final=3/3 total=3
+2026-11-25T09:02:21.634271+00:00 | AGENT-ADMIN | MONITOR-EXAM-12-PCM | PASS | 200 | window_closed=True final=2/2 total=2
+2026-11-25T09:02:21.674610+00:00 | AGENT-ADMIN | MONITOR-EXAM-12-PCB | PASS | 200 | window_closed=True final=2/2 total=2
+2026-11-25T09:02:21.763680+00:00 | AGENT-ADMIN | PUBLISH-RESULTS-11-PCM | PASS | 200 | {}
+2026-11-25T09:02:21.820989+00:00 | AGENT-ADMIN | PUBLISH-RESULTS-11-PCB | PASS | 200 | {}
+2026-11-25T09:02:21.849746+00:00 | AGENT-ADMIN | PUBLISH-RESULTS-12-PCM | PASS | 200 | {}
+2026-11-25T09:02:21.903151+00:00 | AGENT-ADMIN | PUBLISH-RESULTS-12-PCB | PASS | 200 | {}

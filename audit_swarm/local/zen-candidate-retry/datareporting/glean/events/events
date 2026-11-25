@@ -1,0 +1,10 @@
+{"timestamp":4512968,"category":"nimbus_events","name":"migration","extra":{"success":"true","migration_id":"graduate-firefox-labs-jpeg-xl","duration":"1","is_first_startup":"false","glean_timestamp":"1795592213110"}}
+{"timestamp":4512969,"category":"nimbus_events","name":"migration","extra":{"is_first_startup":"false","migration_id":"bug-2054546-mitigation","duration":"1","glean_timestamp":"1795592213110","success":"true"}}
+{"timestamp":4512969,"category":"nimbus_events","name":"migration","extra":{"glean_timestamp":"1795592213110","migration_id":"graduate-firefox-labs-jpeg-xl-all-channels","duration":"1","is_first_startup":"false","success":"true"}}
+{"timestamp":4513073,"category":"jsonfile","name":"load_autofillprofiles","extra":{"glean_timestamp":"1795592213214","value":"error_notfounderror"}}
+{"timestamp":4513082,"category":"jsonfile","name":"load_logins","extra":{"glean_timestamp":"1795592213223","value":"error_notfounderror"}}
+{"timestamp":4513160,"category":"pwmgr","name":"rust_init_status","extra":{"glean_timestamp":"1795592213302","init_rust_components_ms":"5","result":"ok","create_rust_store_ms":"18","total_ms":"117","backend":"json"}}
+{"timestamp":4513269,"category":"containers","name":"container_profile_loaded","extra":{"glean_timestamp":"1795592213410","containers":"0"}}
+{"timestamp":4513272,"category":"containers","name":"container_profile_loaded","extra":{"glean_timestamp":"1795592213414","containers":"0"}}
+{"timestamp":4513360,"category":"upgrade_dialog","name":"trigger_reason","extra":{"glean_timestamp":"1795592213501","value":"not-major"}}
+{"timestamp":4513919,"category":"glean","name":"session_start","extra":{"session_seq":"1","session_start_time":"2026-11-25T13:06:54.058+05:30","session_id":"826dde41-9567-48c6-b9fd-0c8a7649d1fe","sampled_in":"true","glean_timestamp":"1795592214060"}}

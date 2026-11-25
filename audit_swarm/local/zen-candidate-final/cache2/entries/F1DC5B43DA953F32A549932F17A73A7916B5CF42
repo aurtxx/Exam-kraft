@@ -1,0 +1,116 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/NotFound.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=314a0332"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import { Link } from "/node_modules/.vite/deps/react-router-dom.js?v=314a0332";
+import { AlertTriangle, Home } from "/node_modules/.vite/deps/lucide-react.js?v=314a0332";
+export const NotFound = () => {
+  return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen flex items-center justify-center bg-slate-100 p-4", children: /* @__PURE__ */ jsxDEV("div", { className: "text-center max-w-md", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4", children: /* @__PURE__ */ jsxDEV(AlertTriangle, { size: 32 }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+      lineNumber: 29,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+      lineNumber: 28,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("h1", { className: "text-4xl font-extrabold text-slate-900 tracking-tight", children: "404" }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+      lineNumber: 31,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("h2", { className: "text-lg font-semibold text-slate-700 mt-2", children: "Page Not Found" }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+      lineNumber: 32,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-slate-500 mt-1 mb-6", children: "The requested page or route does not exist in the EZExam platform." }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+      lineNumber: 33,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV(
+      Link,
+      {
+        to: "/",
+        className: "inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all shadow-sm",
+        children: [
+          /* @__PURE__ */ jsxDEV(Home, { size: 16 }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+            lineNumber: 40,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { children: "Return to Dashboard" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+            lineNumber: 41,
+            columnNumber: 11
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+        lineNumber: 36,
+        columnNumber: 9
+      },
+      this
+    )
+  ] }, void 0, true, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+    lineNumber: 27,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx",
+    lineNumber: 26,
+    columnNumber: 5
+  }, this);
+};
+_c = NotFound;
+export default NotFound;
+var _c;
+$RefreshReg$(_c, "NotFound");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/NotFound.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBU1U7Ozs7Ozs7Ozs7Ozs7Ozs7QUFSVixTQUFTQSxZQUFZO0FBQ3JCLFNBQVNDLGVBQWVDLFlBQVk7QUFFN0IsYUFBTUMsV0FBcUJBLE1BQU07QUFDdEMsU0FDRSx1QkFBQyxTQUFJLFdBQVUsa0VBQ2IsaUNBQUMsU0FBSSxXQUFVLHdCQUNiO0FBQUEsMkJBQUMsU0FBSSxXQUFVLG1HQUNiLGlDQUFDLGlCQUFjLE1BQU0sTUFBckI7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQUF3QixLQUQxQjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBRUE7QUFBQSxJQUNBLHVCQUFDLFFBQUcsV0FBVSx5REFBd0QsbUJBQXRFO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FBeUU7QUFBQSxJQUN6RSx1QkFBQyxRQUFHLFdBQVUsNkNBQTRDLDhCQUExRDtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBQXdFO0FBQUEsSUFDeEUsdUJBQUMsT0FBRSxXQUFVLG9DQUFrQyxrRkFBL0M7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQUVBO0FBQUEsSUFDQTtBQUFBLE1BQUM7QUFBQTtBQUFBLFFBQ0MsSUFBRztBQUFBLFFBQ0gsV0FBVTtBQUFBLFFBRVY7QUFBQSxpQ0FBQyxRQUFLLE1BQU0sTUFBWjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUFlO0FBQUEsVUFDZix1QkFBQyxVQUFLLG1DQUFOO0FBQUE7QUFBQTtBQUFBO0FBQUEsaUJBQXlCO0FBQUE7QUFBQTtBQUFBLE1BTDNCO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxJQU1BO0FBQUEsT0FmRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBZ0JBLEtBakJGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FrQkE7QUFFSjtBQUFFQyxLQXRCV0Q7QUF3QmIsZUFBZUE7QUFBUyxJQUFBQztBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJMaW5rIiwiQWxlcnRUcmlhbmdsZSIsIkhvbWUiLCJOb3RGb3VuZCIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIk5vdEZvdW5kLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QgZnJvbSAncmVhY3QnO1xuaW1wb3J0IHsgTGluayB9IGZyb20gJ3JlYWN0LXJvdXRlci1kb20nO1xuaW1wb3J0IHsgQWxlcnRUcmlhbmdsZSwgSG9tZSB9IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XG5cbmV4cG9ydCBjb25zdCBOb3RGb3VuZDogUmVhY3QuRkMgPSAoKSA9PiB7XG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9XCJtaW4taC1zY3JlZW4gZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgYmctc2xhdGUtMTAwIHAtNFwiPlxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBtYXgtdy1tZFwiPlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctMTYgaC0xNiByb3VuZGVkLTJ4bCBiZy1hbWJlci0xMDAgdGV4dC1hbWJlci02MDAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgbXgtYXV0byBtYi00XCI+XG4gICAgICAgICAgPEFsZXJ0VHJpYW5nbGUgc2l6ZT17MzJ9IC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8aDEgY2xhc3NOYW1lPVwidGV4dC00eGwgZm9udC1leHRyYWJvbGQgdGV4dC1zbGF0ZS05MDAgdHJhY2tpbmctdGlnaHRcIj40MDQ8L2gxPlxuICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC1sZyBmb250LXNlbWlib2xkIHRleHQtc2xhdGUtNzAwIG10LTJcIj5QYWdlIE5vdCBGb3VuZDwvaDI+XG4gICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1zbGF0ZS01MDAgbXQtMSBtYi02XCI+XG4gICAgICAgICAgVGhlIHJlcXVlc3RlZCBwYWdlIG9yIHJvdXRlIGRvZXMgbm90IGV4aXN0IGluIHRoZSBFWkV4YW0gcGxhdGZvcm0uXG4gICAgICAgIDwvcD5cbiAgICAgICAgPExpbmtcbiAgICAgICAgICB0bz1cIi9cIlxuICAgICAgICAgIGNsYXNzTmFtZT1cImlubGluZS1mbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBiZy1wcmltYXJ5LTUwMCBob3ZlcjpiZy1wcmltYXJ5LTYwMCB0ZXh0LXdoaXRlIGZvbnQtc2VtaWJvbGQgdGV4dC1zbSBweC01IHB5LTIuNSByb3VuZGVkLXhsIHRyYW5zaXRpb24tYWxsIHNoYWRvdy1zbVwiXG4gICAgICAgID5cbiAgICAgICAgICA8SG9tZSBzaXplPXsxNn0gLz5cbiAgICAgICAgICA8c3Bhbj5SZXR1cm4gdG8gRGFzaGJvYXJkPC9zcGFuPlxuICAgICAgICA8L0xpbms+XG4gICAgICA8L2Rpdj5cbiAgICA8L2Rpdj5cbiAgKTtcbn07XG5cbmV4cG9ydCBkZWZhdWx0IE5vdEZvdW5kO1xuIl0sImZpbGUiOiIvVXNlcnMvYXVydHgvdGVhbXdvcmtfcHJvamVjdHMvZXpleGFtX3JlY29uc3RydWN0aW9uL2Zyb250ZW5kL3NyYy9wYWdlcy9Ob3RGb3VuZC50c3gifQ==/∂ùWÛ      kêGkêGJ/<≤       S    O^partitionKey=%28http%2C127.0.0.1%29,:http://127.0.0.1:5173/src/pages/NotFound.tsx strongly-framed 1 request-method GET response-head HTTP/1.1 200 OK
+Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"140d-QR5IvQq26H+u/ET5GPGY+Vebyrk"
+Date: Wed, 25 Nov 2026 07:37:43 GMT
+Content-Length: 8184
+ original-response-headers Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"140d-QR5IvQq26H+u/ET5GPGY+Vebyrk"
+Date: Wed, 25 Nov 2026 07:37:43 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Content-Length: 8184
+ ctid 2 net-response-time-onstart 69 net-response-time-onstop 70      ¯

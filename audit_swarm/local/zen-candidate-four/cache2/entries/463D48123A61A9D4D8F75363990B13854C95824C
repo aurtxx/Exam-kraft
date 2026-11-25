@@ -1,0 +1,320 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/Login.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=314a0332"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime["Fragment"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=314a0332"; const useState = __vite__cjsImport3_react["useState"];
+import { useNavigate, useLocation } from "/node_modules/.vite/deps/react-router-dom.js?v=314a0332";
+import { homeForRole } from "/src/components/layout/ProtectedRoutes.tsx";
+import { useAuth } from "/src/context/AuthContext.tsx";
+import { Lock, User, AlertCircle, ArrowRight } from "/node_modules/.vite/deps/lucide-react.js?v=314a0332";
+export const Login = () => {
+  _s();
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const from = location.state?.from?.pathname;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!username.trim() || !password) {
+      setError("Please enter both your username and password.");
+      return;
+    }
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const { user } = await login(username.trim(), password);
+      const validReturn = user.role === "STUDENT" ? from === "/student" || from?.startsWith("/student/") || from?.startsWith("/online-exams/") : from === "/staff" || from?.startsWith("/staff/");
+      navigate(validReturn && from ? from : homeForRole(user.role), { replace: true });
+    } catch (err) {
+      const axiosError = err;
+      setError(
+        axiosError.response?.data?.message || "Invalid credentials or tenant mismatch. Please verify your details."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen flex items-center justify-center bg-slate-100 p-4", children: /* @__PURE__ */ jsxDEV("div", { className: "max-w-md w-full", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "text-center mb-8", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-navy-900 to-primary-500 text-white font-extrabold text-2xl shadow-lg mb-3", children: "EZ" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+        lineNumber: 70,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("h1", { className: "text-2xl font-bold text-slate-900 tracking-tight", children: "EZExam Portal" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+        lineNumber: 73,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-slate-500 mt-1", children: "Sign in to access examinations, cohorts, and question banks" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+        lineNumber: 74,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+      lineNumber: 69,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-2xl shadow-sm border border-slate-200 p-8", children: [
+      error && /* @__PURE__ */ jsxDEV("div", { className: "mb-6 p-4 rounded-xl bg-danger-500/10 border border-danger-500/20 text-danger-500 flex items-start gap-3 text-sm", children: [
+        /* @__PURE__ */ jsxDEV(AlertCircle, { size: 18, className: "flex-shrink-0 mt-0.5" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+          lineNumber: 83,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { children: error }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+          lineNumber: 84,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+        lineNumber: 82,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("form", { onSubmit: handleSubmit, className: "space-y-5", children: [
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2", children: "Username / Email / Phone" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+            lineNumber: 90,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "relative", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400", children: /* @__PURE__ */ jsxDEV(User, { size: 18 }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+              lineNumber: 95,
+              columnNumber: 19
+            }, this) }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+              lineNumber: 94,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "text",
+                required: true,
+                value: username,
+                onChange: (e) => setUsername(e.target.value),
+                placeholder: "admin or username",
+                className: "w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder:text-slate-400"
+              },
+              void 0,
+              false,
+              {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+                lineNumber: 97,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+            lineNumber: 93,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+          lineNumber: 89,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2", children: "Password" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+            lineNumber: 109,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "relative", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400", children: /* @__PURE__ */ jsxDEV(Lock, { size: 18 }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+              lineNumber: 114,
+              columnNumber: 19
+            }, this) }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+              lineNumber: 113,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "password",
+                required: true,
+                value: password,
+                onChange: (e) => setPassword(e.target.value),
+                placeholder: "‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢",
+                className: "w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder:text-slate-400"
+              },
+              void 0,
+              false,
+              {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+                lineNumber: 116,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+            lineNumber: 112,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+          lineNumber: 108,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between text-xs text-slate-500", children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "flex items-center gap-2 cursor-pointer", children: [
+            /* @__PURE__ */ jsxDEV("input", { type: "checkbox", className: "rounded text-primary-500 focus:ring-primary-500/30" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+              lineNumber: 129,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Remember this workstation" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+              lineNumber: 130,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+            lineNumber: 128,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("a", { href: "#reset", className: "text-primary-600 hover:underline font-medium", children: "Forgot password?" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+            lineNumber: 132,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+          lineNumber: 127,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            type: "submit",
+            disabled: isSubmitting,
+            className: "w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+            children: isSubmitting ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+                lineNumber: 144,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { children: "Authenticating..." }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+                lineNumber: 145,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+              lineNumber: 143,
+              columnNumber: 15
+            }, this) : /* @__PURE__ */ jsxDEV(Fragment, { children: [
+              /* @__PURE__ */ jsxDEV("span", { children: "Sign In" }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+                lineNumber: 149,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV(ArrowRight, { size: 16 }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+                lineNumber: 150,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+              lineNumber: 148,
+              columnNumber: 15
+            }, this)
+          },
+          void 0,
+          false,
+          {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+            lineNumber: 137,
+            columnNumber: 13
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+        lineNumber: 88,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+      lineNumber: 80,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "text-center mt-6 text-xs text-slate-400", children: "Self-Hosted Examination Architecture ¬∑ Multi-Tenant Isolated" }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+      lineNumber: 158,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+    lineNumber: 67,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx",
+    lineNumber: 66,
+    columnNumber: 5
+  }, this);
+};
+_s(Login, "Quwe3XIpIQIbxr/p+1X6E8M+jlY=", false, function() {
+  return [useAuth, useNavigate, useLocation];
+});
+_c = Login;
+export default Login;
+var _c;
+$RefreshReg$(_c, "Login");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/Login.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFBQSxPQTdGRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBOEZBLEtBL0ZGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FnR0E7QUFFSjtBQUFFVixHQTFJV0QsT0FBZTtBQUFBLFVBQ1JMLFNBQ0RILGFBQ0FDLFdBQVc7QUFBQTtBQUFBLEtBSGpCTztBQTRJYixlQUFlQTtBQUFNLElBQUFnQztBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJ1c2VTdGF0ZSIsInVzZU5hdmlnYXRlIiwidXNlTG9jYXRpb24iLCJob21lRm9yUm9sZSIsInVzZUF1dGgiLCJMb2NrIiwiVXNlciIsIkFsZXJ0Q2lyY2xlIiwiQXJyb3dSaWdodCIsIkxvZ2luIiwiX3MiLCJsb2dpbiIsIm5hdmlnYXRlIiwibG9jYXRpb24iLCJ1c2VybmFtZSIsInNldFVzZXJuYW1lIiwicGFzc3dvcmQiLCJzZXRQYXNzd29yZCIsImVycm9yIiwic2V0RXJyb3IiLCJpc1N1Ym1pdHRpbmciLCJzZXRJc1N1Ym1pdHRpbmciLCJmcm9tIiwic3RhdGUiLCJwYXRobmFtZSIsImhhbmRsZVN1Ym1pdCIsImUiLCJwcmV2ZW50RGVmYXVsdCIsInRyaW0iLCJ1c2VyIiwidmFsaWRSZXR1cm4iLCJyb2xlIiwic3RhcnRzV2l0aCIsInJlcGxhY2UiLCJlcnIiLCJheGlvc0Vycm9yIiwicmVzcG9uc2UiLCJkYXRhIiwibWVzc2FnZSIsInRhcmdldCIsInZhbHVlIiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiTG9naW4udHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBSZWFjdCwgeyB1c2VTdGF0ZSB9IGZyb20gJ3JlYWN0JztcbmltcG9ydCB7IHVzZU5hdmlnYXRlLCB1c2VMb2NhdGlvbiB9IGZyb20gJ3JlYWN0LXJvdXRlci1kb20nO1xuaW1wb3J0IHsgaG9tZUZvclJvbGUgfSBmcm9tICcuLi9jb21wb25lbnRzL2xheW91dC9Qcm90ZWN0ZWRSb3V0ZXMnO1xuaW1wb3J0IHsgdXNlQXV0aCB9IGZyb20gJy4uL2NvbnRleHQvQXV0aENvbnRleHQnO1xuaW1wb3J0IHsgTG9jaywgVXNlciwgQWxlcnRDaXJjbGUsIEFycm93UmlnaHQgfSBmcm9tICdsdWNpZGUtcmVhY3QnO1xuXG5leHBvcnQgY29uc3QgTG9naW46IFJlYWN0LkZDID0gKCkgPT4ge1xuICBjb25zdCB7IGxvZ2luIH0gPSB1c2VBdXRoKCk7XG4gIGNvbnN0IG5hdmlnYXRlID0gdXNlTmF2aWdhdGUoKTtcbiAgY29uc3QgbG9jYXRpb24gPSB1c2VMb2NhdGlvbigpO1xuXG4gIGNvbnN0IFt1c2VybmFtZSwgc2V0VXNlcm5hbWVdID0gdXNlU3RhdGUoJycpO1xuICBjb25zdCBbcGFzc3dvcmQsIHNldFBhc3N3b3JkXSA9IHVzZVN0YXRlKCcnKTtcbiAgY29uc3QgW2Vycm9yLCBzZXRFcnJvcl0gPSB1c2VTdGF0ZTxzdHJpbmcgfCBudWxsPihudWxsKTtcbiAgY29uc3QgW2lzU3VibWl0dGluZywgc2V0SXNTdWJtaXR0aW5nXSA9IHVzZVN0YXRlKGZhbHNlKTtcblxuICBjb25zdCBmcm9tID0gKGxvY2F0aW9uLnN0YXRlIGFzIHsgZnJvbT86IHsgcGF0aG5hbWU6IHN0cmluZyB9IH0pPy5mcm9tPy5wYXRobmFtZTtcblxuICBjb25zdCBoYW5kbGVTdWJtaXQgPSBhc3luYyAoZTogUmVhY3QuRm9ybUV2ZW50KSA9PiB7XG4gICAgZS5wcmV2ZW50RGVmYXVsdCgpO1xuICAgIGlmICghdXNlcm5hbWUudHJpbSgpIHx8ICFwYXNzd29yZCkge1xuICAgICAgc2V0RXJyb3IoJ1BsZWFzZSBlbnRlciBib3RoIHlvdXIgdXNlcm5hbWUgYW5kIHBhc3N3b3JkLicpO1xuICAgICAgcmV0dXJuO1xuICAgIH1cblxuICAgIHNldEVycm9yKG51bGwpO1xuICAgIHNldElzU3VibWl0dGluZyh0cnVlKTtcblxuICAgIHRyeSB7XG4gICAgICBjb25zdCB7IHVzZXIgfSA9IGF3YWl0IGxvZ2luKHVzZXJuYW1lLnRyaW0oKSwgcGFzc3dvcmQpO1xuICAgICAgY29uc3QgdmFsaWRSZXR1cm4gPSB1c2VyLnJvbGUgPT09ICdTVFVERU5UJ1xuICAgICAgICA/IGZyb20gPT09ICcvc3R1ZGVudCcgfHwgZnJvbT8uc3RhcnRzV2l0aCgnL3N0dWRlbnQvJykgfHwgZnJvbT8uc3RhcnRzV2l0aCgnL29ubGluZS1leGFtcy8nKVxuICAgICAgICA6IGZyb20gPT09ICcvc3RhZmYnIHx8IGZyb20/LnN0YXJ0c1dpdGgoJy9zdGFmZi8nKTtcbiAgICAgIG5hdmlnYXRlKHZhbGlkUmV0dXJuICYmIGZyb20gPyBmcm9tIDogaG9tZUZvclJvbGUodXNlci5yb2xlKSwgeyByZXBsYWNlOiB0cnVlIH0pO1xuICAgIH0gY2F0Y2ggKGVycjogdW5rbm93bikge1xuICAgICAgY29uc3QgYXhpb3NFcnJvciA9IGVyciBhcyB7IHJlc3BvbnNlPzogeyBkYXRhPzogeyBtZXNzYWdlPzogc3RyaW5nIH0gfSB9O1xuICAgICAgc2V0RXJyb3IoXG4gICAgICAgIGF4aW9zRXJyb3IucmVzcG9uc2U/LmRhdGE/Lm1lc3NhZ2UgfHxcbiAgICAgICAgICAnSW52YWxpZCBjcmVkZW50aWFscyBvciB0ZW5hbnQgbWlzbWF0Y2guIFBsZWFzZSB2ZXJpZnkgeW91ciBkZXRhaWxzLidcbiAgICAgICk7XG4gICAgfSBmaW5hbGx5IHtcbiAgICAgIHNldElzU3VibWl0dGluZyhmYWxzZSk7XG4gICAgfVxuICB9O1xuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9XCJtaW4taC1zY3JlZW4gZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgYmctc2xhdGUtMTAwIHAtNFwiPlxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJtYXgtdy1tZCB3LWZ1bGxcIj5cbiAgICAgICAgey8qIEJyYW5kIEhlYWRlciAqL31cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBtYi04XCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgdy0xNCBoLTE0IHJvdW5kZWQtMnhsIGJnLWdyYWRpZW50LXRvLXRyIGZyb20tbmF2eS05MDAgdG8tcHJpbWFyeS01MDAgdGV4dC13aGl0ZSBmb250LWV4dHJhYm9sZCB0ZXh0LTJ4bCBzaGFkb3ctbGcgbWItM1wiPlxuICAgICAgICAgICAgRVpcbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8aDEgY2xhc3NOYW1lPVwidGV4dC0yeGwgZm9udC1ib2xkIHRleHQtc2xhdGUtOTAwIHRyYWNraW5nLXRpZ2h0XCI+RVpFeGFtIFBvcnRhbDwvaDE+XG4gICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LXNsYXRlLTUwMCBtdC0xXCI+XG4gICAgICAgICAgICBTaWduIGluIHRvIGFjY2VzcyBleGFtaW5hdGlvbnMsIGNvaG9ydHMsIGFuZCBxdWVzdGlvbiBiYW5rc1xuICAgICAgICAgIDwvcD5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIENhcmQgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctd2hpdGUgcm91bmRlZC0yeGwgc2hhZG93LXNtIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIHAtOFwiPlxuICAgICAgICAgIHtlcnJvciAmJiAoXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1iLTYgcC00IHJvdW5kZWQteGwgYmctZGFuZ2VyLTUwMC8xMCBib3JkZXIgYm9yZGVyLWRhbmdlci01MDAvMjAgdGV4dC1kYW5nZXItNTAwIGZsZXggaXRlbXMtc3RhcnQgZ2FwLTMgdGV4dC1zbVwiPlxuICAgICAgICAgICAgICA8QWxlcnRDaXJjbGUgc2l6ZT17MTh9IGNsYXNzTmFtZT1cImZsZXgtc2hyaW5rLTAgbXQtMC41XCIgLz5cbiAgICAgICAgICAgICAgPHNwYW4+e2Vycm9yfTwvc3Bhbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICl9XG5cbiAgICAgICAgICA8Zm9ybSBvblN1Ym1pdD17aGFuZGxlU3VibWl0fSBjbGFzc05hbWU9XCJzcGFjZS15LTVcIj5cbiAgICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJibG9jayB0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdGV4dC1zbGF0ZS03MDAgdXBwZXJjYXNlIHRyYWNraW5nLXdpZGVyIG1iLTJcIj5cbiAgICAgICAgICAgICAgICBVc2VybmFtZSAvIEVtYWlsIC8gUGhvbmVcbiAgICAgICAgICAgICAgPC9sYWJlbD5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWxhdGl2ZVwiPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYWJzb2x1dGUgaW5zZXQteS0wIGxlZnQtMCBwbC0zLjUgZmxleCBpdGVtcy1jZW50ZXIgcG9pbnRlci1ldmVudHMtbm9uZSB0ZXh0LXNsYXRlLTQwMFwiPlxuICAgICAgICAgICAgICAgICAgPFVzZXIgc2l6ZT17MTh9IC8+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgPGlucHV0XG4gICAgICAgICAgICAgICAgICB0eXBlPVwidGV4dFwiXG4gICAgICAgICAgICAgICAgICByZXF1aXJlZFxuICAgICAgICAgICAgICAgICAgdmFsdWU9e3VzZXJuYW1lfVxuICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRVc2VybmFtZShlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cImFkbWluIG9yIHVzZXJuYW1lXCJcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBwbC0xMCBwci00IHB5LTIuNSByb3VuZGVkLXhsIGJvcmRlciBib3JkZXItc2xhdGUtMzAwIHRleHQtc20gZm9jdXM6b3V0bGluZS1ub25lIGZvY3VzOnJpbmctMiBmb2N1czpyaW5nLXByaW1hcnktNTAwLzIwIGZvY3VzOmJvcmRlci1wcmltYXJ5LTUwMCB0cmFuc2l0aW9uLWFsbCBwbGFjZWhvbGRlcjp0ZXh0LXNsYXRlLTQwMFwiXG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cImJsb2NrIHRleHQteHMgZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTcwMCB1cHBlcmNhc2UgdHJhY2tpbmctd2lkZXIgbWItMlwiPlxuICAgICAgICAgICAgICAgIFBhc3N3b3JkXG4gICAgICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicmVsYXRpdmVcIj5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImFic29sdXRlIGluc2V0LXktMCBsZWZ0LTAgcGwtMy41IGZsZXggaXRlbXMtY2VudGVyIHBvaW50ZXItZXZlbnRzLW5vbmUgdGV4dC1zbGF0ZS00MDBcIj5cbiAgICAgICAgICAgICAgICAgIDxMb2NrIHNpemU9ezE4fSAvPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgIDxpbnB1dFxuICAgICAgICAgICAgICAgICAgdHlwZT1cInBhc3N3b3JkXCJcbiAgICAgICAgICAgICAgICAgIHJlcXVpcmVkXG4gICAgICAgICAgICAgICAgICB2YWx1ZT17cGFzc3dvcmR9XG4gICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFBhc3N3b3JkKGUudGFyZ2V0LnZhbHVlKX1cbiAgICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPVwi4oCi4oCi4oCi4oCi4oCi4oCi4oCi4oCi4oCi4oCi4oCi4oCiXCJcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBwbC0xMCBwci00IHB5LTIuNSByb3VuZGVkLXhsIGJvcmRlciBib3JkZXItc2xhdGUtMzAwIHRleHQtc20gZm9jdXM6b3V0bGluZS1ub25lIGZvY3VzOnJpbmctMiBmb2N1czpyaW5nLXByaW1hcnktNTAwLzIwIGZvY3VzOmJvcmRlci1wcmltYXJ5LTUwMCB0cmFuc2l0aW9uLWFsbCBwbGFjZWhvbGRlcjp0ZXh0LXNsYXRlLTQwMFwiXG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gdGV4dC14cyB0ZXh0LXNsYXRlLTUwMFwiPlxuICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgY3Vyc29yLXBvaW50ZXJcIj5cbiAgICAgICAgICAgICAgICA8aW5wdXQgdHlwZT1cImNoZWNrYm94XCIgY2xhc3NOYW1lPVwicm91bmRlZCB0ZXh0LXByaW1hcnktNTAwIGZvY3VzOnJpbmctcHJpbWFyeS01MDAvMzBcIiAvPlxuICAgICAgICAgICAgICAgIDxzcGFuPlJlbWVtYmVyIHRoaXMgd29ya3N0YXRpb248L3NwYW4+XG4gICAgICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgICAgIDxhIGhyZWY9XCIjcmVzZXRcIiBjbGFzc05hbWU9XCJ0ZXh0LXByaW1hcnktNjAwIGhvdmVyOnVuZGVybGluZSBmb250LW1lZGl1bVwiPlxuICAgICAgICAgICAgICAgIEZvcmdvdCBwYXNzd29yZD9cbiAgICAgICAgICAgICAgPC9hPlxuICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgdHlwZT1cInN1Ym1pdFwiXG4gICAgICAgICAgICAgIGRpc2FibGVkPXtpc1N1Ym1pdHRpbmd9XG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBiZy1wcmltYXJ5LTUwMCBob3ZlcjpiZy1wcmltYXJ5LTYwMCB0ZXh0LXdoaXRlIGZvbnQtc2VtaWJvbGQgcHktMi41IHB4LTQgcm91bmRlZC14bCB0ZXh0LXNtIHRyYW5zaXRpb24tYWxsIHNoYWRvdy1tZCBob3ZlcjpzaGFkb3ctbGcgZGlzYWJsZWQ6b3BhY2l0eS01MCBkaXNhYmxlZDpjdXJzb3Itbm90LWFsbG93ZWQgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgZ2FwLTJcIlxuICAgICAgICAgICAgPlxuICAgICAgICAgICAgICB7aXNTdWJtaXR0aW5nID8gKFxuICAgICAgICAgICAgICAgIDw+XG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctNCBoLTQgYm9yZGVyLTIgYm9yZGVyLXdoaXRlIGJvcmRlci10LXRyYW5zcGFyZW50IHJvdW5kZWQtZnVsbCBhbmltYXRlLXNwaW5cIiAvPlxuICAgICAgICAgICAgICAgICAgPHNwYW4+QXV0aGVudGljYXRpbmcuLi48L3NwYW4+XG4gICAgICAgICAgICAgICAgPC8+XG4gICAgICAgICAgICAgICkgOiAoXG4gICAgICAgICAgICAgICAgPD5cbiAgICAgICAgICAgICAgICAgIDxzcGFuPlNpZ24gSW48L3NwYW4+XG4gICAgICAgICAgICAgICAgICA8QXJyb3dSaWdodCBzaXplPXsxNn0gLz5cbiAgICAgICAgICAgICAgICA8Lz5cbiAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICAgIDwvZm9ybT5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIEZvb3RlciAqL31cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBtdC02IHRleHQteHMgdGV4dC1zbGF0ZS00MDBcIj5cbiAgICAgICAgICBTZWxmLUhvc3RlZCBFeGFtaW5hdGlvbiBBcmNoaXRlY3R1cmUgJm1pZGRvdDsgTXVsdGktVGVuYW50IElzb2xhdGVkXG4gICAgICAgIDwvZGl2PlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gICk7XG59O1xuXG5leHBvcnQgZGVmYXVsdCBMb2dpbjtcbiJdLCJmaWxlIjoiL1VzZXJzL2F1cnR4L3RlYW13b3JrX3Byb2plY3RzL2V6ZXhhbV9yZWNvbnN0cnVjdGlvbi9mcm9udGVuZC9zcmMvcGFnZXMvTG9naW4udHN4In0=UÉÅÎ±      kêdkêdJ/<«       P    O^partitionKey=%28http%2C127.0.0.1%29,:http://127.0.0.1:5173/src/pages/Login.tsx strongly-framed 1 request-method GET response-head HTTP/1.1 200 OK
+Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"3f6d-/uyEMt8p4Lf9jRsIL+xf22GyOHY"
+Date: Wed, 25 Nov 2026 07:38:12 GMT
+Content-Length: 30700
+ original-response-headers Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"3f6d-/uyEMt8p4Lf9jRsIL+xf22GyOHY"
+Date: Wed, 25 Nov 2026 07:38:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Content-Length: 30700
+ ctid 2 net-response-time-onstart 30 net-response-time-onstop 31      wÏ

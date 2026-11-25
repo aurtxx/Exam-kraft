@@ -1,0 +1,41 @@
+2026-11-25T07:58:24.396119+00:00 | AGENT-S-06 | LOGIN | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:58:24.414229+00:00 | AGENT-S-06 | LIST_EXAMS | PASS | 200 | {}
+2026-11-25T07:58:24.414730+00:00 | AGENT-S-06 | COHORT_ISOLATION | PASS | - | {"visible_count": 1}
+2026-11-25T07:58:24.431583+00:00 | AGENT-S-06 | CHECK-01_HTTP | PASS | 403 | {}
+2026-11-25T07:58:24.432229+00:00 | AGENT-S-06 | CHECK-01 | PASS | 403 | {"denied": true}
+2026-11-25T08:02:16.307057+00:00 | AGENT-S-06 | START_WINDOW | PASS | - | {"offset_seconds": 0.014753}
+2026-11-25T08:02:17.511857+00:00 | AGENT-S-06 | START | FAIL | 500 | {}
+2026-11-25T08:02:18.602023+00:00 | AGENT-S-06 | START | PASS | 200 | {"attempt_id": "839ff358-840e-4d2c-84aa-d8775fde9187", "status": "SUCCESS"}
+2026-11-25T08:02:18.602266+00:00 | AGENT-S-06 | CHECK-08 | FAIL | - | {"numerical_answer_field_in_question": false, "numerical_answer_field_name": "numerical_value", "option_display_key_present": true, "option_sensitive_fields": [], "question_count": 15, "question_fields": [], "source": "start"}
+2026-11-25T08:02:19.156824+00:00 | AGENT-S-06 | SAVE | FAIL | 500 | {}
+2026-11-25T08:02:20.181683+00:00 | AGENT-S-06 | SAVE | FAIL | 500 | {}
+2026-11-25T08:02:20.814692+00:00 | AGENT-S-06 | SAVE | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T08:02:20.835132+00:00 | AGENT-S-06 | SAVE | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T08:02:46.326958+00:00 | AGENT-S-06 | TAB_SWITCH | PASS | 200 | {"auto_submitted": false, "status": "SUCCESS", "tab_switch_count": 1}
+2026-11-25T08:02:46.327553+00:00 | AGENT-S-06 | VIOLATION_COUNT | PASS | - | {"actual": 1, "expected": 1}
+2026-11-25T08:02:46.349218+00:00 | AGENT-S-06 | SAVE | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T08:03:16.362154+00:00 | AGENT-S-06 | TAB_SWITCH | PASS | 200 | {"auto_submitted": false, "status": "SUCCESS", "tab_switch_count": 2}
+2026-11-25T08:03:16.362403+00:00 | AGENT-S-06 | VIOLATION_COUNT | PASS | - | {"actual": 2, "expected": 2}
+2026-11-25T08:03:16.401384+00:00 | AGENT-S-06 | SAVE | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T08:03:46.415503+00:00 | AGENT-S-06 | TAB_SWITCH | FAIL | 500 | {}
+2026-11-25T08:03:46.874795+00:00 | AGENT-S-06 | TAB_SWITCH | PASS | 200 | {"auto_submitted": false, "status": "SUCCESS", "tab_switch_count": 3}
+2026-11-25T08:03:46.874952+00:00 | AGENT-S-06 | VIOLATION_COUNT | PASS | - | {"actual": 3, "expected": 3}
+2026-11-25T08:03:46.891935+00:00 | AGENT-S-06 | SAVE | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T08:04:16.482098+00:00 | AGENT-S-06 | TAB_SWITCH | PASS | 200 | {"auto_submitted": false, "status": "SUCCESS", "tab_switch_count": 4}
+2026-11-25T08:04:16.483121+00:00 | AGENT-S-06 | VIOLATION_COUNT | PASS | - | {"actual": 4, "expected": 4}
+2026-11-25T08:04:16.678417+00:00 | AGENT-S-06 | SAVE | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T08:04:46.478575+00:00 | AGENT-S-06 | TAB_SWITCH | PASS | 200 | {"auto_submitted": false, "status": "SUCCESS", "tab_switch_count": 5}
+2026-11-25T08:04:46.479090+00:00 | AGENT-S-06 | VIOLATION_COUNT | PASS | - | {"actual": 5, "expected": 5}
+2026-11-25T08:04:46.614782+00:00 | AGENT-S-06 | SAVE | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T08:05:16.327467+00:00 | AGENT-S-06 | TAB_SWITCH | PASS | 200 | {"auto_submitted": true, "status": "SUCCESS", "tab_switch_count": 6}
+2026-11-25T08:05:16.328078+00:00 | AGENT-S-06 | VIOLATION_COUNT | PASS | - | {"actual": 6, "expected": 6}
+2026-11-25T08:05:16.344686+00:00 | AGENT-S-06 | CHECK-06_LOCK | PASS | 403 | {"code": "ATTEMPT_LOCKED", "status": "ERROR"}
+2026-11-25T08:05:16.344833+00:00 | AGENT-S-06 | CHECK-06 | PASS | 403 | {"auto_submitted": true, "violation_count": 6}
+2026-11-25T08:05:16.344914+00:00 | AGENT-S-06 | SUBMITTED_CONFIRMATION | PASS | - | {"auto_submitted": true, "tab_switch_count": 6}
+2026-11-25T08:05:16.385445+00:00 | AGENT-S-06 | CHECK-02 | PASS | 403 | {"code": "RESULTS_NOT_PUBLISHED", "status": "ERROR"}
+2026-11-25T08:05:16.385523+00:00 | AGENT-S-06 | AWAIT_RESULTS | PASS | - | {"attempt": "839ff358-840e-4d2c-84aa-d8775fde9187", "window_end": "2026-11-25T09:02:16.267385+00:00"}
+2026-11-25T09:02:17.046579+00:00 | AGENT-S-06 | REFRESH | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T09:02:17.068222+00:00 | AGENT-S-06 | RESULT_REPORT | PASS | 403 | {"code": "RESULTS_NOT_PUBLISHED", "status": "ERROR"}
+2026-11-25T09:02:47.518324+00:00 | AGENT-S-06 | RESULT_REPORT | PASS | 200 | {"attempt_id": "839ff358-840e-4d2c-84aa-d8775fde9187", "status": "SUCCESS"}
+2026-11-25T09:02:47.518593+00:00 | AGENT-S-06 | PUBLISHED_SCORE | PASS | 200 | {"score_present": true}
+2026-11-25T09:02:54.569678+00:00 | AGENT-S-06 | RUN | PASS | - | {"http_requests": 26}

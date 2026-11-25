@@ -1,0 +1,43 @@
+*** You are running in headless mode.
+WebDriver BiDi listening on ws://127.0.0.1:50961
+1795593103074	RemoteAgent	INFO	Perform WebSocket upgrade for incoming connection from 127.0.0.1:51635
+Crash Annotation GraphicsCriticalError: |[0][GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt (t=1.55946) [GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt
+JavaScript error: moz-src:///browser/components/sessionstore/SessionStartup.sys.mjs, line 264: TypeError: can't access property "length", initialState.savedGroups is undefined
+JavaScript error: chrome://browser/content/browser.js, line 3895: TypeError: can't access property "isConnected", browser is null
+JavaScript error: chrome://browser/content/urlbar/UrlbarInputBase.mjs, line 3287: TypeError: WeakMap key null must be an object or an unregistered symbol
+JavaScript error: chrome://browser/content/urlbar/UrlbarInputBase.mjs, line 3287: TypeError: WeakMap key null must be an object or an unregistered symbol
+console.error: RSLoader: 
+  Failed to retrieve recipes from Remote Settings
+  Message: Error: Shutdown started
+  Stack:
+    ShutdownStartedError@resource://nimbus/lib/RemoteSettingsExperimentLoader.sys.mjs:1577:5
+listener@resource://nimbus/lib/RemoteSettingsExperimentLoader.sys.mjs:747:35
+@resource://nimbus/lib/RemoteSettingsExperimentLoader.sys.mjs:306:31
+trigger@resource://gre/modules/AsyncShutdown.sys.mjs:773:23
+trigger@resource://gre/modules/AsyncShutdown.sys.mjs:811:11
+_wait@resource://gre/modules/AsyncShutdown.sys.mjs:941:15
+wait@resource://gre/modules/AsyncShutdown.sys.mjs:922:34
+observe@resource://gre/modules/AsyncShutdown.sys.mjs:573:10
+quit@chrome://remote/content/shared/Browser.sys.mjs:102:22
+onPacket@chrome://remote/content/webdriver-bidi/WebDriverBiDiConnection.sys.mjs:256:20
+
+console.error: ExperimentAPI: 
+  Failed to enable RemoteSettingsExperimentLoader:
+  Message: Error: Shutdown started
+  Stack:
+    ShutdownStartedError@resource://nimbus/lib/RemoteSettingsExperimentLoader.sys.mjs:1577:5
+listener@resource://nimbus/lib/RemoteSettingsExperimentLoader.sys.mjs:747:35
+@resource://nimbus/lib/RemoteSettingsExperimentLoader.sys.mjs:306:31
+trigger@resource://gre/modules/AsyncShutdown.sys.mjs:773:23
+trigger@resource://gre/modules/AsyncShutdown.sys.mjs:811:11
+_wait@resource://gre/modules/AsyncShutdown.sys.mjs:941:15
+wait@resource://gre/modules/AsyncShutdown.sys.mjs:922:34
+observe@resource://gre/modules/AsyncShutdown.sys.mjs:573:10
+quit@chrome://remote/content/shared/Browser.sys.mjs:102:22
+onPacket@chrome://remote/content/webdriver-bidi/WebDriverBiDiConnection.sys.mjs:256:20
+
+JavaScript error: chrome://global/content/elements/browser-custom-element.mjs, line 1108: NS_ERROR_UNEXPECTED: Component returned failure code: 0x8000ffff (NS_ERROR_UNEXPECTED) [nsIScriptSecurityManager.getLoadContextContentPrincipal]
+JavaScript error: moz-src:///toolkit/components/remotebrowserutils/RemoteWebNavigation.sys.mjs, line 41: TypeError: can't access property "remoteTab", this._browser.frameLoader is null
+JavaScript error: chrome://browser/content/urlbar/UrlbarInputBase.mjs, line 3287: TypeError: WeakMap key null must be an object or an unregistered symbol
+WARNING: At least one completion condition is taking too long to complete. Conditions: [{"name":"CrashMonitor: Writing notifications to file after receiving profile-before-change and awaiting all checkpoints written","state":{"profile-after-change":true,"final-ui-startup":true,"sessionstore-windows-restored":true,"quit-application-granted":true,"quit-application":true,"profile-change-net-teardown":true,"profile-change-teardown":true,"profile-before-change":true},"filename":"resource://gre/modules/CrashMonitor.sys.mjs","lineNumber":164,"stack":["resource://gre/modules/CrashMonitor.sys.mjs:init:164","resource://gre/modules/nsCrashMonitor.sys.mjs:observe:20"]}] Barrier: IOUtils: waiting for profileBeforeChange IO to complete
+WARNING: At least one completion condition is taking too long to complete. Conditions: [{"name":"IOUtils Blocker (profile-before-change)","state":"(none)","filename":"./../../../xpcom/ioutils/IOUtils.cpp","lineNumber":2577,"stack":"IOUtils::EventQueue::SetShutdownHooks"}] Barrier: profile-before-change

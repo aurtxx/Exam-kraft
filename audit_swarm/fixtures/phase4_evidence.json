@@ -1,0 +1,115 @@
+{
+  "window_closed": true,
+  "exams": {
+    "11-PCM": {
+      "expected": 3,
+      "final_count": 3,
+      "ready": true,
+      "attempts": [
+        {
+          "id": "373fe350-3250-4f08-af5f-40e6600543a0",
+          "user": "swarm-s-03@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-11-PCM [PUBLISHED]",
+          "status": "Submitted",
+          "tab_switch_count": "0"
+        },
+        {
+          "id": "9737057f-39e8-4003-8b48-d2f82c2e0aad",
+          "user": "swarm-s-02@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-11-PCM [PUBLISHED]",
+          "status": "Submitted",
+          "tab_switch_count": "3"
+        },
+        {
+          "id": "56672e3c-1c39-4b9f-a1fb-3038c073ec21",
+          "user": "swarm-s-01@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-11-PCM [PUBLISHED]",
+          "status": "Submitted",
+          "tab_switch_count": "0"
+        }
+      ],
+      "publication": {
+        "published_count": 3
+      }
+    },
+    "11-PCB": {
+      "expected": 3,
+      "final_count": 3,
+      "ready": true,
+      "attempts": [
+        {
+          "id": "aefa7d39-d4a9-4ac4-bda9-8d73f8acfbcc",
+          "user": "swarm-s-05@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-11-PCB [PUBLISHED]",
+          "status": "Submitted",
+          "tab_switch_count": "0"
+        },
+        {
+          "id": "6303afa0-0107-4633-81aa-3fe10587dcd7",
+          "user": "swarm-s-04@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-11-PCB [PUBLISHED]",
+          "status": "Submitted",
+          "tab_switch_count": "0"
+        },
+        {
+          "id": "839ff358-840e-4d2c-84aa-d8775fde9187",
+          "user": "swarm-s-06@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-11-PCB [PUBLISHED]",
+          "status": "Auto Submitted",
+          "tab_switch_count": "6"
+        }
+      ],
+      "publication": {
+        "published_count": 3
+      }
+    },
+    "12-PCM": {
+      "expected": 2,
+      "final_count": 2,
+      "ready": true,
+      "attempts": [
+        {
+          "id": "c7c80b1e-8625-4422-bc00-6e39198b4654",
+          "user": "swarm-s-08@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-12-PCM [PUBLISHED]",
+          "status": "Auto Submitted",
+          "tab_switch_count": "6"
+        },
+        {
+          "id": "bc12ee00-b011-448f-a42f-9b82431a635e",
+          "user": "swarm-s-07@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-12-PCM [PUBLISHED]",
+          "status": "Submitted",
+          "tab_switch_count": "0"
+        }
+      ],
+      "publication": {
+        "published_count": 2
+      }
+    },
+    "12-PCB": {
+      "expected": 2,
+      "final_count": 2,
+      "ready": true,
+      "attempts": [
+        {
+          "id": "de2a9b64-c552-4a09-8501-9b5660ee37b9",
+          "user": "swarm-s-09@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-12-PCB [PUBLISHED]",
+          "status": "Submitted",
+          "tab_switch_count": "0"
+        },
+        {
+          "id": "e7ed2e9b-2397-4587-896f-9ada4e0bec53",
+          "user": "swarm-s-10@exam-kraft-swarm.test (STUDENT)",
+          "examination": "EXAM-12-PCB [PUBLISHED]",
+          "status": "Submitted",
+          "tab_switch_count": "0"
+        }
+      ],
+      "publication": {
+        "published_count": 2
+      }
+    }
+  }
+}

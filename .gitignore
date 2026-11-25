@@ -60,3 +60,35 @@ frontend/dist/
 .coverage
 htmlcov/
 test-reports/
+
+# Audit swarm browser profiles & binary caches (Zen browser internal files)
+audit_swarm/zen-preflight/
+audit_swarm/profiles/
+audit_swarm/console/
+audit_swarm/local/fixture-deps/
+audit_swarm/local/*.sqlite
+audit_swarm/local/*.sqlite-wal
+audit_swarm/local/*.log
+
+# Sentinel & local logs
+audit_fix/sentinel.log
+audit_fix/sentinel_resume.log
+audit_fix/backend_stdout.log
+audit_fix/frontend_stdout.log
+
+# Python venv & cache
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# DB files
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Audit swarm temporary files & binaries
+audit_swarm/tools/
+audit_swarm/profiles/
+audit_swarm/zen-preflight/

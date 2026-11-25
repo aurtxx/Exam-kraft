@@ -1,0 +1,1020 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/staff/BatchAnalyticsPage.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=314a0332"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=314a0332"; const useEffect = __vite__cjsImport3_react["useEffect"]; const useState = __vite__cjsImport3_react["useState"]; const useMemo = __vite__cjsImport3_react["useMemo"];
+import { useParams, useNavigate } from "/node_modules/.vite/deps/react-router-dom.js?v=314a0332";
+import {
+  Trophy,
+  Users,
+  TrendingUp,
+  Award,
+  RefreshCw,
+  Search,
+  Download,
+  ArrowLeft,
+  AlertCircle,
+  BarChart2,
+  CheckCircle2,
+  Eye
+} from "/node_modules/.vite/deps/lucide-react.js?v=314a0332";
+import analyticsApi from "/src/services/analyticsApi.ts";
+export const BatchAnalyticsPage = () => {
+  _s();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [evaluating, setEvaluating] = useState(false);
+  const [error, setError] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const loadAnalytics = async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await analyticsApi.getExamResults(id);
+      setAnalytics(data);
+    } catch (err) {
+      console.error("Failed to load batch analytics:", err);
+      setError(
+        err.response?.data?.detail || err.response?.data?.message || "Failed to load cohort analytics."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadAnalytics();
+  }, [id]);
+  const handleReEvaluate = async () => {
+    if (!id) return;
+    try {
+      setEvaluating(true);
+      await analyticsApi.evaluateExam(id);
+      await loadAnalytics();
+    } catch (err) {
+      console.error("Re-evaluation error:", err);
+      alert("Failed to re-evaluate cohort: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setEvaluating(false);
+    }
+  };
+  const rankings = useMemo(() => {
+    return analytics?.rankings || analytics?.summary?.rankings || [];
+  }, [analytics]);
+  const filteredRankings = useMemo(() => {
+    if (!searchQuery.trim()) return rankings;
+    const q = searchQuery.toLowerCase();
+    return rankings.filter(
+      (r) => r.candidate_name?.toLowerCase().includes(q) || r.username?.toLowerCase().includes(q) || r.student?.toLowerCase().includes(q) || r.attempt_id?.toLowerCase().includes(q)
+    );
+  }, [rankings, searchQuery]);
+  const summary = analytics?.summary;
+  const totalCandidates = summary?.total_candidates ?? rankings.length;
+  const avgScore = summary?.average_score ?? 0;
+  const highestScore = summary?.highest_score ?? 0;
+  const lowestScore = summary?.lowest_score ?? 0;
+  const passingCount = useMemo(() => {
+    return rankings.filter((r) => r.total_score >= 0).length;
+  }, [rankings]);
+  const passingRate = totalCandidates > 0 ? Math.round(passingCount / totalCandidates * 100) : 0;
+  const topPerformers = useMemo(() => {
+    return rankings.slice(0, 3);
+  }, [rankings]);
+  const distributionBins = useMemo(() => {
+    if (analytics?.score_distribution && analytics.score_distribution.length > 0) {
+      return analytics.score_distribution;
+    }
+    const bins = {};
+    rankings.forEach((r) => {
+      const bucket = `${Math.floor(r.total_score / 10) * 10}-${Math.floor(r.total_score / 10) * 10 + 9}`;
+      bins[bucket] = (bins[bucket] || 0) + 1;
+    });
+    return Object.entries(bins).map(([total_score, candidates]) => ({
+      total_score,
+      candidates
+    }));
+  }, [analytics, rankings]);
+  const maxBinCount = useMemo(() => {
+    return Math.max(...distributionBins.map((b) => Number(b.candidates)), 1);
+  }, [distributionBins]);
+  const handleExportCsv = () => {
+    if (!rankings.length) return;
+    const headers = ["Rank", "Candidate Name", "Username", "Total Score", "Maximum Score", "Penalty", "Percentile"];
+    const rows = rankings.map(
+      (r) => [
+        r.rank,
+        `"${r.candidate_name || r.student || ""}"`,
+        `"${r.username || ""}"`,
+        r.total_score,
+        r.maximum_score,
+        r.penalty,
+        r.percentile
+      ]
+    );
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `cohort-rankings-${id}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  if (loading) {
+    return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 165,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("h2", { className: "text-xl font-bold text-slate-800", children: "Compiling Cohort Analytics..." }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 166,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-slate-500 mt-1", children: "Aggregating score distribution, calculating percentiles and leaderboard." }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 167,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+      lineNumber: 164,
+      columnNumber: 7
+    }, this);
+  }
+  if (error || !analytics) {
+    return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6", children: /* @__PURE__ */ jsxDEV("div", { className: "max-w-md w-full bg-white rounded-2xl shadow-lg border border-slate-200 p-8 text-center", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4", children: /* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-8 h-8" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 177,
+        columnNumber: 13
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 176,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("h2", { className: "text-xl font-bold text-slate-900 mb-2", children: "Analytics Unavailable" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 179,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-slate-600 mb-6", children: error || "No evaluation data found for this examination." }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 180,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex gap-3", children: [
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => navigate("/staff/exams"),
+            className: "flex-1 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm transition",
+            children: "Back to Exams"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 182,
+            columnNumber: 13
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: handleReEvaluate,
+            disabled: evaluating,
+            className: "flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm transition",
+            children: evaluating ? "Evaluating..." : "Evaluate Now"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 188,
+            columnNumber: 13
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 181,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+      lineNumber: 175,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+      lineNumber: 174,
+      columnNumber: 7
+    }, this);
+  }
+  return /* @__PURE__ */ jsxDEV("div", { className: "space-y-8 pb-16", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => navigate("/staff/exams"),
+            className: "p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition",
+            children: /* @__PURE__ */ jsxDEV(ArrowLeft, { className: "w-5 h-5" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 210,
+              columnNumber: 13
+            }, this)
+          },
+          void 0,
+          false,
+          {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 206,
+            columnNumber: 11
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("h1", { className: "text-2xl font-extrabold text-slate-900", children: "Cohort Batch Analytics" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 213,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-500", children: [
+            "Exam ID: ",
+            /* @__PURE__ */ jsxDEV("span", { className: "font-mono text-slate-700", children: id }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 215,
+              columnNumber: 24
+            }, this),
+            " ‚Ä¢ Evaluated:",
+            " ",
+            summary?.evaluated_at ? new Date(summary.evaluated_at).toLocaleString() : "Recent"
+          ] }, void 0, true, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 214,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 212,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 205,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: handleReEvaluate,
+            disabled: evaluating,
+            className: "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs font-semibold transition",
+            children: [
+              /* @__PURE__ */ jsxDEV(RefreshCw, { className: `w-4 h-4 ${evaluating ? "animate-spin" : ""}` }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 227,
+                columnNumber: 13
+              }, this),
+              evaluating ? "Recalculating..." : "Re-Evaluate Cohort"
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 222,
+            columnNumber: 11
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: handleExportCsv,
+            className: "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold shadow-sm transition",
+            children: [
+              /* @__PURE__ */ jsxDEV(Download, { className: "w-4 h-4" }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 234,
+                columnNumber: 13
+              }, this),
+              " Export Leaderboard"
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 230,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 221,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+      lineNumber: 204,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-2xl border border-slate-200 p-5 shadow-sm", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between text-slate-500 text-xs font-medium mb-1", children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Candidates Tested" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 244,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV(Users, { className: "w-4 h-4 text-indigo-500" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 245,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 243,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "text-3xl font-extrabold text-slate-900", children: totalCandidates }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 247,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: "text-xs text-slate-400 mt-1 block", children: "Final submitted attempts" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 248,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 242,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-2xl border border-slate-200 p-5 shadow-sm", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between text-slate-500 text-xs font-medium mb-1", children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Cohort Average" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 254,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV(TrendingUp, { className: "w-4 h-4 text-emerald-500" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 255,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 253,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "text-3xl font-extrabold text-emerald-600", children: avgScore }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 257,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: "text-xs text-slate-400 mt-1 block", children: "Mean score of cohort" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 258,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 252,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-2xl border border-slate-200 p-5 shadow-sm", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between text-slate-500 text-xs font-medium mb-1", children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Highest Score" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 264,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV(Trophy, { className: "w-4 h-4 text-amber-500" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 265,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 263,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "text-3xl font-extrabold text-amber-600", children: highestScore }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 267,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: "text-xs text-slate-400 mt-1 block", children: "Top candidate score" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 268,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 262,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-2xl border border-slate-200 p-5 shadow-sm", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between text-slate-500 text-xs font-medium mb-1", children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Lowest Score" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 274,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV(BarChart2, { className: "w-4 h-4 text-slate-400" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 275,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 273,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "text-3xl font-extrabold text-slate-700", children: lowestScore }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 277,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: "text-xs text-slate-400 mt-1 block", children: "Baseline attempt score" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 278,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 272,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-2xl border border-slate-200 p-5 shadow-sm", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between text-slate-500 text-xs font-medium mb-1", children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Passing Rate" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 284,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-4 h-4 text-cyan-500" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 285,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 283,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "text-3xl font-extrabold text-cyan-600", children: [
+          passingRate,
+          "%"
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 287,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: "text-xs text-slate-400 mt-1 block", children: [
+          passingCount,
+          " candidates passing"
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 288,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 282,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+      lineNumber: 240,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between mb-4", children: [
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("h2", { className: "text-lg font-bold text-slate-900", children: "Score Distribution Histogram" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 298,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-500", children: "Frequency of candidate net scores across the cohort" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 299,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 297,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV(BarChart2, { className: "w-5 h-5 text-indigo-500" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 301,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 296,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "h-48 flex items-end gap-3 pt-6 border-b border-slate-200 pb-2", children: distributionBins.map((bin, idx) => {
+          const count = Number(bin.candidates);
+          const heightPct = Math.round(count / maxBinCount * 100);
+          return /* @__PURE__ */ jsxDEV("div", { className: "flex-1 flex flex-col items-center h-full justify-end group", children: [
+            /* @__PURE__ */ jsxDEV("span", { className: "text-xs font-bold text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity mb-1", children: count }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 310,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "div",
+              {
+                className: "w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg transition-all duration-300 min-h-[4px]",
+                style: { height: `${Math.max(heightPct, 6)}%` }
+              },
+              void 0,
+              false,
+              {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 313,
+                columnNumber: 19
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDEV("span", { className: "text-[10px] text-slate-500 mt-2 rotate-[-45deg] origin-top-left font-mono", children: bin.total_score }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 317,
+              columnNumber: 19
+            }, this)
+          ] }, idx, true, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 309,
+            columnNumber: 17
+          }, this);
+        }) }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 304,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 295,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between", children: [
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between mb-4", children: [
+            /* @__PURE__ */ jsxDEV("h2", { className: "text-lg font-bold text-slate-900", children: "Top Performers" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 330,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV(Award, { className: "w-5 h-5 text-amber-500" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 331,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 329,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "space-y-3", children: topPerformers.map(
+            (cand, idx) => /* @__PURE__ */ jsxDEV(
+              "div",
+              {
+                className: "flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200",
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+                    /* @__PURE__ */ jsxDEV(
+                      "span",
+                      {
+                        className: `w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${idx === 0 ? "bg-amber-400 text-white" : idx === 1 ? "bg-slate-300 text-slate-800" : "bg-amber-700/60 text-white"}`,
+                        children: [
+                          "#",
+                          cand.rank
+                        ]
+                      },
+                      void 0,
+                      true,
+                      {
+                        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                        lineNumber: 341,
+                        columnNumber: 21
+                      },
+                      this
+                    ),
+                    /* @__PURE__ */ jsxDEV("div", { children: [
+                      /* @__PURE__ */ jsxDEV("h4", { className: "font-bold text-slate-900 text-xs", children: cand.candidate_name || cand.student || cand.username }, void 0, false, {
+                        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                        lineNumber: 353,
+                        columnNumber: 23
+                      }, this),
+                      /* @__PURE__ */ jsxDEV("span", { className: "text-[10px] text-slate-400 font-mono", children: [
+                        "@",
+                        cand.username
+                      ] }, void 0, true, {
+                        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                        lineNumber: 356,
+                        columnNumber: 23
+                      }, this)
+                    ] }, void 0, true, {
+                      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                      lineNumber: 352,
+                      columnNumber: 21
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                    lineNumber: 340,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("div", { className: "text-right", children: [
+                    /* @__PURE__ */ jsxDEV("span", { className: "font-extrabold text-sm text-indigo-600", children: [
+                      cand.total_score,
+                      " pts"
+                    ] }, void 0, true, {
+                      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                      lineNumber: 360,
+                      columnNumber: 21
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { className: "block text-[10px] text-emerald-600 font-semibold", children: [
+                      cand.percentile?.toFixed(2),
+                      "%ile"
+                    ] }, void 0, true, {
+                      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                      lineNumber: 361,
+                      columnNumber: 21
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                    lineNumber: 359,
+                    columnNumber: 19
+                  }, this)
+                ]
+              },
+              cand.attempt_id,
+              true,
+              {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 336,
+                columnNumber: 15
+              },
+              this
+            )
+          ) }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 334,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 328,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "mt-4 pt-4 border-t border-slate-100 text-xs text-slate-400 text-center", children: "Rankings determined with standard tie-break order" }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 370,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 327,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+      lineNumber: 293,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4", children: [
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("h2", { className: "text-xl font-bold text-slate-900", children: "Cohort Leaderboard" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 380,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-500 mt-0.5", children: "Deterministic rankings with section breakdown, penalties, and percentile scores" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 381,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 379,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "relative w-full sm:w-72", children: [
+          /* @__PURE__ */ jsxDEV(Search, { className: "w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 387,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "input",
+            {
+              type: "text",
+              placeholder: "Search candidate name or username...",
+              value: searchQuery,
+              onChange: (e) => setSearchQuery(e.target.value),
+              className: "w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"
+            },
+            void 0,
+            false,
+            {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 388,
+              columnNumber: 13
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 386,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 378,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxDEV("table", { className: "w-full text-left text-xs", children: [
+        /* @__PURE__ */ jsxDEV("thead", { className: "bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider", children: /* @__PURE__ */ jsxDEV("tr", { children: [
+          /* @__PURE__ */ jsxDEV("th", { className: "py-3.5 px-6", children: "Rank" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 402,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("th", { className: "py-3.5 px-6", children: "Candidate" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 403,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("th", { className: "py-3.5 px-6", children: "Net Score" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 404,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("th", { className: "py-3.5 px-6", children: "Penalty" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 405,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("th", { className: "py-3.5 px-6", children: "Correct / Incorrect" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 406,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("th", { className: "py-3.5 px-6", children: "Percentile" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 407,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("th", { className: "py-3.5 px-6 text-right", children: "Actions" }, void 0, false, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 408,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 401,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 400,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("tbody", { className: "divide-y divide-slate-100", children: filteredRankings.length > 0 ? filteredRankings.map(
+          (cand) => /* @__PURE__ */ jsxDEV("tr", { className: "hover:bg-slate-50/80 transition", children: [
+            /* @__PURE__ */ jsxDEV("td", { className: "py-4 px-6 font-bold text-slate-900", children: /* @__PURE__ */ jsxDEV(
+              "span",
+              {
+                className: `inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${cand.rank === 1 ? "bg-amber-100 text-amber-800 border border-amber-300" : cand.rank === 2 ? "bg-slate-100 text-slate-700 border border-slate-300" : cand.rank === 3 ? "bg-orange-100 text-orange-800 border border-orange-300" : "text-slate-600"}`,
+                children: cand.rank
+              },
+              void 0,
+              false,
+              {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 416,
+                columnNumber: 23
+              },
+              this
+            ) }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 415,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ jsxDEV("td", { className: "py-4 px-6", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "font-bold text-slate-900", children: cand.candidate_name || cand.student || cand.username }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 431,
+                columnNumber: 23
+              }, this),
+              /* @__PURE__ */ jsxDEV("div", { className: "text-[11px] text-slate-400 font-mono", children: [
+                "@",
+                cand.username
+              ] }, void 0, true, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 434,
+                columnNumber: 23
+              }, this)
+            ] }, void 0, true, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 430,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ jsxDEV("td", { className: "py-4 px-6", children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "font-extrabold text-sm text-slate-900", children: cand.total_score }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 437,
+                columnNumber: 23
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "text-slate-400 font-normal", children: [
+                " / ",
+                cand.maximum_score
+              ] }, void 0, true, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 438,
+                columnNumber: 23
+              }, this)
+            ] }, void 0, true, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 436,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ jsxDEV("td", { className: "py-4 px-6", children: cand.penalty > 0 ? /* @__PURE__ */ jsxDEV("span", { className: "text-rose-600 font-semibold", children: [
+              "-",
+              cand.penalty,
+              " pts"
+            ] }, void 0, true, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 442,
+              columnNumber: 19
+            }, this) : /* @__PURE__ */ jsxDEV("span", { className: "text-slate-400", children: "0 pts" }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 444,
+              columnNumber: 19
+            }, this) }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 440,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ jsxDEV("td", { className: "py-4 px-6", children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "text-emerald-600 font-semibold", children: cand.total_correct }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 448,
+                columnNumber: 23
+              }, this),
+              " /",
+              " ",
+              /* @__PURE__ */ jsxDEV("span", { className: "text-rose-600 font-semibold", children: cand.total_incorrect }, void 0, false, {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 449,
+                columnNumber: 23
+              }, this)
+            ] }, void 0, true, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 447,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ jsxDEV("td", { className: "py-4 px-6", children: /* @__PURE__ */ jsxDEV("span", { className: "px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-200", children: [
+              cand.percentile?.toFixed(3),
+              "%"
+            ] }, void 0, true, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 452,
+              columnNumber: 23
+            }, this) }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 451,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ jsxDEV("td", { className: "py-4 px-6 text-right", children: /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                onClick: () => navigate(`/student/exam/${cand.attempt_id}/report`),
+                className: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition",
+                title: "View Detailed Student Report",
+                children: [
+                  /* @__PURE__ */ jsxDEV(Eye, { className: "w-3.5 h-3.5" }, void 0, false, {
+                    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                    lineNumber: 462,
+                    columnNumber: 25
+                  }, this),
+                  " View Report"
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+                lineNumber: 457,
+                columnNumber: 23
+              },
+              this
+            ) }, void 0, false, {
+              fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+              lineNumber: 456,
+              columnNumber: 21
+            }, this)
+          ] }, cand.attempt_id, true, {
+            fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+            lineNumber: 414,
+            columnNumber: 15
+          }, this)
+        ) : /* @__PURE__ */ jsxDEV("tr", { children: /* @__PURE__ */ jsxDEV("td", { colSpan: 7, className: "py-12 text-center text-slate-400", children: "No candidates found matching the query." }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 469,
+          columnNumber: 19
+        }, this) }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 468,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+          lineNumber: 411,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 399,
+        columnNumber: 11
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+        lineNumber: 398,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+      lineNumber: 377,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx",
+    lineNumber: 202,
+    columnNumber: 5
+  }, this);
+};
+_s(BatchAnalyticsPage, "SBSNqtceZfPGibK9f/U9xNnAlSo=", false, function() {
+  return [useParams, useNavigate];
+});
+_c = BatchAnalyticsPage;
+export default BatchAnalyticsPage;
+var _c;
+$RefreshReg$(_c, "BatchAnalyticsPage");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/pages/staff/BatchAnalyticsPage.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QSxLQTdFRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBOEVBO0FBQUEsU0FuR0Y7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQW9HQTtBQUFBLE9BblJGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FvUkE7QUFFSjtBQUFFcEMsR0F6YldELG9CQUE0QjtBQUFBLFVBQ3hCZixXQUNFQyxXQUFXO0FBQUE7QUFBQSxLQUZqQmM7QUEyYmIsZUFBZUE7QUFBbUIsSUFBQXNHO0FBQUEsYUFBQUEsSUFBQSIsIm5hbWVzIjpbInVzZUVmZmVjdCIsInVzZVN0YXRlIiwidXNlTWVtbyIsInVzZVBhcmFtcyIsInVzZU5hdmlnYXRlIiwiVHJvcGh5IiwiVXNlcnMiLCJUcmVuZGluZ1VwIiwiQXdhcmQiLCJSZWZyZXNoQ3ciLCJTZWFyY2giLCJEb3dubG9hZCIsIkFycm93TGVmdCIsIkFsZXJ0Q2lyY2xlIiwiQmFyQ2hhcnQyIiwiQ2hlY2tDaXJjbGUyIiwiRXllIiwiYW5hbHl0aWNzQXBpIiwiQmF0Y2hBbmFseXRpY3NQYWdlIiwiX3MiLCJpZCIsIm5hdmlnYXRlIiwibG9hZGluZyIsInNldExvYWRpbmciLCJldmFsdWF0aW5nIiwic2V0RXZhbHVhdGluZyIsImVycm9yIiwic2V0RXJyb3IiLCJhbmFseXRpY3MiLCJzZXRBbmFseXRpY3MiLCJzZWFyY2hRdWVyeSIsInNldFNlYXJjaFF1ZXJ5IiwibG9hZEFuYWx5dGljcyIsImRhdGEiLCJnZXRFeGFtUmVzdWx0cyIsImVyciIsImNvbnNvbGUiLCJyZXNwb25zZSIsImRldGFpbCIsIm1lc3NhZ2UiLCJoYW5kbGVSZUV2YWx1YXRlIiwiZXZhbHVhdGVFeGFtIiwiYWxlcnQiLCJyYW5raW5ncyIsInN1bW1hcnkiLCJmaWx0ZXJlZFJhbmtpbmdzIiwidHJpbSIsInEiLCJ0b0xvd2VyQ2FzZSIsImZpbHRlciIsInIiLCJjYW5kaWRhdGVfbmFtZSIsImluY2x1ZGVzIiwidXNlcm5hbWUiLCJzdHVkZW50IiwiYXR0ZW1wdF9pZCIsInRvdGFsQ2FuZGlkYXRlcyIsInRvdGFsX2NhbmRpZGF0ZXMiLCJsZW5ndGgiLCJhdmdTY29yZSIsImF2ZXJhZ2Vfc2NvcmUiLCJoaWdoZXN0U2NvcmUiLCJoaWdoZXN0X3Njb3JlIiwibG93ZXN0U2NvcmUiLCJsb3dlc3Rfc2NvcmUiLCJwYXNzaW5nQ291bnQiLCJ0b3RhbF9zY29yZSIsInBhc3NpbmdSYXRlIiwiTWF0aCIsInJvdW5kIiwidG9wUGVyZm9ybWVycyIsInNsaWNlIiwiZGlzdHJpYnV0aW9uQmlucyIsInNjb3JlX2Rpc3RyaWJ1dGlvbiIsImJpbnMiLCJmb3JFYWNoIiwiYnVja2V0IiwiZmxvb3IiLCJPYmplY3QiLCJlbnRyaWVzIiwibWFwIiwiY2FuZGlkYXRlcyIsIm1heEJpbkNvdW50IiwibWF4IiwiYiIsIk51bWJlciIsImhhbmRsZUV4cG9ydENzdiIsImhlYWRlcnMiLCJyb3dzIiwicmFuayIsIm1heGltdW1fc2NvcmUiLCJwZW5hbHR5IiwicGVyY2VudGlsZSIsImNzdkNvbnRlbnQiLCJqb2luIiwiZSIsImVuY29kZWRVcmkiLCJlbmNvZGVVUkkiLCJsaW5rIiwiZG9jdW1lbnQiLCJjcmVhdGVFbGVtZW50Iiwic2V0QXR0cmlidXRlIiwiYm9keSIsImFwcGVuZENoaWxkIiwiY2xpY2siLCJyZW1vdmVDaGlsZCIsImV2YWx1YXRlZF9hdCIsIkRhdGUiLCJ0b0xvY2FsZVN0cmluZyIsImJpbiIsImlkeCIsImNvdW50IiwiaGVpZ2h0UGN0IiwiaGVpZ2h0IiwiY2FuZCIsInRvRml4ZWQiLCJ0YXJnZXQiLCJ2YWx1ZSIsInRvdGFsX2NvcnJlY3QiLCJ0b3RhbF9pbmNvcnJlY3QiLCJfYyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJCYXRjaEFuYWx5dGljc1BhZ2UudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBSZWFjdCwgeyB1c2VFZmZlY3QsIHVzZVN0YXRlLCB1c2VNZW1vIH0gZnJvbSAncmVhY3QnO1xuaW1wb3J0IHsgdXNlUGFyYW1zLCB1c2VOYXZpZ2F0ZSB9IGZyb20gJ3JlYWN0LXJvdXRlci1kb20nO1xuaW1wb3J0IHtcbiAgVHJvcGh5LFxuICBVc2VycyxcbiAgVHJlbmRpbmdVcCxcbiAgQXdhcmQsXG4gIFJlZnJlc2hDdyxcbiAgU2VhcmNoLFxuICBEb3dubG9hZCxcbiAgQXJyb3dMZWZ0LFxuICBBbGVydENpcmNsZSxcbiAgQmFyQ2hhcnQyLFxuICBDaGVja0NpcmNsZTIsXG4gIEV5ZSxcbn0gZnJvbSAnbHVjaWRlLXJlYWN0JztcbmltcG9ydCBhbmFseXRpY3NBcGkgZnJvbSAnLi4vLi4vc2VydmljZXMvYW5hbHl0aWNzQXBpJztcbmltcG9ydCB7IEJhdGNoQW5hbHl0aWNzUGF5bG9hZCwgQ29ob3J0UmFua2luZ0VudHJ5IH0gZnJvbSAnLi4vLi4vdHlwZXMnO1xuXG5leHBvcnQgY29uc3QgQmF0Y2hBbmFseXRpY3NQYWdlOiBSZWFjdC5GQyA9ICgpID0+IHtcbiAgY29uc3QgeyBpZCB9ID0gdXNlUGFyYW1zPHsgaWQ6IHN0cmluZyB9PigpO1xuICBjb25zdCBuYXZpZ2F0ZSA9IHVzZU5hdmlnYXRlKCk7XG5cbiAgY29uc3QgW2xvYWRpbmcsIHNldExvYWRpbmddID0gdXNlU3RhdGU8Ym9vbGVhbj4odHJ1ZSk7XG4gIGNvbnN0IFtldmFsdWF0aW5nLCBzZXRFdmFsdWF0aW5nXSA9IHVzZVN0YXRlPGJvb2xlYW4+KGZhbHNlKTtcbiAgY29uc3QgW2Vycm9yLCBzZXRFcnJvcl0gPSB1c2VTdGF0ZTxzdHJpbmcgfCBudWxsPihudWxsKTtcbiAgY29uc3QgW2FuYWx5dGljcywgc2V0QW5hbHl0aWNzXSA9IHVzZVN0YXRlPEJhdGNoQW5hbHl0aWNzUGF5bG9hZCB8IG51bGw+KG51bGwpO1xuICBjb25zdCBbc2VhcmNoUXVlcnksIHNldFNlYXJjaFF1ZXJ5XSA9IHVzZVN0YXRlPHN0cmluZz4oJycpO1xuXG4gIGNvbnN0IGxvYWRBbmFseXRpY3MgPSBhc3luYyAoKSA9PiB7XG4gICAgaWYgKCFpZCkgcmV0dXJuO1xuICAgIHRyeSB7XG4gICAgICBzZXRMb2FkaW5nKHRydWUpO1xuICAgICAgc2V0RXJyb3IobnVsbCk7XG4gICAgICBjb25zdCBkYXRhID0gYXdhaXQgYW5hbHl0aWNzQXBpLmdldEV4YW1SZXN1bHRzKGlkKTtcbiAgICAgIHNldEFuYWx5dGljcyhkYXRhKTtcbiAgICB9IGNhdGNoIChlcnI6IGFueSkge1xuICAgICAgY29uc29sZS5lcnJvcignRmFpbGVkIHRvIGxvYWQgYmF0Y2ggYW5hbHl0aWNzOicsIGVycik7XG4gICAgICBzZXRFcnJvcihcbiAgICAgICAgZXJyLnJlc3BvbnNlPy5kYXRhPy5kZXRhaWwgfHxcbiAgICAgICAgZXJyLnJlc3BvbnNlPy5kYXRhPy5tZXNzYWdlIHx8XG4gICAgICAgICdGYWlsZWQgdG8gbG9hZCBjb2hvcnQgYW5hbHl0aWNzLidcbiAgICAgICk7XG4gICAgfSBmaW5hbGx5IHtcbiAgICAgIHNldExvYWRpbmcoZmFsc2UpO1xuICAgIH1cbiAgfTtcblxuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIGxvYWRBbmFseXRpY3MoKTtcbiAgfSwgW2lkXSk7XG5cbiAgY29uc3QgaGFuZGxlUmVFdmFsdWF0ZSA9IGFzeW5jICgpID0+IHtcbiAgICBpZiAoIWlkKSByZXR1cm47XG4gICAgdHJ5IHtcbiAgICAgIHNldEV2YWx1YXRpbmcodHJ1ZSk7XG4gICAgICBhd2FpdCBhbmFseXRpY3NBcGkuZXZhbHVhdGVFeGFtKGlkKTtcbiAgICAgIGF3YWl0IGxvYWRBbmFseXRpY3MoKTtcbiAgICB9IGNhdGNoIChlcnI6IGFueSkge1xuICAgICAgY29uc29sZS5lcnJvcignUmUtZXZhbHVhdGlvbiBlcnJvcjonLCBlcnIpO1xuICAgICAgYWxlcnQoJ0ZhaWxlZCB0byByZS1ldmFsdWF0ZSBjb2hvcnQ6ICcgKyAoZXJyLnJlc3BvbnNlPy5kYXRhPy5kZXRhaWwgfHwgZXJyLm1lc3NhZ2UpKTtcbiAgICB9IGZpbmFsbHkge1xuICAgICAgc2V0RXZhbHVhdGluZyhmYWxzZSk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IHJhbmtpbmdzOiBDb2hvcnRSYW5raW5nRW50cnlbXSA9IHVzZU1lbW8oKCkgPT4ge1xuICAgIHJldHVybiBhbmFseXRpY3M/LnJhbmtpbmdzIHx8IGFuYWx5dGljcz8uc3VtbWFyeT8ucmFua2luZ3MgfHwgW107XG4gIH0sIFthbmFseXRpY3NdKTtcblxuICBjb25zdCBmaWx0ZXJlZFJhbmtpbmdzID0gdXNlTWVtbygoKSA9PiB7XG4gICAgaWYgKCFzZWFyY2hRdWVyeS50cmltKCkpIHJldHVybiByYW5raW5ncztcbiAgICBjb25zdCBxID0gc2VhcmNoUXVlcnkudG9Mb3dlckNhc2UoKTtcbiAgICByZXR1cm4gcmFua2luZ3MuZmlsdGVyKFxuICAgICAgKHIpID0+XG4gICAgICAgIHIuY2FuZGlkYXRlX25hbWU/LnRvTG93ZXJDYXNlKCkuaW5jbHVkZXMocSkgfHxcbiAgICAgICAgci51c2VybmFtZT8udG9Mb3dlckNhc2UoKS5pbmNsdWRlcyhxKSB8fFxuICAgICAgICByLnN0dWRlbnQ/LnRvTG93ZXJDYXNlKCkuaW5jbHVkZXMocSkgfHxcbiAgICAgICAgci5hdHRlbXB0X2lkPy50b0xvd2VyQ2FzZSgpLmluY2x1ZGVzKHEpXG4gICAgKTtcbiAgfSwgW3JhbmtpbmdzLCBzZWFyY2hRdWVyeV0pO1xuXG4gIGNvbnN0IHN1bW1hcnkgPSBhbmFseXRpY3M/LnN1bW1hcnk7XG4gIGNvbnN0IHRvdGFsQ2FuZGlkYXRlcyA9IHN1bW1hcnk/LnRvdGFsX2NhbmRpZGF0ZXMgPz8gcmFua2luZ3MubGVuZ3RoO1xuICBjb25zdCBhdmdTY29yZSA9IHN1bW1hcnk/LmF2ZXJhZ2Vfc2NvcmUgPz8gMDtcbiAgY29uc3QgaGlnaGVzdFNjb3JlID0gc3VtbWFyeT8uaGlnaGVzdF9zY29yZSA/PyAwO1xuICBjb25zdCBsb3dlc3RTY29yZSA9IHN1bW1hcnk/Lmxvd2VzdF9zY29yZSA/PyAwO1xuXG4gIC8vIFBhc3Npbmcgc3RhdHNcbiAgY29uc3QgcGFzc2luZ0NvdW50ID0gdXNlTWVtbygoKSA9PiB7XG4gICAgcmV0dXJuIHJhbmtpbmdzLmZpbHRlcigocikgPT4gci50b3RhbF9zY29yZSA+PSAwKS5sZW5ndGg7IC8vIG9yIGNoZWNrIHBhc3NpbmdcbiAgfSwgW3JhbmtpbmdzXSk7XG4gIGNvbnN0IHBhc3NpbmdSYXRlID0gdG90YWxDYW5kaWRhdGVzID4gMCA/IE1hdGgucm91bmQoKHBhc3NpbmdDb3VudCAvIHRvdGFsQ2FuZGlkYXRlcykgKiAxMDApIDogMDtcblxuICAvLyBUb3AgcGVyZm9ybWVyc1xuICBjb25zdCB0b3BQZXJmb3JtZXJzID0gdXNlTWVtbygoKSA9PiB7XG4gICAgcmV0dXJuIHJhbmtpbmdzLnNsaWNlKDAsIDMpO1xuICB9LCBbcmFua2luZ3NdKTtcblxuICAvLyBTY29yZSBkaXN0cmlidXRpb24gY2FsY3VsYXRpb25zIGZvciB2aXN1YWwgaGlzdG9ncmFtXG4gIGNvbnN0IGRpc3RyaWJ1dGlvbkJpbnMgPSB1c2VNZW1vKCgpID0+IHtcbiAgICBpZiAoYW5hbHl0aWNzPy5zY29yZV9kaXN0cmlidXRpb24gJiYgYW5hbHl0aWNzLnNjb3JlX2Rpc3RyaWJ1dGlvbi5sZW5ndGggPiAwKSB7XG4gICAgICByZXR1cm4gYW5hbHl0aWNzLnNjb3JlX2Rpc3RyaWJ1dGlvbjtcbiAgICB9XG4gICAgLy8gRmFsbGJhY2sgYmluc1xuICAgIGNvbnN0IGJpbnM6IFJlY29yZDxzdHJpbmcsIG51bWJlcj4gPSB7fTtcbiAgICByYW5raW5ncy5mb3JFYWNoKChyKSA9PiB7XG4gICAgICBjb25zdCBidWNrZXQgPSBgJHtNYXRoLmZsb29yKHIudG90YWxfc2NvcmUgLyAxMCkgKiAxMH0tJHtNYXRoLmZsb29yKHIudG90YWxfc2NvcmUgLyAxMCkgKiAxMCArIDl9YDtcbiAgICAgIGJpbnNbYnVja2V0XSA9IChiaW5zW2J1Y2tldF0gfHwgMCkgKyAxO1xuICAgIH0pO1xuICAgIHJldHVybiBPYmplY3QuZW50cmllcyhiaW5zKS5tYXAoKFt0b3RhbF9zY29yZSwgY2FuZGlkYXRlc10pID0+ICh7XG4gICAgICB0b3RhbF9zY29yZSxcbiAgICAgIGNhbmRpZGF0ZXMsXG4gICAgfSkpO1xuICB9LCBbYW5hbHl0aWNzLCByYW5raW5nc10pO1xuXG4gIGNvbnN0IG1heEJpbkNvdW50ID0gdXNlTWVtbygoKSA9PiB7XG4gICAgcmV0dXJuIE1hdGgubWF4KC4uLmRpc3RyaWJ1dGlvbkJpbnMubWFwKChiKSA9PiBOdW1iZXIoYi5jYW5kaWRhdGVzKSksIDEpO1xuICB9LCBbZGlzdHJpYnV0aW9uQmluc10pO1xuXG4gIGNvbnN0IGhhbmRsZUV4cG9ydENzdiA9ICgpID0+IHtcbiAgICBpZiAoIXJhbmtpbmdzLmxlbmd0aCkgcmV0dXJuO1xuICAgIGNvbnN0IGhlYWRlcnMgPSBbJ1JhbmsnLCAnQ2FuZGlkYXRlIE5hbWUnLCAnVXNlcm5hbWUnLCAnVG90YWwgU2NvcmUnLCAnTWF4aW11bSBTY29yZScsICdQZW5hbHR5JywgJ1BlcmNlbnRpbGUnXTtcbiAgICBjb25zdCByb3dzID0gcmFua2luZ3MubWFwKChyKSA9PiBbXG4gICAgICByLnJhbmssXG4gICAgICBgXCIke3IuY2FuZGlkYXRlX25hbWUgfHwgci5zdHVkZW50IHx8ICcnfVwiYCxcbiAgICAgIGBcIiR7ci51c2VybmFtZSB8fCAnJ31cImAsXG4gICAgICByLnRvdGFsX3Njb3JlLFxuICAgICAgci5tYXhpbXVtX3Njb3JlLFxuICAgICAgci5wZW5hbHR5LFxuICAgICAgci5wZXJjZW50aWxlLFxuICAgIF0pO1xuICAgIGNvbnN0IGNzdkNvbnRlbnQgPSAnZGF0YTp0ZXh0L2NzdjtjaGFyc2V0PXV0Zi04LCcgKyBbaGVhZGVycy5qb2luKCcsJyksIC4uLnJvd3MubWFwKChlKSA9PiBlLmpvaW4oJywnKSldLmpvaW4oJ1xcbicpO1xuICAgIGNvbnN0IGVuY29kZWRVcmkgPSBlbmNvZGVVUkkoY3N2Q29udGVudCk7XG4gICAgY29uc3QgbGluayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2EnKTtcbiAgICBsaW5rLnNldEF0dHJpYnV0ZSgnaHJlZicsIGVuY29kZWRVcmkpO1xuICAgIGxpbmsuc2V0QXR0cmlidXRlKCdkb3dubG9hZCcsIGBjb2hvcnQtcmFua2luZ3MtJHtpZH0uY3N2YCk7XG4gICAgZG9jdW1lbnQuYm9keS5hcHBlbmRDaGlsZChsaW5rKTtcbiAgICBsaW5rLmNsaWNrKCk7XG4gICAgZG9jdW1lbnQuYm9keS5yZW1vdmVDaGlsZChsaW5rKTtcbiAgfTtcblxuICBpZiAobG9hZGluZykge1xuICAgIHJldHVybiAoXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1pbi1oLXNjcmVlbiBiZy1zbGF0ZS01MCBmbGV4IGZsZXgtY29sIGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBwLTZcIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LTEyIGgtMTIgYm9yZGVyLTQgYm9yZGVyLWluZGlnby02MDAgYm9yZGVyLXQtdHJhbnNwYXJlbnQgcm91bmRlZC1mdWxsIGFuaW1hdGUtc3BpbiBtYi00XCIgLz5cbiAgICAgICAgPGgyIGNsYXNzTmFtZT1cInRleHQteGwgZm9udC1ib2xkIHRleHQtc2xhdGUtODAwXCI+Q29tcGlsaW5nIENvaG9ydCBBbmFseXRpY3MuLi48L2gyPlxuICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtc2xhdGUtNTAwIG10LTFcIj5BZ2dyZWdhdGluZyBzY29yZSBkaXN0cmlidXRpb24sIGNhbGN1bGF0aW5nIHBlcmNlbnRpbGVzIGFuZCBsZWFkZXJib2FyZC48L3A+XG4gICAgICA8L2Rpdj5cbiAgICApO1xuICB9XG5cbiAgaWYgKGVycm9yIHx8ICFhbmFseXRpY3MpIHtcbiAgICByZXR1cm4gKFxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaW4taC1zY3JlZW4gYmctc2xhdGUtNTAgZmxleCBmbGV4LWNvbCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcC02XCI+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWF4LXctbWQgdy1mdWxsIGJnLXdoaXRlIHJvdW5kZWQtMnhsIHNoYWRvdy1sZyBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBwLTggdGV4dC1jZW50ZXJcIj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctMTQgaC0xNCBiZy1yb3NlLTEwMCB0ZXh0LXJvc2UtNjAwIHJvdW5kZWQtZnVsbCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBteC1hdXRvIG1iLTRcIj5cbiAgICAgICAgICAgIDxBbGVydENpcmNsZSBjbGFzc05hbWU9XCJ3LTggaC04XCIgLz5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC14bCBmb250LWJvbGQgdGV4dC1zbGF0ZS05MDAgbWItMlwiPkFuYWx5dGljcyBVbmF2YWlsYWJsZTwvaDI+XG4gICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LXNsYXRlLTYwMCBtYi02XCI+e2Vycm9yIHx8ICdObyBldmFsdWF0aW9uIGRhdGEgZm91bmQgZm9yIHRoaXMgZXhhbWluYXRpb24uJ308L3A+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0zXCI+XG4gICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG5hdmlnYXRlKCcvc3RhZmYvZXhhbXMnKX1cbiAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZmxleC0xIHB4LTQgcHktMi41IHJvdW5kZWQteGwgYmctc2xhdGUtMTAwIGhvdmVyOmJnLXNsYXRlLTIwMCB0ZXh0LXNsYXRlLTcwMCBmb250LW1lZGl1bSB0ZXh0LXNtIHRyYW5zaXRpb25cIlxuICAgICAgICAgICAgPlxuICAgICAgICAgICAgICBCYWNrIHRvIEV4YW1zXG4gICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgb25DbGljaz17aGFuZGxlUmVFdmFsdWF0ZX1cbiAgICAgICAgICAgICAgZGlzYWJsZWQ9e2V2YWx1YXRpbmd9XG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXgtMSBweC00IHB5LTIuNSByb3VuZGVkLXhsIGJnLWluZGlnby02MDAgaG92ZXI6YmctaW5kaWdvLTcwMCB0ZXh0LXdoaXRlIGZvbnQtbWVkaXVtIHRleHQtc20gdHJhbnNpdGlvblwiXG4gICAgICAgICAgICA+XG4gICAgICAgICAgICAgIHtldmFsdWF0aW5nID8gJ0V2YWx1YXRpbmcuLi4nIDogJ0V2YWx1YXRlIE5vdyd9XG4gICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L2Rpdj5cbiAgICApO1xuICB9XG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktOCBwYi0xNlwiPlxuICAgICAgey8qIEhlYWRlciAqL31cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBmbGV4LWNvbCBzbTpmbGV4LXJvdyBzbTppdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGdhcC00IHBiLTQgYm9yZGVyLWIgYm9yZGVyLXNsYXRlLTIwMFwiPlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XG4gICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgb25DbGljaz17KCkgPT4gbmF2aWdhdGUoJy9zdGFmZi9leGFtcycpfVxuICAgICAgICAgICAgY2xhc3NOYW1lPVwicC0yIHJvdW5kZWQteGwgdGV4dC1zbGF0ZS01MDAgaG92ZXI6dGV4dC1zbGF0ZS04MDAgaG92ZXI6Ymctc2xhdGUtMTAwIHRyYW5zaXRpb25cIlxuICAgICAgICAgID5cbiAgICAgICAgICAgIDxBcnJvd0xlZnQgY2xhc3NOYW1lPVwidy01IGgtNVwiIC8+XG4gICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgIDxoMSBjbGFzc05hbWU9XCJ0ZXh0LTJ4bCBmb250LWV4dHJhYm9sZCB0ZXh0LXNsYXRlLTkwMFwiPkNvaG9ydCBCYXRjaCBBbmFseXRpY3M8L2gxPlxuICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LXNsYXRlLTUwMFwiPlxuICAgICAgICAgICAgICBFeGFtIElEOiA8c3BhbiBjbGFzc05hbWU9XCJmb250LW1vbm8gdGV4dC1zbGF0ZS03MDBcIj57aWR9PC9zcGFuPiDigKIgRXZhbHVhdGVkOnsnICd9XG4gICAgICAgICAgICAgIHtzdW1tYXJ5Py5ldmFsdWF0ZWRfYXQgPyBuZXcgRGF0ZShzdW1tYXJ5LmV2YWx1YXRlZF9hdCkudG9Mb2NhbGVTdHJpbmcoKSA6ICdSZWNlbnQnfVxuICAgICAgICAgICAgPC9wPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2Rpdj5cblxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XG4gICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgb25DbGljaz17aGFuZGxlUmVFdmFsdWF0ZX1cbiAgICAgICAgICAgIGRpc2FibGVkPXtldmFsdWF0aW5nfVxuICAgICAgICAgICAgY2xhc3NOYW1lPVwiaW5saW5lLWZsZXggaXRlbXMtY2VudGVyIGdhcC0yIHB4LTQgcHktMiByb3VuZGVkLXhsIGJnLWluZGlnby01MCB0ZXh0LWluZGlnby03MDAgaG92ZXI6YmctaW5kaWdvLTEwMCBib3JkZXIgYm9yZGVyLWluZGlnby0yMDAgdGV4dC14cyBmb250LXNlbWlib2xkIHRyYW5zaXRpb25cIlxuICAgICAgICAgID5cbiAgICAgICAgICAgIDxSZWZyZXNoQ3cgY2xhc3NOYW1lPXtgdy00IGgtNCAke2V2YWx1YXRpbmcgPyAnYW5pbWF0ZS1zcGluJyA6ICcnfWB9IC8+XG4gICAgICAgICAgICB7ZXZhbHVhdGluZyA/ICdSZWNhbGN1bGF0aW5nLi4uJyA6ICdSZS1FdmFsdWF0ZSBDb2hvcnQnfVxuICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgIG9uQ2xpY2s9e2hhbmRsZUV4cG9ydENzdn1cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImlubGluZS1mbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBweC00IHB5LTIgcm91bmRlZC14bCBiZy1zbGF0ZS04MDAgaG92ZXI6Ymctc2xhdGUtOTAwIHRleHQtd2hpdGUgdGV4dC14cyBmb250LXNlbWlib2xkIHNoYWRvdy1zbSB0cmFuc2l0aW9uXCJcbiAgICAgICAgICA+XG4gICAgICAgICAgICA8RG93bmxvYWQgY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+IEV4cG9ydCBMZWFkZXJib2FyZFxuICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvZGl2PlxuXG4gICAgICB7LyogTWV0cmljIENhcmRzIEdyaWQgKi99XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImdyaWQgZ3JpZC1jb2xzLTEgc206Z3JpZC1jb2xzLTIgbGc6Z3JpZC1jb2xzLTUgZ2FwLTRcIj5cbiAgICAgICAgey8qIFRvdGFsIENhbmRpZGF0ZXMgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctd2hpdGUgcm91bmRlZC0yeGwgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgcC01IHNoYWRvdy1zbVwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIHRleHQtc2xhdGUtNTAwIHRleHQteHMgZm9udC1tZWRpdW0gbWItMVwiPlxuICAgICAgICAgICAgPHNwYW4+Q2FuZGlkYXRlcyBUZXN0ZWQ8L3NwYW4+XG4gICAgICAgICAgICA8VXNlcnMgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LWluZGlnby01MDBcIiAvPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC0zeGwgZm9udC1leHRyYWJvbGQgdGV4dC1zbGF0ZS05MDBcIj57dG90YWxDYW5kaWRhdGVzfTwvZGl2PlxuICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1zbGF0ZS00MDAgbXQtMSBibG9ja1wiPkZpbmFsIHN1Ym1pdHRlZCBhdHRlbXB0czwvc3Bhbj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIEJhdGNoIEF2ZXJhZ2UgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctd2hpdGUgcm91bmRlZC0yeGwgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgcC01IHNoYWRvdy1zbVwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIHRleHQtc2xhdGUtNTAwIHRleHQteHMgZm9udC1tZWRpdW0gbWItMVwiPlxuICAgICAgICAgICAgPHNwYW4+Q29ob3J0IEF2ZXJhZ2U8L3NwYW4+XG4gICAgICAgICAgICA8VHJlbmRpbmdVcCBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtZW1lcmFsZC01MDBcIiAvPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC0zeGwgZm9udC1leHRyYWJvbGQgdGV4dC1lbWVyYWxkLTYwMFwiPnthdmdTY29yZX08L2Rpdj5cbiAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtc2xhdGUtNDAwIG10LTEgYmxvY2tcIj5NZWFuIHNjb3JlIG9mIGNvaG9ydDwvc3Bhbj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIEhpZ2hlc3QgU2NvcmUgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctd2hpdGUgcm91bmRlZC0yeGwgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgcC01IHNoYWRvdy1zbVwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIHRleHQtc2xhdGUtNTAwIHRleHQteHMgZm9udC1tZWRpdW0gbWItMVwiPlxuICAgICAgICAgICAgPHNwYW4+SGlnaGVzdCBTY29yZTwvc3Bhbj5cbiAgICAgICAgICAgIDxUcm9waHkgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LWFtYmVyLTUwMFwiIC8+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LTN4bCBmb250LWV4dHJhYm9sZCB0ZXh0LWFtYmVyLTYwMFwiPntoaWdoZXN0U2NvcmV9PC9kaXY+XG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LXNsYXRlLTQwMCBtdC0xIGJsb2NrXCI+VG9wIGNhbmRpZGF0ZSBzY29yZTwvc3Bhbj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIExvd2VzdCBTY29yZSAqL31cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJiZy13aGl0ZSByb3VuZGVkLTJ4bCBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBwLTUgc2hhZG93LXNtXCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gdGV4dC1zbGF0ZS01MDAgdGV4dC14cyBmb250LW1lZGl1bSBtYi0xXCI+XG4gICAgICAgICAgICA8c3Bhbj5Mb3dlc3QgU2NvcmU8L3NwYW4+XG4gICAgICAgICAgICA8QmFyQ2hhcnQyIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1zbGF0ZS00MDBcIiAvPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC0zeGwgZm9udC1leHRyYWJvbGQgdGV4dC1zbGF0ZS03MDBcIj57bG93ZXN0U2NvcmV9PC9kaXY+XG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LXNsYXRlLTQwMCBtdC0xIGJsb2NrXCI+QmFzZWxpbmUgYXR0ZW1wdCBzY29yZTwvc3Bhbj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIFBhc3NpbmcgUmF0ZSAqL31cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJiZy13aGl0ZSByb3VuZGVkLTJ4bCBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBwLTUgc2hhZG93LXNtXCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gdGV4dC1zbGF0ZS01MDAgdGV4dC14cyBmb250LW1lZGl1bSBtYi0xXCI+XG4gICAgICAgICAgICA8c3Bhbj5QYXNzaW5nIFJhdGU8L3NwYW4+XG4gICAgICAgICAgICA8Q2hlY2tDaXJjbGUyIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1jeWFuLTUwMFwiIC8+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LTN4bCBmb250LWV4dHJhYm9sZCB0ZXh0LWN5YW4tNjAwXCI+e3Bhc3NpbmdSYXRlfSU8L2Rpdj5cbiAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtc2xhdGUtNDAwIG10LTEgYmxvY2tcIj57cGFzc2luZ0NvdW50fSBjYW5kaWRhdGVzIHBhc3Npbmc8L3NwYW4+XG4gICAgICAgIDwvZGl2PlxuICAgICAgPC9kaXY+XG5cbiAgICAgIHsvKiBTY29yZSBEaXN0cmlidXRpb24gJiBUb3AgUGVyZm9ybWVycyBTZWN0aW9uICovfVxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJncmlkIGdyaWQtY29scy0xIGxnOmdyaWQtY29scy0zIGdhcC02XCI+XG4gICAgICAgIHsvKiBTY29yZSBEaXN0cmlidXRpb24gSGlzdG9ncmFtICovfVxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImxnOmNvbC1zcGFuLTIgYmctd2hpdGUgcm91bmRlZC0zeGwgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgcC02IHNoYWRvdy1zbVwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIG1iLTRcIj5cbiAgICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9XCJ0ZXh0LWxnIGZvbnQtYm9sZCB0ZXh0LXNsYXRlLTkwMFwiPlNjb3JlIERpc3RyaWJ1dGlvbiBIaXN0b2dyYW08L2gyPlxuICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtc2xhdGUtNTAwXCI+RnJlcXVlbmN5IG9mIGNhbmRpZGF0ZSBuZXQgc2NvcmVzIGFjcm9zcyB0aGUgY29ob3J0PC9wPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8QmFyQ2hhcnQyIGNsYXNzTmFtZT1cInctNSBoLTUgdGV4dC1pbmRpZ28tNTAwXCIgLz5cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiaC00OCBmbGV4IGl0ZW1zLWVuZCBnYXAtMyBwdC02IGJvcmRlci1iIGJvcmRlci1zbGF0ZS0yMDAgcGItMlwiPlxuICAgICAgICAgICAge2Rpc3RyaWJ1dGlvbkJpbnMubWFwKChiaW4sIGlkeCkgPT4ge1xuICAgICAgICAgICAgICBjb25zdCBjb3VudCA9IE51bWJlcihiaW4uY2FuZGlkYXRlcyk7XG4gICAgICAgICAgICAgIGNvbnN0IGhlaWdodFBjdCA9IE1hdGgucm91bmQoKGNvdW50IC8gbWF4QmluQ291bnQpICogMTAwKTtcbiAgICAgICAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgICAgICA8ZGl2IGtleT17aWR4fSBjbGFzc05hbWU9XCJmbGV4LTEgZmxleCBmbGV4LWNvbCBpdGVtcy1jZW50ZXIgaC1mdWxsIGp1c3RpZnktZW5kIGdyb3VwXCI+XG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXhzIGZvbnQtYm9sZCB0ZXh0LXNsYXRlLTcwMCBvcGFjaXR5LTAgZ3JvdXAtaG92ZXI6b3BhY2l0eS0xMDAgdHJhbnNpdGlvbi1vcGFjaXR5IG1iLTFcIj5cbiAgICAgICAgICAgICAgICAgICAge2NvdW50fVxuICAgICAgICAgICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgYmctaW5kaWdvLTUwMCBob3ZlcjpiZy1pbmRpZ28tNjAwIHJvdW5kZWQtdC1sZyB0cmFuc2l0aW9uLWFsbCBkdXJhdGlvbi0zMDAgbWluLWgtWzRweF1cIlxuICAgICAgICAgICAgICAgICAgICBzdHlsZT17eyBoZWlnaHQ6IGAke01hdGgubWF4KGhlaWdodFBjdCwgNil9JWAgfX1cbiAgICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LVsxMHB4XSB0ZXh0LXNsYXRlLTUwMCBtdC0yIHJvdGF0ZS1bLTQ1ZGVnXSBvcmlnaW4tdG9wLWxlZnQgZm9udC1tb25vXCI+XG4gICAgICAgICAgICAgICAgICAgIHtiaW4udG90YWxfc2NvcmV9XG4gICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICk7XG4gICAgICAgICAgICB9KX1cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIFRvcCBQZXJmb3JtZXJzIFBvZGl1bSAqL31cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJiZy13aGl0ZSByb3VuZGVkLTN4bCBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBwLTYgc2hhZG93LXNtIGZsZXggZmxleC1jb2wganVzdGlmeS1iZXR3ZWVuXCI+XG4gICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIG1iLTRcIj5cbiAgICAgICAgICAgICAgPGgyIGNsYXNzTmFtZT1cInRleHQtbGcgZm9udC1ib2xkIHRleHQtc2xhdGUtOTAwXCI+VG9wIFBlcmZvcm1lcnM8L2gyPlxuICAgICAgICAgICAgICA8QXdhcmQgY2xhc3NOYW1lPVwidy01IGgtNSB0ZXh0LWFtYmVyLTUwMFwiIC8+XG4gICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTNcIj5cbiAgICAgICAgICAgICAge3RvcFBlcmZvcm1lcnMubWFwKChjYW5kLCBpZHgpID0+IChcbiAgICAgICAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICAgICAgICBrZXk9e2NhbmQuYXR0ZW1wdF9pZH1cbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBwLTMgcm91bmRlZC0yeGwgYmctc2xhdGUtNTAgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDBcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTNcIj5cbiAgICAgICAgICAgICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9e2B3LTcgaC03IHJvdW5kZWQtZnVsbCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBmb250LWJvbGQgdGV4dC14cyAke1xuICAgICAgICAgICAgICAgICAgICAgICAgaWR4ID09PSAwXG4gICAgICAgICAgICAgICAgICAgICAgICAgID8gJ2JnLWFtYmVyLTQwMCB0ZXh0LXdoaXRlJ1xuICAgICAgICAgICAgICAgICAgICAgICAgICA6IGlkeCA9PT0gMVxuICAgICAgICAgICAgICAgICAgICAgICAgICA/ICdiZy1zbGF0ZS0zMDAgdGV4dC1zbGF0ZS04MDAnXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDogJ2JnLWFtYmVyLTcwMC82MCB0ZXh0LXdoaXRlJ1xuICAgICAgICAgICAgICAgICAgICAgIH1gfVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgI3tjYW5kLnJhbmt9XG4gICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgICAgICAgICA8aDQgY2xhc3NOYW1lPVwiZm9udC1ib2xkIHRleHQtc2xhdGUtOTAwIHRleHQteHNcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIHtjYW5kLmNhbmRpZGF0ZV9uYW1lIHx8IGNhbmQuc3R1ZGVudCB8fCBjYW5kLnVzZXJuYW1lfVxuICAgICAgICAgICAgICAgICAgICAgIDwvaDQ+XG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1bMTBweF0gdGV4dC1zbGF0ZS00MDAgZm9udC1tb25vXCI+QHtjYW5kLnVzZXJuYW1lfTwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1yaWdodFwiPlxuICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmb250LWV4dHJhYm9sZCB0ZXh0LXNtIHRleHQtaW5kaWdvLTYwMFwiPntjYW5kLnRvdGFsX3Njb3JlfSBwdHM8L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImJsb2NrIHRleHQtWzEwcHhdIHRleHQtZW1lcmFsZC02MDAgZm9udC1zZW1pYm9sZFwiPlxuICAgICAgICAgICAgICAgICAgICAgIHtjYW5kLnBlcmNlbnRpbGU/LnRvRml4ZWQoMil9JWlsZVxuICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgKSl9XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibXQtNCBwdC00IGJvcmRlci10IGJvcmRlci1zbGF0ZS0xMDAgdGV4dC14cyB0ZXh0LXNsYXRlLTQwMCB0ZXh0LWNlbnRlclwiPlxuICAgICAgICAgICAgUmFua2luZ3MgZGV0ZXJtaW5lZCB3aXRoIHN0YW5kYXJkIHRpZS1icmVhayBvcmRlclxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvZGl2PlxuXG4gICAgICB7LyogQ29ob3J0IExlYWRlcmJvYXJkIFRhYmxlICovfVxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJiZy13aGl0ZSByb3VuZGVkLTN4bCBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBzaGFkb3ctc20gb3ZlcmZsb3ctaGlkZGVuXCI+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC02IGJvcmRlci1iIGJvcmRlci1zbGF0ZS0yMDAgZmxleCBmbGV4LWNvbCBzbTpmbGV4LXJvdyBzbTppdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGdhcC00XCI+XG4gICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9XCJ0ZXh0LXhsIGZvbnQtYm9sZCB0ZXh0LXNsYXRlLTkwMFwiPkNvaG9ydCBMZWFkZXJib2FyZDwvaDI+XG4gICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtc2xhdGUtNTAwIG10LTAuNVwiPlxuICAgICAgICAgICAgICBEZXRlcm1pbmlzdGljIHJhbmtpbmdzIHdpdGggc2VjdGlvbiBicmVha2Rvd24sIHBlbmFsdGllcywgYW5kIHBlcmNlbnRpbGUgc2NvcmVzXG4gICAgICAgICAgICA8L3A+XG4gICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInJlbGF0aXZlIHctZnVsbCBzbTp3LTcyXCI+XG4gICAgICAgICAgICA8U2VhcmNoIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1zbGF0ZS00MDAgYWJzb2x1dGUgbGVmdC0zLjUgdG9wLTEvMiAtdHJhbnNsYXRlLXktMS8yXCIgLz5cbiAgICAgICAgICAgIDxpbnB1dFxuICAgICAgICAgICAgICB0eXBlPVwidGV4dFwiXG4gICAgICAgICAgICAgIHBsYWNlaG9sZGVyPVwiU2VhcmNoIGNhbmRpZGF0ZSBuYW1lIG9yIHVzZXJuYW1lLi4uXCJcbiAgICAgICAgICAgICAgdmFsdWU9e3NlYXJjaFF1ZXJ5fVxuICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFNlYXJjaFF1ZXJ5KGUudGFyZ2V0LnZhbHVlKX1cbiAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsIHBsLTEwIHByLTQgcHktMiB0ZXh0LXhzIHJvdW5kZWQteGwgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgZm9jdXM6b3V0bGluZS1ub25lIGZvY3VzOnJpbmctMiBmb2N1czpyaW5nLWluZGlnby01MDAgYmctc2xhdGUtNTBcIlxuICAgICAgICAgICAgLz5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJvdmVyZmxvdy14LWF1dG9cIj5cbiAgICAgICAgICA8dGFibGUgY2xhc3NOYW1lPVwidy1mdWxsIHRleHQtbGVmdCB0ZXh0LXhzXCI+XG4gICAgICAgICAgICA8dGhlYWQgY2xhc3NOYW1lPVwiYmctc2xhdGUtNTAgYm9yZGVyLWIgYm9yZGVyLXNsYXRlLTIwMCB0ZXh0LXNsYXRlLTUwMCBmb250LXNlbWlib2xkIHVwcGVyY2FzZSB0cmFja2luZy13aWRlclwiPlxuICAgICAgICAgICAgICA8dHI+XG4gICAgICAgICAgICAgICAgPHRoIGNsYXNzTmFtZT1cInB5LTMuNSBweC02XCI+UmFuazwvdGg+XG4gICAgICAgICAgICAgICAgPHRoIGNsYXNzTmFtZT1cInB5LTMuNSBweC02XCI+Q2FuZGlkYXRlPC90aD5cbiAgICAgICAgICAgICAgICA8dGggY2xhc3NOYW1lPVwicHktMy41IHB4LTZcIj5OZXQgU2NvcmU8L3RoPlxuICAgICAgICAgICAgICAgIDx0aCBjbGFzc05hbWU9XCJweS0zLjUgcHgtNlwiPlBlbmFsdHk8L3RoPlxuICAgICAgICAgICAgICAgIDx0aCBjbGFzc05hbWU9XCJweS0zLjUgcHgtNlwiPkNvcnJlY3QgLyBJbmNvcnJlY3Q8L3RoPlxuICAgICAgICAgICAgICAgIDx0aCBjbGFzc05hbWU9XCJweS0zLjUgcHgtNlwiPlBlcmNlbnRpbGU8L3RoPlxuICAgICAgICAgICAgICAgIDx0aCBjbGFzc05hbWU9XCJweS0zLjUgcHgtNiB0ZXh0LXJpZ2h0XCI+QWN0aW9uczwvdGg+XG4gICAgICAgICAgICAgIDwvdHI+XG4gICAgICAgICAgICA8L3RoZWFkPlxuICAgICAgICAgICAgPHRib2R5IGNsYXNzTmFtZT1cImRpdmlkZS15IGRpdmlkZS1zbGF0ZS0xMDBcIj5cbiAgICAgICAgICAgICAge2ZpbHRlcmVkUmFua2luZ3MubGVuZ3RoID4gMCA/IChcbiAgICAgICAgICAgICAgICBmaWx0ZXJlZFJhbmtpbmdzLm1hcCgoY2FuZCkgPT4gKFxuICAgICAgICAgICAgICAgICAgPHRyIGtleT17Y2FuZC5hdHRlbXB0X2lkfSBjbGFzc05hbWU9XCJob3ZlcjpiZy1zbGF0ZS01MC84MCB0cmFuc2l0aW9uXCI+XG4gICAgICAgICAgICAgICAgICAgIDx0ZCBjbGFzc05hbWU9XCJweS00IHB4LTYgZm9udC1ib2xkIHRleHQtc2xhdGUtOTAwXCI+XG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17YGlubGluZS1mbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciB3LTYgaC02IHJvdW5kZWQtZnVsbCB0ZXh0LXhzIGZvbnQtYm9sZCAke1xuICAgICAgICAgICAgICAgICAgICAgICAgICBjYW5kLnJhbmsgPT09IDFcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA/ICdiZy1hbWJlci0xMDAgdGV4dC1hbWJlci04MDAgYm9yZGVyIGJvcmRlci1hbWJlci0zMDAnXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgOiBjYW5kLnJhbmsgPT09IDJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA/ICdiZy1zbGF0ZS0xMDAgdGV4dC1zbGF0ZS03MDAgYm9yZGVyIGJvcmRlci1zbGF0ZS0zMDAnXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgOiBjYW5kLnJhbmsgPT09IDNcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA/ICdiZy1vcmFuZ2UtMTAwIHRleHQtb3JhbmdlLTgwMCBib3JkZXIgYm9yZGVyLW9yYW5nZS0zMDAnXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgOiAndGV4dC1zbGF0ZS02MDAnXG4gICAgICAgICAgICAgICAgICAgICAgICB9YH1cbiAgICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgICB7Y2FuZC5yYW5rfVxuICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgPC90ZD5cbiAgICAgICAgICAgICAgICAgICAgPHRkIGNsYXNzTmFtZT1cInB5LTQgcHgtNlwiPlxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZm9udC1ib2xkIHRleHQtc2xhdGUtOTAwXCI+XG4gICAgICAgICAgICAgICAgICAgICAgICB7Y2FuZC5jYW5kaWRhdGVfbmFtZSB8fCBjYW5kLnN0dWRlbnQgfHwgY2FuZC51c2VybmFtZX1cbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtWzExcHhdIHRleHQtc2xhdGUtNDAwIGZvbnQtbW9ub1wiPkB7Y2FuZC51c2VybmFtZX08L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgPC90ZD5cbiAgICAgICAgICAgICAgICAgICAgPHRkIGNsYXNzTmFtZT1cInB5LTQgcHgtNlwiPlxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImZvbnQtZXh0cmFib2xkIHRleHQtc20gdGV4dC1zbGF0ZS05MDBcIj57Y2FuZC50b3RhbF9zY29yZX08L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbGF0ZS00MDAgZm9udC1ub3JtYWxcIj4gLyB7Y2FuZC5tYXhpbXVtX3Njb3JlfTwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgPC90ZD5cbiAgICAgICAgICAgICAgICAgICAgPHRkIGNsYXNzTmFtZT1cInB5LTQgcHgtNlwiPlxuICAgICAgICAgICAgICAgICAgICAgIHtjYW5kLnBlbmFsdHkgPiAwID8gKFxuICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1yb3NlLTYwMCBmb250LXNlbWlib2xkXCI+LXtjYW5kLnBlbmFsdHl9IHB0czwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgICApIDogKFxuICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbGF0ZS00MDBcIj4wIHB0czwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICAgICAgICA8L3RkPlxuICAgICAgICAgICAgICAgICAgICA8dGQgY2xhc3NOYW1lPVwicHktNCBweC02XCI+XG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1lbWVyYWxkLTYwMCBmb250LXNlbWlib2xkXCI+e2NhbmQudG90YWxfY29ycmVjdH08L3NwYW4+IC97JyAnfVxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtcm9zZS02MDAgZm9udC1zZW1pYm9sZFwiPntjYW5kLnRvdGFsX2luY29ycmVjdH08L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgIDwvdGQ+XG4gICAgICAgICAgICAgICAgICAgIDx0ZCBjbGFzc05hbWU9XCJweS00IHB4LTZcIj5cbiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJweC0yLjUgcHktMSByb3VuZGVkLW1kIGJnLWluZGlnby01MCB0ZXh0LWluZGlnby03MDAgZm9udC1ib2xkIGJvcmRlciBib3JkZXItaW5kaWdvLTIwMFwiPlxuICAgICAgICAgICAgICAgICAgICAgICAge2NhbmQucGVyY2VudGlsZT8udG9GaXhlZCgzKX0lXG4gICAgICAgICAgICAgICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICA8L3RkPlxuICAgICAgICAgICAgICAgICAgICA8dGQgY2xhc3NOYW1lPVwicHktNCBweC02IHRleHQtcmlnaHRcIj5cbiAgICAgICAgICAgICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBuYXZpZ2F0ZShgL3N0dWRlbnQvZXhhbS8ke2NhbmQuYXR0ZW1wdF9pZH0vcmVwb3J0YCl9XG4gICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSBweC0zIHB5LTEuNSByb3VuZGVkLWxnIGJnLXNsYXRlLTEwMCBob3ZlcjpiZy1zbGF0ZS0yMDAgdGV4dC1zbGF0ZS03MDAgZm9udC1zZW1pYm9sZCB0ZXh0LXhzIHRyYW5zaXRpb25cIlxuICAgICAgICAgICAgICAgICAgICAgICAgdGl0bGU9XCJWaWV3IERldGFpbGVkIFN0dWRlbnQgUmVwb3J0XCJcbiAgICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgICA8RXllIGNsYXNzTmFtZT1cInctMy41IGgtMy41XCIgLz4gVmlldyBSZXBvcnRcbiAgICAgICAgICAgICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICAgICAgICAgICAgPC90ZD5cbiAgICAgICAgICAgICAgICAgIDwvdHI+XG4gICAgICAgICAgICAgICAgKSlcbiAgICAgICAgICAgICAgKSA6IChcbiAgICAgICAgICAgICAgICA8dHI+XG4gICAgICAgICAgICAgICAgICA8dGQgY29sU3Bhbj17N30gY2xhc3NOYW1lPVwicHktMTIgdGV4dC1jZW50ZXIgdGV4dC1zbGF0ZS00MDBcIj5cbiAgICAgICAgICAgICAgICAgICAgTm8gY2FuZGlkYXRlcyBmb3VuZCBtYXRjaGluZyB0aGUgcXVlcnkuXG4gICAgICAgICAgICAgICAgICA8L3RkPlxuICAgICAgICAgICAgICAgIDwvdHI+XG4gICAgICAgICAgICAgICl9XG4gICAgICAgICAgICA8L3Rib2R5PlxuICAgICAgICAgIDwvdGFibGU+XG4gICAgICAgIDwvZGl2PlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gICk7XG59O1xuXG5leHBvcnQgZGVmYXVsdCBCYXRjaEFuYWx5dGljc1BhZ2U7XG4iXSwiZmlsZSI6Ii9Vc2Vycy9hdXJ0eC90ZWFtd29ya19wcm9qZWN0cy9lemV4YW1fcmVjb25zdHJ1Y3Rpb24vZnJvbnRlbmQvc3JjL3BhZ2VzL3N0YWZmL0JhdGNoQW5hbHl0aWNzUGFnZS50c3gifQ==”XÏü∂∫      kè⁄kè‹J/<g       c    O^partitionKey=%28http%2C127.0.0.1%29,:http://127.0.0.1:5173/src/pages/staff/BatchAnalyticsPage.tsx strongly-framed 1 request-method GET response-head HTTP/1.1 200 OK
+Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"d32e-T+vhkh3B8qnzeGvxVTzGFZSK7X0"
+Date: Wed, 25 Nov 2026 07:35:56 GMT
+Content-Length: 102461
+ original-response-headers Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"d32e-T+vhkh3B8qnzeGvxVTzGFZSK7X0"
+Date: Wed, 25 Nov 2026 07:35:56 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Content-Length: 102461
+ ctid 2 net-response-time-onstart 1123 net-response-time-onstop 1124     ê=

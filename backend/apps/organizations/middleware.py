@@ -11,7 +11,7 @@ class TenantMiddleware(MiddlewareMixin):
     Resolves the active tenant Organization from:
     1. Authenticated User / JWT token claims
     2. 'X-Tenant-ID' request header (UUID or slug)
-    3. Host subdomain mapping (e.g. {slug}.ezexam.in)
+    3. Host subdomain mapping (e.g. {slug}.examkraft.in)
     and binds it to thread/task context via contextvars.
     """
 

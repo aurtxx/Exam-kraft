@@ -1,0 +1,41 @@
+2026-11-25T07:51:22.437663+00:00 | AGENT-TEACHER-PHY | LOGIN | PASS | 200 | 
+2026-11-25T07:51:22.459525+00:00 | AGENT-TEACHER-PHY | 11-PCM_A_1 | PASS | 201 | {"id": "0fc1a48f-f5d1-411a-b350-6bade6c69947", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.478663+00:00 | AGENT-TEACHER-PHY | 11-PCM_A_2 | PASS | 201 | {"id": "6b60e76e-18b8-4a90-a2c9-00db2ad949d0", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.496509+00:00 | AGENT-TEACHER-PHY | 11-PCM_B_PNG_3 | PASS | 400 | {"code": "INVALID_QUESTION_TYPE", "message": "question_type is required.", "status": "ERROR"}
+2026-11-25T07:51:22.521446+00:00 | AGENT-TEACHER-PHY | 11-PCM_B_FALLBACK_3 | PASS | 201 | {"id": "a6c35a73-0df3-4bc3-87b5-5719b2e88530", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.533464+00:00 | AGENT-TEACHER-PHY | 11-PCM_B_PNG_4 | PASS | 400 | {"code": "INVALID_QUESTION_TYPE", "message": "question_type is required.", "status": "ERROR"}
+2026-11-25T07:51:22.546128+00:00 | AGENT-TEACHER-PHY | 11-PCM_B_FALLBACK_4 | PASS | 201 | {"id": "83e1f758-0c0b-453b-b496-8db45a5cc567", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.546424+00:00 | AGENT-TEACHER-PHY | 11-PCM_C_XLSX | UNSUPPORTED | - | TEACHER-FINDING-002: Excel answer key import not implemented
+2026-11-25T07:51:22.567020+00:00 | AGENT-TEACHER-PHY | 11-PCM_C_FALLBACK_5 | PASS | 201 | {"id": "8532f0a0-439c-4e4b-8581-b21d830e7dfe", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.590311+00:00 | AGENT-TEACHER-PHY | 11-PCM_VERIFY | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:51:22.590582+00:00 | AGENT-TEACHER-PHY | 11-PCM_COUNT | PASS | 200 | Five expected Physics questions present
+2026-11-25T07:51:22.608084+00:00 | AGENT-TEACHER-PHY | 11-PCB_A_1 | PASS | 201 | {"id": "4dff9f74-65eb-4661-b149-465b72b00777", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.626486+00:00 | AGENT-TEACHER-PHY | 11-PCB_A_2 | PASS | 201 | {"id": "7ed86797-7a8b-4eb8-b0a2-8b4257b55475", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.636670+00:00 | AGENT-TEACHER-PHY | 11-PCB_B_PNG_3 | PASS | 400 | {"code": "INVALID_QUESTION_TYPE", "message": "question_type is required.", "status": "ERROR"}
+2026-11-25T07:51:22.651005+00:00 | AGENT-TEACHER-PHY | 11-PCB_B_FALLBACK_3 | PASS | 201 | {"id": "f38c7b60-ca35-47de-9784-930792c269b6", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.661006+00:00 | AGENT-TEACHER-PHY | 11-PCB_B_PNG_4 | PASS | 400 | {"code": "INVALID_QUESTION_TYPE", "message": "question_type is required.", "status": "ERROR"}
+2026-11-25T07:51:22.674439+00:00 | AGENT-TEACHER-PHY | 11-PCB_B_FALLBACK_4 | PASS | 201 | {"id": "2a9b62fa-86d2-4345-bfa3-61d69071c51f", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.674561+00:00 | AGENT-TEACHER-PHY | 11-PCB_C_XLSX | UNSUPPORTED | - | TEACHER-FINDING-002: Excel answer key import not implemented
+2026-11-25T07:51:22.691266+00:00 | AGENT-TEACHER-PHY | 11-PCB_C_FALLBACK_5 | PASS | 201 | {"id": "f651c326-5ad8-43b6-84d0-302983b35048", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.713569+00:00 | AGENT-TEACHER-PHY | 11-PCB_VERIFY | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:51:22.713701+00:00 | AGENT-TEACHER-PHY | 11-PCB_COUNT | PASS | 200 | Five expected Physics questions present
+2026-11-25T07:51:22.728788+00:00 | AGENT-TEACHER-PHY | 12-PCM_A_1 | PASS | 201 | {"id": "c00c07d0-1baa-47ef-9e0d-6a8b710a5177", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.743655+00:00 | AGENT-TEACHER-PHY | 12-PCM_A_2 | PASS | 201 | {"id": "c79b2d2d-ebe0-45c7-993b-404329057a98", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.757033+00:00 | AGENT-TEACHER-PHY | 12-PCM_B_PNG_3 | PASS | 400 | {"code": "INVALID_QUESTION_TYPE", "message": "question_type is required.", "status": "ERROR"}
+2026-11-25T07:51:22.776391+00:00 | AGENT-TEACHER-PHY | 12-PCM_B_FALLBACK_3 | PASS | 201 | {"id": "805dc35b-4e57-47d8-884e-340465a914b6", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.787408+00:00 | AGENT-TEACHER-PHY | 12-PCM_B_PNG_4 | PASS | 400 | {"code": "INVALID_QUESTION_TYPE", "message": "question_type is required.", "status": "ERROR"}
+2026-11-25T07:51:22.799179+00:00 | AGENT-TEACHER-PHY | 12-PCM_B_FALLBACK_4 | PASS | 201 | {"id": "3d5e2afe-2e5a-4f28-ac94-98e6066734c0", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.799389+00:00 | AGENT-TEACHER-PHY | 12-PCM_C_XLSX | UNSUPPORTED | - | TEACHER-FINDING-002: Excel answer key import not implemented
+2026-11-25T07:51:22.812185+00:00 | AGENT-TEACHER-PHY | 12-PCM_C_FALLBACK_5 | PASS | 201 | {"id": "434b1307-de9f-4cef-beab-a43b658ad502", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.828703+00:00 | AGENT-TEACHER-PHY | 12-PCM_VERIFY | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:51:22.828830+00:00 | AGENT-TEACHER-PHY | 12-PCM_COUNT | PASS | 200 | Five expected Physics questions present
+2026-11-25T07:51:22.842518+00:00 | AGENT-TEACHER-PHY | 12-PCB_A_1 | PASS | 201 | {"id": "09198526-5b59-450f-a200-bf538da815ed", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.856724+00:00 | AGENT-TEACHER-PHY | 12-PCB_A_2 | PASS | 201 | {"id": "1b37adcf-151e-4010-bb88-fa775d031efd", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.867190+00:00 | AGENT-TEACHER-PHY | 12-PCB_B_PNG_3 | PASS | 400 | {"code": "INVALID_QUESTION_TYPE", "message": "question_type is required.", "status": "ERROR"}
+2026-11-25T07:51:22.884179+00:00 | AGENT-TEACHER-PHY | 12-PCB_B_FALLBACK_3 | PASS | 201 | {"id": "bb87b6ee-c7d4-4534-921e-b404b6183362", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.894704+00:00 | AGENT-TEACHER-PHY | 12-PCB_B_PNG_4 | PASS | 400 | {"code": "INVALID_QUESTION_TYPE", "message": "question_type is required.", "status": "ERROR"}
+2026-11-25T07:51:22.906362+00:00 | AGENT-TEACHER-PHY | 12-PCB_B_FALLBACK_4 | PASS | 201 | {"id": "1f3f3d48-f327-42de-97d2-16e753b97af7", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.906615+00:00 | AGENT-TEACHER-PHY | 12-PCB_C_XLSX | UNSUPPORTED | - | TEACHER-FINDING-002: Excel answer key import not implemented
+2026-11-25T07:51:22.921058+00:00 | AGENT-TEACHER-PHY | 12-PCB_C_FALLBACK_5 | PASS | 201 | {"id": "d14cae11-4dee-4ba0-aa6a-a55f0467d6a5", "message": "Question authored successfully.", "status": "SUCCESS"}
+2026-11-25T07:51:22.949811+00:00 | AGENT-TEACHER-PHY | 12-PCB_VERIFY | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:51:22.950059+00:00 | AGENT-TEACHER-PHY | 12-PCB_COUNT | PASS | 200 | Five expected Physics questions present

@@ -1,0 +1,11 @@
+{
+  "start_window": "2026-11-25T08:02:16.267385+00:00",
+  "end_window": "2026-11-25T09:02:16.267385+00:00",
+  "duration_minutes": 55,
+  "published": {
+    "11-PCM": "66eb7feb-e4bd-42f4-b866-5eb94ab71b2c",
+    "11-PCB": "cc581bfc-bc3b-48df-8fe4-180c26bf0e93",
+    "12-PCM": "1953bc0a-5fbd-4eae-bbbd-90ea990a6ac5",
+    "12-PCB": "c0e1827b-b4bc-4a49-b19c-b54c496eb534"
+  }
+}

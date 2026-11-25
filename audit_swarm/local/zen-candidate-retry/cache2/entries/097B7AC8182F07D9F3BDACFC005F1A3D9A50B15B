@@ -1,0 +1,144 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/layout/Shell.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=314a0332"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=314a0332"; const useState = __vite__cjsImport3_react["useState"];
+import { Outlet, Navigate } from "/node_modules/.vite/deps/react-router-dom.js?v=314a0332";
+import { useAuth } from "/src/context/AuthContext.tsx";
+import Header from "/src/components/layout/Header.tsx";
+import Sidebar from "/src/components/layout/Sidebar.tsx";
+export const Shell = () => {
+  _s();
+  const { user, isLoading } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  if (isLoading) {
+    return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen flex items-center justify-center bg-slate-50", children: /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col items-center gap-3", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+        lineNumber: 34,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-sm font-medium text-slate-500", children: "Loading EZExam Workspace..." }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+        lineNumber: 35,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+      lineNumber: 33,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+      lineNumber: 32,
+      columnNumber: 7
+    }, this);
+  }
+  if (!user) {
+    return /* @__PURE__ */ jsxDEV(Navigate, { to: "/login", replace: true }, void 0, false, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+      lineNumber: 42,
+      columnNumber: 12
+    }, this);
+  }
+  if (user.role === "STUDENT") return /* @__PURE__ */ jsxDEV(Navigate, { to: "/student", replace: true }, void 0, false, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+    lineNumber: 45,
+    columnNumber: 39
+  }, this);
+  return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen flex flex-col bg-slate-100", children: [
+    /* @__PURE__ */ jsxDEV(
+      Header,
+      {
+        onToggleSidebar: () => setIsSidebarOpen((prev) => !prev),
+        isSidebarOpen
+      },
+      void 0,
+      false,
+      {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+        lineNumber: 49,
+        columnNumber: 7
+      },
+      this
+    ),
+    /* @__PURE__ */ jsxDEV("div", { className: "flex flex-1 overflow-hidden", children: [
+      /* @__PURE__ */ jsxDEV(Sidebar, { isOpen: isSidebarOpen }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+        lineNumber: 54,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("main", { className: "flex-1 overflow-y-auto p-4 md:p-6 lg:p-8", children: /* @__PURE__ */ jsxDEV("div", { className: "max-w-7xl mx-auto", children: /* @__PURE__ */ jsxDEV(Outlet, {}, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+        lineNumber: 57,
+        columnNumber: 13
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+        lineNumber: 56,
+        columnNumber: 11
+      }, this) }, void 0, false, {
+        fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+        lineNumber: 55,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+      lineNumber: 53,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx",
+    lineNumber: 48,
+    columnNumber: 5
+  }, this);
+};
+_s(Shell, "rNLgv0txv94GXUln1ZRPNtxNoE0=", false, function() {
+  return [useAuth];
+});
+_c = Shell;
+export default Shell;
+var _c;
+$RefreshReg$(_c, "Shell");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("/Users/aurtx/teamwork_projects/ezexam_reconstruction/frontend/src/components/layout/Shell.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBY1U7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBZFYsU0FBZ0JBLGdCQUFnQjtBQUNoQyxTQUFTQyxRQUFRQyxnQkFBZ0I7QUFDakMsU0FBU0MsZUFBZTtBQUN4QixPQUFPQyxZQUFZO0FBQ25CLE9BQU9DLGFBQWE7QUFFYixhQUFNQyxRQUFrQkEsTUFBTTtBQUFBQyxLQUFBO0FBQ25DLFFBQU0sRUFBRUMsTUFBTUMsVUFBVSxJQUFJTixRQUFRO0FBQ3BDLFFBQU0sQ0FBQ08sZUFBZUMsZ0JBQWdCLElBQUlYLFNBQVMsSUFBSTtBQUV2RCxNQUFJUyxXQUFXO0FBQ2IsV0FDRSx1QkFBQyxTQUFJLFdBQVUsNkRBQ2IsaUNBQUMsU0FBSSxXQUFVLG9DQUNiO0FBQUEsNkJBQUMsU0FBSSxXQUFVLDBGQUFmO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBcUc7QUFBQSxNQUNyRyx1QkFBQyxPQUFFLFdBQVUsc0NBQXFDLDJDQUFsRDtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBQTZFO0FBQUEsU0FGL0U7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQUdBLEtBSkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQUtBO0FBQUEsRUFFSjtBQUVBLE1BQUksQ0FBQ0QsTUFBTTtBQUNULFdBQU8sdUJBQUMsWUFBUyxJQUFHLFVBQVMsU0FBTyxRQUE3QjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBQTZCO0FBQUEsRUFDdEM7QUFFQSxNQUFJQSxLQUFLSSxTQUFTLFVBQVcsUUFBTyx1QkFBQyxZQUFTLElBQUcsWUFBVyxTQUFPLFFBQS9CO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FBK0I7QUFFbkUsU0FDRSx1QkFBQyxTQUFJLFdBQVUsMkNBQ2I7QUFBQTtBQUFBLE1BQUM7QUFBQTtBQUFBLFFBQ0MsaUJBQWlCLE1BQU1ELGlCQUFpQixDQUFDRSxTQUFTLENBQUNBLElBQUk7QUFBQSxRQUN2RDtBQUFBO0FBQUEsTUFGRjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsSUFFK0I7QUFBQSxJQUUvQix1QkFBQyxTQUFJLFdBQVUsK0JBQ2I7QUFBQSw2QkFBQyxXQUFRLFFBQVFILGlCQUFqQjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBQStCO0FBQUEsTUFDL0IsdUJBQUMsVUFBSyxXQUFVLDRDQUNkLGlDQUFDLFNBQUksV0FBVSxxQkFDYixpQ0FBQyxZQUFEO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBTyxLQURUO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFFQSxLQUhGO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFJQTtBQUFBLFNBTkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQU9BO0FBQUEsT0FaRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBYUE7QUFFSjtBQUFFSCxHQXJDV0QsT0FBZTtBQUFBLFVBQ0VILE9BQU87QUFBQTtBQUFBLEtBRHhCRztBQXVDYixlQUFlQTtBQUFNLElBQUFRO0FBQUEsYUFBQUEsSUFBQSIsIm5hbWVzIjpbInVzZVN0YXRlIiwiT3V0bGV0IiwiTmF2aWdhdGUiLCJ1c2VBdXRoIiwiSGVhZGVyIiwiU2lkZWJhciIsIlNoZWxsIiwiX3MiLCJ1c2VyIiwiaXNMb2FkaW5nIiwiaXNTaWRlYmFyT3BlbiIsInNldElzU2lkZWJhck9wZW4iLCJyb2xlIiwicHJldiIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIlNoZWxsLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QsIHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBPdXRsZXQsIE5hdmlnYXRlIH0gZnJvbSAncmVhY3Qtcm91dGVyLWRvbSc7XG5pbXBvcnQgeyB1c2VBdXRoIH0gZnJvbSAnLi4vLi4vY29udGV4dC9BdXRoQ29udGV4dCc7XG5pbXBvcnQgSGVhZGVyIGZyb20gJy4vSGVhZGVyJztcbmltcG9ydCBTaWRlYmFyIGZyb20gJy4vU2lkZWJhcic7XG5cbmV4cG9ydCBjb25zdCBTaGVsbDogUmVhY3QuRkMgPSAoKSA9PiB7XG4gIGNvbnN0IHsgdXNlciwgaXNMb2FkaW5nIH0gPSB1c2VBdXRoKCk7XG4gIGNvbnN0IFtpc1NpZGViYXJPcGVuLCBzZXRJc1NpZGViYXJPcGVuXSA9IHVzZVN0YXRlKHRydWUpO1xuXG4gIGlmIChpc0xvYWRpbmcpIHtcbiAgICByZXR1cm4gKFxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaW4taC1zY3JlZW4gZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgYmctc2xhdGUtNTBcIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtY29sIGl0ZW1zLWNlbnRlciBnYXAtM1wiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy0xMCBoLTEwIGJvcmRlci00IGJvcmRlci1wcmltYXJ5LTUwMCBib3JkZXItdC10cmFuc3BhcmVudCByb3VuZGVkLWZ1bGwgYW5pbWF0ZS1zcGluXCIgLz5cbiAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtIHRleHQtc2xhdGUtNTAwXCI+TG9hZGluZyBFWkV4YW0gV29ya3NwYWNlLi4uPC9wPlxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvZGl2PlxuICAgICk7XG4gIH1cblxuICBpZiAoIXVzZXIpIHtcbiAgICByZXR1cm4gPE5hdmlnYXRlIHRvPVwiL2xvZ2luXCIgcmVwbGFjZSAvPjtcbiAgfVxuXG4gIGlmICh1c2VyLnJvbGUgPT09ICdTVFVERU5UJykgcmV0dXJuIDxOYXZpZ2F0ZSB0bz1cIi9zdHVkZW50XCIgcmVwbGFjZSAvPjtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwibWluLWgtc2NyZWVuIGZsZXggZmxleC1jb2wgYmctc2xhdGUtMTAwXCI+XG4gICAgICA8SGVhZGVyXG4gICAgICAgIG9uVG9nZ2xlU2lkZWJhcj17KCkgPT4gc2V0SXNTaWRlYmFyT3BlbigocHJldikgPT4gIXByZXYpfVxuICAgICAgICBpc1NpZGViYXJPcGVuPXtpc1NpZGViYXJPcGVufVxuICAgICAgLz5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBmbGV4LTEgb3ZlcmZsb3ctaGlkZGVuXCI+XG4gICAgICAgIDxTaWRlYmFyIGlzT3Blbj17aXNTaWRlYmFyT3Blbn0gLz5cbiAgICAgICAgPG1haW4gY2xhc3NOYW1lPVwiZmxleC0xIG92ZXJmbG93LXktYXV0byBwLTQgbWQ6cC02IGxnOnAtOFwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWF4LXctN3hsIG14LWF1dG9cIj5cbiAgICAgICAgICAgIDxPdXRsZXQgLz5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9tYWluPlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gICk7XG59O1xuXG5leHBvcnQgZGVmYXVsdCBTaGVsbDtcbiJdLCJmaWxlIjoiL1VzZXJzL2F1cnR4L3RlYW13b3JrX3Byb2plY3RzL2V6ZXhhbV9yZWNvbnN0cnVjdGlvbi9mcm9udGVuZC9zcmMvY29tcG9uZW50cy9sYXlvdXQvU2hlbGwudHN4In0=vYÀWô      kêkêJ/<ê       \    O^partitionKey=%28http%2C127.0.0.1%29,:http://127.0.0.1:5173/src/components/layout/Shell.tsx strongly-framed 1 request-method GET response-head HTTP/1.1 200 OK
+Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"18f3-uPELv0vO0SkvQF7MMoHKPfJjpCs"
+Date: Wed, 25 Nov 2026 07:36:54 GMT
+Content-Length: 10598
+ original-response-headers Vary: Origin
+Content-Type: text/javascript
+Cache-Control: no-cache
+Etag: W/"18f3-uPELv0vO0SkvQF7MMoHKPfJjpCs"
+Date: Wed, 25 Nov 2026 07:36:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Content-Length: 10598
+ ctid 2 net-response-time-onstart 73 net-response-time-onstop 74      )f

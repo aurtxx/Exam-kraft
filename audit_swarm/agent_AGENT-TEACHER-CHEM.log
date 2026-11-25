@@ -1,0 +1,56 @@
+2026-11-25T07:51:35.201891+00:00 | AGENT-TEACHER-CHEM | LOGIN | PASS | 200 | {}
+2026-11-25T07:51:35.223396+00:00 | AGENT-TEACHER-CHEM | 11-PCM_A_QUESTION_1 | PASS | 201 | {"status": "SUCCESS", "id": "58215027-2430-461d-a3cb-e66d73dd7701", "message": "Question authored successfully."}
+2026-11-25T07:51:35.238531+00:00 | AGENT-TEACHER-CHEM | 11-PCM_A_QUESTION_2 | PASS | 201 | {"status": "SUCCESS", "id": "6cebb3ec-c6b3-410e-b4de-5f5418268cfb", "message": "Question authored successfully."}
+2026-11-25T07:52:41.184983+00:00 | AGENT-TEACHER-CHEM | LOGIN | PASS | 200 | {}
+2026-11-25T07:52:41.214364+00:00 | AGENT-TEACHER-CHEM | 11-PCM_EXISTING | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:52:54.462105+00:00 | AGENT-TEACHER-CHEM | LOGIN | PASS | 200 | {}
+2026-11-25T07:52:54.512048+00:00 | AGENT-TEACHER-CHEM | 11-PCM_EXISTING | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:52:54.543579+00:00 | AGENT-TEACHER-CHEM | 11-PCM_B_PNG_1 | FAIL | 400 | {"status": "ERROR", "code": "INVALID_QUESTION_TYPE", "message": "question_type is required."}
+2026-11-25T07:52:54.544118+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-001 | UNSUPPORTED | 400 | Multipart PNG received by question endpoint. Endpoint requires explicit question type and does not extract question fields.
+2026-11-25T07:52:54.570535+00:00 | AGENT-TEACHER-CHEM | 11-PCM_B_QUESTION_3 | PASS | 201 | {"status": "SUCCESS", "id": "9f2853ee-a861-47e8-8af6-75fc2698093d", "message": "Question authored successfully."}
+2026-11-25T07:52:54.589253+00:00 | AGENT-TEACHER-CHEM | 11-PCM_B_PNG_2 | FAIL | 400 | {"status": "ERROR", "code": "INVALID_QUESTION_TYPE", "message": "question_type is required."}
+2026-11-25T07:52:54.589361+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-001 | UNSUPPORTED | 400 | Multipart PNG received by question endpoint. Endpoint requires explicit question type and does not extract question fields.
+2026-11-25T07:52:54.605774+00:00 | AGENT-TEACHER-CHEM | 11-PCM_B_QUESTION_4 | PASS | 201 | {"status": "SUCCESS", "id": "9cfa6c93-f37f-460a-a875-e93ad08109d0", "message": "Question authored successfully."}
+2026-11-25T07:52:54.605856+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-002 | UNSUPPORTED | - | Question-bank routes expose no Excel answer-key import endpoint. JSON fallback used.
+2026-11-25T07:52:54.621306+00:00 | AGENT-TEACHER-CHEM | 11-PCM_C_QUESTION_5 | PASS | 201 | {"status": "SUCCESS", "id": "b012ffe5-6e29-49de-948d-827f024eba02", "message": "Question authored successfully."}
+2026-11-25T07:52:54.644407+00:00 | AGENT-TEACHER-CHEM | 11-PCM_VERIFY | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:52:54.644501+00:00 | AGENT-TEACHER-CHEM | 11-PCM_VERIFY_CHEM_COUNT | PASS | 200 | Five Chemistry questions matched their authored stems
+2026-11-25T07:52:54.675096+00:00 | AGENT-TEACHER-CHEM | 11-PCB_EXISTING | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:52:54.691853+00:00 | AGENT-TEACHER-CHEM | 11-PCB_A_QUESTION_1 | PASS | 201 | {"status": "SUCCESS", "id": "9608c827-67ef-40f4-807e-714629e563f3", "message": "Question authored successfully."}
+2026-11-25T07:52:54.705902+00:00 | AGENT-TEACHER-CHEM | 11-PCB_A_QUESTION_2 | PASS | 201 | {"status": "SUCCESS", "id": "f21ab73a-4fa7-4d6a-b7b7-7c4a70205aeb", "message": "Question authored successfully."}
+2026-11-25T07:52:54.723623+00:00 | AGENT-TEACHER-CHEM | 11-PCB_B_PNG_1 | FAIL | 400 | {"status": "ERROR", "code": "INVALID_QUESTION_TYPE", "message": "question_type is required."}
+2026-11-25T07:52:54.724038+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-001 | UNSUPPORTED | 400 | Multipart PNG received by question endpoint. Endpoint requires explicit question type and does not extract question fields.
+2026-11-25T07:52:54.742714+00:00 | AGENT-TEACHER-CHEM | 11-PCB_B_QUESTION_3 | PASS | 201 | {"status": "SUCCESS", "id": "a6070adf-21f8-4c22-b2b3-0a736045d545", "message": "Question authored successfully."}
+2026-11-25T07:52:54.758740+00:00 | AGENT-TEACHER-CHEM | 11-PCB_B_PNG_2 | FAIL | 400 | {"status": "ERROR", "code": "INVALID_QUESTION_TYPE", "message": "question_type is required."}
+2026-11-25T07:52:54.758859+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-001 | UNSUPPORTED | 400 | Multipart PNG received by question endpoint. Endpoint requires explicit question type and does not extract question fields.
+2026-11-25T07:52:54.773754+00:00 | AGENT-TEACHER-CHEM | 11-PCB_B_QUESTION_4 | PASS | 201 | {"status": "SUCCESS", "id": "126ba34a-fbd0-4446-8fce-98856957751e", "message": "Question authored successfully."}
+2026-11-25T07:52:54.773844+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-002 | UNSUPPORTED | - | Question-bank routes expose no Excel answer-key import endpoint. JSON fallback used.
+2026-11-25T07:52:54.792955+00:00 | AGENT-TEACHER-CHEM | 11-PCB_C_QUESTION_5 | PASS | 201 | {"status": "SUCCESS", "id": "c82a7707-b5ec-4b71-ac39-2314ad9abc25", "message": "Question authored successfully."}
+2026-11-25T07:52:54.821170+00:00 | AGENT-TEACHER-CHEM | 11-PCB_VERIFY | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:52:54.821271+00:00 | AGENT-TEACHER-CHEM | 11-PCB_VERIFY_CHEM_COUNT | PASS | 200 | Five Chemistry questions matched their authored stems
+2026-11-25T07:52:54.840217+00:00 | AGENT-TEACHER-CHEM | 12-PCM_EXISTING | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:52:54.856935+00:00 | AGENT-TEACHER-CHEM | 12-PCM_A_QUESTION_1 | PASS | 201 | {"status": "SUCCESS", "id": "cb839cce-5320-4b5f-962f-e364d7961266", "message": "Question authored successfully."}
+2026-11-25T07:52:54.871879+00:00 | AGENT-TEACHER-CHEM | 12-PCM_A_QUESTION_2 | PASS | 201 | {"status": "SUCCESS", "id": "8a0b3572-3ef3-4b99-8b79-8e5ba3a0d602", "message": "Question authored successfully."}
+2026-11-25T07:52:54.885984+00:00 | AGENT-TEACHER-CHEM | 12-PCM_B_PNG_1 | FAIL | 400 | {"status": "ERROR", "code": "INVALID_QUESTION_TYPE", "message": "question_type is required."}
+2026-11-25T07:52:54.886062+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-001 | UNSUPPORTED | 400 | Multipart PNG received by question endpoint. Endpoint requires explicit question type and does not extract question fields.
+2026-11-25T07:52:54.902573+00:00 | AGENT-TEACHER-CHEM | 12-PCM_B_QUESTION_3 | PASS | 201 | {"status": "SUCCESS", "id": "31fde89e-39fa-4b3c-9d8f-42074b7b570a", "message": "Question authored successfully."}
+2026-11-25T07:52:54.918933+00:00 | AGENT-TEACHER-CHEM | 12-PCM_B_PNG_2 | FAIL | 400 | {"status": "ERROR", "code": "INVALID_QUESTION_TYPE", "message": "question_type is required."}
+2026-11-25T07:52:54.919027+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-001 | UNSUPPORTED | 400 | Multipart PNG received by question endpoint. Endpoint requires explicit question type and does not extract question fields.
+2026-11-25T07:52:54.935892+00:00 | AGENT-TEACHER-CHEM | 12-PCM_B_QUESTION_4 | PASS | 201 | {"status": "SUCCESS", "id": "f40e37bb-7ae8-4053-9c41-fc0f84065071", "message": "Question authored successfully."}
+2026-11-25T07:52:54.935970+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-002 | UNSUPPORTED | - | Question-bank routes expose no Excel answer-key import endpoint. JSON fallback used.
+2026-11-25T07:52:54.954577+00:00 | AGENT-TEACHER-CHEM | 12-PCM_C_QUESTION_5 | PASS | 201 | {"status": "SUCCESS", "id": "d3ef0e20-78cc-4135-855a-b451b83a95cf", "message": "Question authored successfully."}
+2026-11-25T07:52:54.976717+00:00 | AGENT-TEACHER-CHEM | 12-PCM_VERIFY | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:52:54.976824+00:00 | AGENT-TEACHER-CHEM | 12-PCM_VERIFY_CHEM_COUNT | PASS | 200 | Five Chemistry questions matched their authored stems
+2026-11-25T07:52:54.999435+00:00 | AGENT-TEACHER-CHEM | 12-PCB_EXISTING | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:52:55.016909+00:00 | AGENT-TEACHER-CHEM | 12-PCB_A_QUESTION_1 | PASS | 201 | {"status": "SUCCESS", "id": "a231f548-9262-45c7-8354-a0338aeb8852", "message": "Question authored successfully."}
+2026-11-25T07:52:55.031331+00:00 | AGENT-TEACHER-CHEM | 12-PCB_A_QUESTION_2 | PASS | 201 | {"status": "SUCCESS", "id": "0b36ed93-f403-4f01-bc2d-fd1a8bef1a86", "message": "Question authored successfully."}
+2026-11-25T07:52:55.047556+00:00 | AGENT-TEACHER-CHEM | 12-PCB_B_PNG_1 | FAIL | 400 | {"status": "ERROR", "code": "INVALID_QUESTION_TYPE", "message": "question_type is required."}
+2026-11-25T07:52:55.047862+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-001 | UNSUPPORTED | 400 | Multipart PNG received by question endpoint. Endpoint requires explicit question type and does not extract question fields.
+2026-11-25T07:52:55.064615+00:00 | AGENT-TEACHER-CHEM | 12-PCB_B_QUESTION_3 | PASS | 201 | {"status": "SUCCESS", "id": "3f2e9048-ee27-4f55-a942-0352a65a04ee", "message": "Question authored successfully."}
+2026-11-25T07:52:55.077779+00:00 | AGENT-TEACHER-CHEM | 12-PCB_B_PNG_2 | FAIL | 400 | {"status": "ERROR", "code": "INVALID_QUESTION_TYPE", "message": "question_type is required."}
+2026-11-25T07:52:55.077895+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-001 | UNSUPPORTED | 400 | Multipart PNG received by question endpoint. Endpoint requires explicit question type and does not extract question fields.
+2026-11-25T07:52:55.095731+00:00 | AGENT-TEACHER-CHEM | 12-PCB_B_QUESTION_4 | PASS | 201 | {"status": "SUCCESS", "id": "0ad594ac-df63-49e0-a251-ecd7bc82f85a", "message": "Question authored successfully."}
+2026-11-25T07:52:55.095829+00:00 | AGENT-TEACHER-CHEM | TEACHER-FINDING-002 | UNSUPPORTED | - | Question-bank routes expose no Excel answer-key import endpoint. JSON fallback used.
+2026-11-25T07:52:55.114088+00:00 | AGENT-TEACHER-CHEM | 12-PCB_C_QUESTION_5 | PASS | 201 | {"status": "SUCCESS", "id": "e134f8d9-272f-48c4-b223-1cf861dda18f", "message": "Question authored successfully."}
+2026-11-25T07:52:55.144483+00:00 | AGENT-TEACHER-CHEM | 12-PCB_VERIFY | PASS | 200 | {"status": "SUCCESS"}
+2026-11-25T07:52:55.144581+00:00 | AGENT-TEACHER-CHEM | 12-PCB_VERIFY_CHEM_COUNT | PASS | 200 | Five Chemistry questions matched their authored stems
