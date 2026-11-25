@@ -3,6 +3,7 @@ import csv
 import secrets
 import uuid
 from django.db import transaction
+from django.db.models import Prefetch
 from django.db.models.functions import Trim
 from rest_framework import status, generics, exceptions
 from rest_framework.views import APIView
@@ -31,6 +32,7 @@ class PlainTextOrCSVParser(BaseParser):
 
 
 class LoginView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -243,14 +245,24 @@ class StudentListCreateView(APIView):
             )
 
         batch_id = request.query_params.get('batch_id')
-        if batch_id:
-            qs = qs.filter(enrollments__batch_id=batch_id)
-
         centre_id = request.query_params.get('centre_id')
-        if centre_id:
-            qs = qs.filter(enrollments__center_id=centre_id)
+        enrollments = StudentBatchEnrollment.objects.filter(
+            is_active=True, batch__organization=tenant
+        ).select_related('batch', 'center')
+        try:
+            if batch_id:
+                enrollments = enrollments.filter(batch_id=uuid.UUID(batch_id))
+            if centre_id:
+                enrollments = enrollments.filter(center_id=uuid.UUID(centre_id))
+        except ValueError:
+            raise exceptions.ValidationError('Invalid batch or examination centre ID.')
 
-        qs = qs.distinct()
+        if batch_id or centre_id:
+            qs = qs.filter(pk__in=enrollments.values('student_id'))
+
+        qs = qs.distinct().select_related('profile').prefetch_related(
+            Prefetch('enrollments', queryset=enrollments, to_attr='roster_enrollments')
+        )
         total_count = qs.count()
         total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
 

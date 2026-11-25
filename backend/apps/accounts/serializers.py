@@ -186,18 +186,23 @@ class StudentMemberSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'date_joined']
 
+    def get_enrollment(self, obj):
+        if hasattr(obj, 'roster_enrollments'):
+            return next(iter(obj.roster_enrollments), None)
+        return obj.enrollments.filter(is_active=True).select_related('batch', 'center').first()
+
     def get_batch_name(self, obj):
-        enrollment = obj.enrollments.filter(is_active=True).first() if hasattr(obj, 'enrollments') else None
+        enrollment = self.get_enrollment(obj)
         return enrollment.batch.name if enrollment and enrollment.batch else None
 
     def get_centre_name(self, obj):
-        enrollment = obj.enrollments.filter(is_active=True).first() if hasattr(obj, 'enrollments') else None
+        enrollment = self.get_enrollment(obj)
         return enrollment.center.name if enrollment and enrollment.center else None
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         ret['name'] = instance.profile.full_name if hasattr(instance, 'profile') else instance.username
-        enrollment = instance.enrollments.filter(is_active=True).first() if hasattr(instance, 'enrollments') else None
+        enrollment = self.get_enrollment(instance)
         ret['roll_number'] = enrollment.roll_number if enrollment else ''
         return ret
 

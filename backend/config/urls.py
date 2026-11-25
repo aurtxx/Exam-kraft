@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path, include
 
 from apps.core.views import health, readiness, detailed_health_check
+from apps.examinations.views import CandidateExaminationView
+
 urlpatterns = [
     path("healthz/", health),
     path("readyz/", readiness),
@@ -18,5 +20,7 @@ urlpatterns = [
     path('api/v1/notices/', include('apps.notices.urls')),
     path('api/v1/analytics/', include('apps.analytics.urls')),
     path('api/v1/attempts/', include('apps.engine.urls')),
+    path('api/v1/student/examinations/', CandidateExaminationView.as_view()),
+    path('api/v1/student/examinations/<uuid:id>/', CandidateExaminationView.as_view()),
     path('api/v1/student/attempts/', include('apps.engine.urls')),
 ]

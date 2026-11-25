@@ -13,7 +13,11 @@ if not DEBUG and not os.environ.get('SECRET_KEY'):
     raise RuntimeError('SECRET_KEY is required when DEBUG=False')
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*' if DEBUG else 'localhost').split(',')
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if os.environ.get('CSRF_TRUSTED_ORIGINS') else []
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000').split(',')
+    if origin.strip()
+]
 HTTPS_ENABLED = os.environ.get('HTTPS_ENABLED') == '1'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = HTTPS_ENABLED

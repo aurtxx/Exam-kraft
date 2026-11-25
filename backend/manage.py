@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
+from pathlib import Path
 import os
 import sys
 
@@ -14,6 +15,9 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+    # Discover the Django suite from the backend even when launched at the repo root.
+    if sys.argv[1:] == ["test"]:
+        os.chdir(Path(__file__).resolve().parent)
     execute_from_command_line(sys.argv)
 
 if __name__ == '__main__':
