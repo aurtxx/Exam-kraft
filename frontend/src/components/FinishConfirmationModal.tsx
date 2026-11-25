@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useId, useRef } from 'react';
 import { AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { CBTSection, CBTResponseRecord, ResponseStatusType } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface SectionSummary {
   sectionTitle: string;
@@ -31,6 +32,17 @@ export const FinishConfirmationModal: React.FC<FinishConfirmationModalProps> = (
   onConfirmSubmit,
   isSubmitting = false,
 }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  const descId = useId();
+
+  useFocusTrap(dialogRef, isOpen, {
+    onEscape: onClose,
+    allowEscape: !isSubmitting,
+    initialFocusRef: cancelButtonRef,
+  });
+
   if (!isOpen) return null;
 
   const sectionSummaries: SectionSummary[] = sections.map((sec) => {
@@ -83,7 +95,15 @@ export const FinishConfirmationModal: React.FC<FinishConfirmationModalProps> = (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
+        tabIndex={-1}
+        className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col focus:outline-none"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2.5">
@@ -91,14 +111,15 @@ export const FinishConfirmationModal: React.FC<FinishConfirmationModalProps> = (
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-800">Submit Examination</h3>
-              <p className="text-xs text-slate-500">Review your attempt summary before final submission</p>
+              <h3 id={titleId} className="text-base font-bold text-slate-800">Submit Examination</h3>
+              <p id={descId} className="text-xs text-slate-500">Review your attempt summary before final submission</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label="Close submission confirmation"
             className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -171,6 +192,7 @@ export const FinishConfirmationModal: React.FC<FinishConfirmationModalProps> = (
         {/* Footer */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
           <button
+            ref={cancelButtonRef}
             type="button"
             disabled={isSubmitting}
             onClick={onClose}

@@ -14,7 +14,7 @@ import {
   Camera,
   ShieldAlert,
 } from 'lucide-react';
-import studentExamApi from '../../services/studentExamApi';
+import studentExamApi, { SaveResponseResult } from '../../services/studentExamApi';
 import {
   CBTAttemptPayload,
   CBTSection,
@@ -27,6 +27,19 @@ import VirtualNumpad from '../../components/VirtualNumpad';
 import FinishConfirmationModal from '../../components/FinishConfirmationModal';
 import { useAuth } from '../../context/AuthContext';
 import MathRenderer from '../../components/MathRenderer';
+import {
+  reconcileResponses,
+  hasPendingResponses,
+  createResponseFlushRunner,
+  submitAttemptWithFlush,
+} from '../../utils/offlineResponseQueue';
+import {
+  ClockAnchor,
+  normalizeRemainingSeconds,
+  createClockAnchor,
+  computeClockRemaining,
+  shouldAutoSubmitOnTick,
+} from '../../utils/examClock';
 
 const TEXT_INPUT_TYPES = new Set(['NUMERICAL', 'SINGLE_DIGIT', 'ONE_WORD', 'SUBJECTIVE', 'CODING']);
 const NUMERIC_INPUT_TYPES = new Set(['NUMERICAL', 'SINGLE_DIGIT']);
@@ -81,6 +94,7 @@ export const ExamCBTPage: React.FC = () => {
 
   // Proctoring state
   const [blurCount, setBlurCount] = useState<number>(0);
+  const blurCountRef = useRef<number>(0);
   const [showBlurWarning, setShowBlurWarning] = useState<boolean>(false);
   const maxBlurSwitches = attempt?.exam?.max_window_switches || 3;
 
@@ -90,8 +104,62 @@ export const ExamCBTPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const pendingResponses = useRef<Record<string, CBTResponseRecord>>({});
-  const saveInFlight = useRef<Promise<void> | null>(null);
+  const attemptRef = useRef<CBTAttemptPayload | null>(null);
+  const examIdRef = useRef<string | undefined>(id);
+  examIdRef.current = id;
+  const flushRunnerRef = useRef<ReturnType<typeof createResponseFlushRunner> | null>(null);
+  const [pendingCount, setPendingCount] = useState<number>(0);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const clockRef = useRef<ClockAnchor>(createClockAnchor(0, Date.now()));
+
+  const applyServerClock = useCallback((remainingSecondsRaw: unknown) => {
+    const nowMs = Date.now();
+    clockRef.current = createClockAnchor(remainingSecondsRaw, nowMs);
+    setRemainingSeconds(normalizeRemainingSeconds(remainingSecondsRaw));
+  }, []);
+
+  const getFlushRunner = useCallback(() => {
+    if (!flushRunnerRef.current) {
+      flushRunnerRef.current = createResponseFlushRunner(() => {
+        const activeAttempt = attemptRef.current;
+        const cacheKey = activeAttempt
+          ? studentExamApi.getCacheKey(activeAttempt.attempt_id, examIdRef.current || 'exam')
+          : '';
+        return {
+          attemptId: activeAttempt?.attempt_id || '',
+          pending: pendingResponses.current,
+          saveResponse: (attemptId, record) => studentExamApi.saveResponse(attemptId, record),
+          persistCache: (map) => {
+            if (cacheKey) studentExamApi.saveLocalCache(cacheKey, map);
+          },
+          onSaveResult: (res: SaveResponseResult) => {
+            if (
+              typeof res.remaining_seconds === 'number' &&
+              Number.isFinite(res.remaining_seconds)
+            ) {
+              applyServerClock(res.remaining_seconds);
+            }
+          },
+        };
+      });
+    }
+    return flushRunnerRef.current;
+  }, [applyServerClock]);
+
+  const triggerPendingFlush = useCallback(async () => {
+    if (
+      !attemptRef.current ||
+      submittingRef.current ||
+      !hasPendingResponses(pendingResponses.current)
+    ) {
+      setPendingCount(Object.keys(pendingResponses.current).length);
+      return;
+    }
+    setSaveStatus('saving');
+    const result = await getFlushRunner().flush();
+    setPendingCount(result.remainingCount);
+    setSaveStatus(result.status);
+  }, [getFlushRunner]);
 
   // Candidate info
   const candidateName = user?.profile?.full_name || user?.username;
@@ -116,19 +184,20 @@ export const ExamCBTPage: React.FC = () => {
         }
 
         if (payload && payload.status === 'SUCCESS') {
+          attemptRef.current = payload;
           setAttempt(payload);
-          setRemainingSeconds(payload.remaining_seconds);
+          applyServerClock(payload.remaining_seconds);
 
-          // Restore responses
-          const initialResponses: Record<string, CBTResponseRecord> = {
-            ...(payload.existing_responses || {}),
-          };
-
-          // Reconcile with localStorage cache
+          // Reconcile server responses with localStorage cache (local wins on conflict)
           const cacheKey = studentExamApi.getCacheKey(payload.attempt_id, id);
-          pendingResponses.current = studentExamApi.loadLocalCache(cacheKey) ?? {};
-          Object.assign(initialResponses, pendingResponses.current);
+          const cachedPending = studentExamApi.loadLocalCache(cacheKey) ?? {};
+          pendingResponses.current = cachedPending;
+          const initialResponses = reconcileResponses(
+            payload.existing_responses,
+            cachedPending
+          );
           setResponses(initialResponses);
+          setPendingCount(Object.keys(cachedPending).length);
 
           // Mark already answered questions as visited
           const visited = new Set<string | number>();
@@ -136,6 +205,10 @@ export const ExamCBTPage: React.FC = () => {
             visited.add(qid);
           });
           setVisitedQuestionIds(visited);
+
+          if (hasPendingResponses(cachedPending)) {
+            void triggerPendingFlush();
+          }
         } else {
           setError('Failed to initialize examination session.');
         }
@@ -180,15 +253,15 @@ export const ExamCBTPage: React.FC = () => {
     }
   }, [currentQuestion, activeSectionIndex, activeQuestionIndex]);
 
-  // Countdown uses elapsed time so a throttled tab catches up on its next tick.
-  const clockRef = useRef({ seconds: 0, receivedAt: 0 });
+  // Countdown uses wall-clock elapsed time so throttled tabs / OS sleep catch up on tick.
   useEffect(() => {
     if (loading || !attempt) return;
-    clockRef.current = { seconds: attempt.remaining_seconds, receivedAt: performance.now() };
-    timerIntervalRef.current = setInterval(() => {
-      const { seconds, receivedAt } = clockRef.current;
-      setRemainingSeconds(Math.max(0, seconds - Math.floor((performance.now() - receivedAt) / 1000)));
-    }, 1000);
+    clockRef.current = createClockAnchor(attempt.remaining_seconds, Date.now());
+    const recomputeTick = () => {
+      setRemainingSeconds(computeClockRemaining(clockRef.current, Date.now()));
+    };
+    recomputeTick();
+    timerIntervalRef.current = setInterval(recomputeTick, 1000);
 
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -196,40 +269,90 @@ export const ExamCBTPage: React.FC = () => {
   }, [loading, attempt]);
 
   useEffect(() => {
-    if (!loading && attempt && remainingSeconds === 0) void handleFinalSubmit('AUTO_TIMER_EXPIRY');
+    if (!loading && attempt && shouldAutoSubmitOnTick(remainingSeconds)) {
+      void handleFinalSubmitRef.current('AUTO_TIMER_EXPIRY');
+    }
   }, [loading, attempt, remainingSeconds]);
 
-  // 4. Server-Authoritative Heartbeat Sync (every 20s)
+  // 4. Server-Authoritative Heartbeat Sync (every 20s + wake/online resync)
   useEffect(() => {
     if (loading || !attempt || !attempt.attempt_id) return;
 
-    heartbeatIntervalRef.current = setInterval(async () => {
+    const syncHeartbeat = async () => {
       try {
-        const hb = await studentExamApi.sendHeartbeat(attempt.attempt_id, blurCount);
+        const hb = await studentExamApi.sendHeartbeat(
+          attempt.attempt_id,
+          blurCountRef.current
+        );
         if (hb.status === 'SUCCESS') {
-          // Sync server clock drift
-          clockRef.current = { seconds: hb.remaining_seconds, receivedAt: performance.now() };
-          setRemainingSeconds(hb.remaining_seconds);
-          if (hb.is_terminated) {
-            handleFinalSubmit('AUTO_TIMER_EXPIRY');
+          applyServerClock(hb.remaining_seconds);
+          if (hasPendingResponses(pendingResponses.current)) {
+            void triggerPendingFlush();
+          }
+          if (
+            shouldAutoSubmitOnTick(
+              normalizeRemainingSeconds(hb.remaining_seconds),
+              hb.is_terminated
+            )
+          ) {
+            void handleFinalSubmitRef.current('AUTO_TIMER_EXPIRY');
           }
         }
       } catch (err) {
         console.warn('Heartbeat synchronization failed (offline/retry)', err);
       }
-    }, 20000);
+    };
+
+    const onOnline = () => {
+      if (hasPendingResponses(pendingResponses.current)) {
+        void triggerPendingFlush();
+      }
+      void syncHeartbeat();
+      if (shouldAutoSubmitOnTick(computeClockRemaining(clockRef.current, Date.now()))) {
+        void handleFinalSubmitRef.current('AUTO_TIMER_EXPIRY');
+      }
+    };
+
+    const onVisibilityWake = () => {
+      if (document.visibilityState === 'visible') {
+        setRemainingSeconds(computeClockRemaining(clockRef.current, Date.now()));
+        void syncHeartbeat();
+      }
+    };
+
+    heartbeatIntervalRef.current = setInterval(syncHeartbeat, 20000);
+    window.addEventListener('online', onOnline);
+    document.addEventListener('visibilitychange', onVisibilityWake);
 
     return () => {
       if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisibilityWake);
     };
-  }, [loading, attempt, blurCount]);
+  }, [loading, attempt, applyServerClock, triggerPendingFlush]);
+
+  // Warn before unloading tab while local answers are still pending sync
+  useEffect(() => {
+    if (!attempt) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasPendingResponses(pendingResponses.current)) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [attempt]);
 
   // 5. Anti-Cheating & Proctoring Window Switch / Blur Listener
   useEffect(() => {
     const handleVisibilityOrBlur = async () => {
       if (loading || !attempt || isSubmitting) return;
 
-      const newCount = blurCount + 1;
+      const newCount = blurCountRef.current + 1;
+      blurCountRef.current = newCount;
       setBlurCount(newCount);
       setShowBlurWarning(true);
 
@@ -246,7 +369,7 @@ export const ExamCBTPage: React.FC = () => {
       // Check max allowed switches
       if (newCount > maxBlurSwitches) {
         alert(`You have switched away ${newCount} times, exceeding the allowable limit (${maxBlurSwitches}). Your exam is now being auto-submitted.`);
-        handleFinalSubmit('AUTO_TIMER_EXPIRY');
+        void handleFinalSubmitRef.current('AUTO_TIMER_EXPIRY');
       }
     };
 
@@ -291,7 +414,7 @@ export const ExamCBTPage: React.FC = () => {
   // 7. Save Response Core Function
   const saveCurrentResponse = useCallback(
     async (targetStatus: ResponseStatusType): Promise<boolean> => {
-      if (!attempt || !currentQuestion || saveInFlight.current || submittingRef.current) return false;
+      if (!attempt || !currentQuestion || submittingRef.current) return false;
 
       const qid = currentQuestion.id;
       const qidKey = String(qid);
@@ -313,24 +436,12 @@ export const ExamCBTPage: React.FC = () => {
       const cacheKey = studentExamApi.getCacheKey(attempt.attempt_id, id || 'exam');
       pendingResponses.current[qidKey] = record;
       studentExamApi.saveLocalCache(cacheKey, pendingResponses.current);
+      setPendingCount(Object.keys(pendingResponses.current).length);
 
-      setSaveStatus('saving');
-      const request = studentExamApi.saveResponse(attempt.attempt_id, record).then(() => {
-        delete pendingResponses.current[qidKey];
-        studentExamApi.saveLocalCache(cacheKey, pendingResponses.current);
-        setSaveStatus('saved');
-      }).catch(() => {
-        setSaveStatus('error');
-      });
-      saveInFlight.current = request;
-      try {
-        await request;
-      } finally {
-        saveInFlight.current = null;
-      }
+      void triggerPendingFlush();
       return true;
     },
-    [attempt, currentQuestion, selectedOptions, numericalValue, id]
+    [attempt, currentQuestion, selectedOptions, numericalValue, id, triggerPendingFlush]
   );
 
   // Navigation: Advance to next question or section
@@ -384,7 +495,7 @@ export const ExamCBTPage: React.FC = () => {
 
   // Action Button: Clear Response
   const handleClearResponse = async () => {
-    if (saveInFlight.current || submittingRef.current) return;
+    if (submittingRef.current) return;
     setSelectedOptions([]);
     setNumericalValue('');
     await saveCurrentResponse('UNANSWERED');
@@ -398,31 +509,52 @@ export const ExamCBTPage: React.FC = () => {
     submittingRef.current = true;
     try {
       setIsSubmitting(true);
-      await saveInFlight.current;
-      if (reason === 'MANUAL_SUBMIT') {
-        const cacheKey = studentExamApi.getCacheKey(attempt.attempt_id, id || 'exam');
-        for (const [qid, record] of Object.entries(pendingResponses.current)) {
-          await studentExamApi.saveResponse(attempt.attempt_id, record);
-          delete pendingResponses.current[qid];
-          studentExamApi.saveLocalCache(cacheKey, pendingResponses.current);
-        }
-      }
-      const res = await studentExamApi.submitExam(attempt.attempt_id, reason);
-      // Clear offline cache
-      if (id) {
-        studentExamApi.clearLocalCache(studentExamApi.getCacheKey(attempt.attempt_id, id));
-      }
+      const cacheKey = studentExamApi.getCacheKey(attempt.attempt_id, id || 'exam');
+      const res = await submitAttemptWithFlush({
+        attemptId: attempt.attempt_id,
+        reason,
+        pending: pendingResponses.current,
+        waitForInFlight: () => getFlushRunner().waitForIdle(),
+        saveResponse: (attemptId, record) => studentExamApi.saveResponse(attemptId, record),
+        submitExam: (attemptId, submitReason) =>
+          studentExamApi.submitExam(attemptId, submitReason),
+        persistCache: (map) => studentExamApi.saveLocalCache(cacheKey, map),
+        clearCache: () => {
+          if (id) {
+            studentExamApi.clearLocalCache(cacheKey);
+          }
+        },
+        onSaveResult: (saveRes) => {
+          if (
+            typeof saveRes.remaining_seconds === 'number' &&
+            Number.isFinite(saveRes.remaining_seconds)
+          ) {
+            applyServerClock(saveRes.remaining_seconds);
+          }
+        },
+      });
+      setPendingCount(Object.keys(pendingResponses.current).length);
       navigate(`/student/exam/${id}/finish`, {
         replace: true,
         state: { submitResult: res, examName: attempt.exam?.name },
       });
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      alert(e.response?.data?.message || 'Submission failed. Please try again.');
+      setPendingCount(Object.keys(pendingResponses.current).length);
+      if (hasPendingResponses(pendingResponses.current)) {
+        setSaveStatus('error');
+      }
+      if (reason === 'MANUAL_SUBMIT') {
+        const e = err as { response?: { data?: { message?: string } } };
+        alert(e.response?.data?.message || 'Submission failed. Please try again.');
+      } else {
+        console.warn('Auto-submit deferred (offline/retry)', err);
+      }
       submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
+  const handleFinalSubmitRef = useRef(handleFinalSubmit);
+  handleFinalSubmitRef.current = handleFinalSubmit;
 
   // Fullscreen toggle
   const toggleFullscreen = () => {
@@ -507,10 +639,23 @@ export const ExamCBTPage: React.FC = () => {
               Autosaving...
             </span>
           )}
-          {saveStatus === 'saved' && (
+          {saveStatus === 'saved' && pendingCount === 0 && (
             <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
               <CheckCircle className="w-3 h-3" /> Saved
             </span>
+          )}
+          {(saveStatus === 'error' || (saveStatus !== 'saving' && pendingCount > 0)) && (
+            <button
+              type="button"
+              onClick={() => void triggerPendingFlush()}
+              className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 transition-colors"
+              title="Some answers are saved locally and waiting to sync. Click to retry now."
+            >
+              <AlertTriangle className="w-3 h-3 text-amber-600" />
+              <span>
+                Offline / Sync Pending{pendingCount > 0 ? ` (${pendingCount})` : ''} — Retry
+              </span>
+            </button>
           )}
         </div>
 
@@ -915,7 +1060,7 @@ export const ExamCBTPage: React.FC = () => {
                 You have switched outside the exam screen {blurCount} of {maxBlurSwitches} allowable times!
               </p>
               <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                Navigating away from the examination window is strictly tracked by AI proctoring telemetry. Exceeding the allowable switches will immediately terminate and submit your examination.
+                Navigating away from the examination window is strictly tracked by window-focus proctoring telemetry. Exceeding the allowable switches will immediately terminate and submit your examination.
               </p>
             </div>
             <button
