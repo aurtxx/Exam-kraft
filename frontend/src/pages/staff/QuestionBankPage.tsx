@@ -1,3 +1,4 @@
+import MathRenderer from '../../components/MathRenderer';
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { QuestionBank, Question, QuestionOption } from '../../types';
@@ -382,7 +383,7 @@ export const QuestionBankPage: React.FC = () => {
 
                         {/* Question Text */}
                         <div className="text-sm text-slate-800 whitespace-pre-wrap font-sans leading-relaxed">
-                          {q.content_text}
+                          <MathRenderer content={q.content_text} />
                         </div>
 
                         {/* Options if MCQ */}
@@ -404,7 +405,7 @@ export const QuestionBankPage: React.FC = () => {
                                   <span className="w-5 h-5 rounded-full bg-white border border-slate-300 flex items-center justify-center font-bold text-[10px]">
                                     {opt.key || opt.option_key || chr(65 + oIdx)}
                                   </span>
-                                  <span>{opt.text || opt.content_text}</span>
+                                  <MathRenderer content={opt.text || opt.content_text || ''} />
                                 </div>
                               );
                             })}
@@ -622,7 +623,7 @@ export const QuestionBankPage: React.FC = () => {
                   />
                 ) : (
                   <div className="min-h-[96px] p-3 rounded-lg border border-slate-200 bg-slate-50 text-sm whitespace-pre-wrap text-slate-800">
-                    {qForm.content_text || <span className="text-slate-400 italic">No content typed yet.</span>}
+                    {qForm.content_text ? <MathRenderer content={qForm.content_text} /> : <span className="text-slate-400 italic">No content typed yet.</span>}
                   </div>
                 )}
               </div>

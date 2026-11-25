@@ -22,6 +22,7 @@ export const StudentsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
   const [selectedBatch, setSelectedBatch] = useState<string>('');
+  const [selectedCentre, setSelectedCentre] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -57,6 +58,7 @@ export const StudentsPage: React.FC = () => {
         page_size: 20,
         search: search || undefined,
         batch_id: selectedBatch || undefined,
+        centre_id: selectedCentre || undefined,
       });
       setStudents(res.students || []);
       setTotalPages(res.total_pages || 1);
@@ -70,19 +72,20 @@ export const StudentsPage: React.FC = () => {
 
   useEffect(() => {
     fetchStudents();
-  }, [page, search, selectedBatch]);
+  }, [page, search, selectedBatch, selectedCentre]);
+
+  const fetchMetadata = async () => {
+    try {
+      const [bData, cData] = await Promise.all([apiService.getBatches(), apiService.getCenters()]);
+      setBatches(bData);
+      setCenters(cData);
+    } catch (err) {
+      console.error('Failed to load master metadata:', err);
+    }
+  };
 
   useEffect(() => {
-    const fetchMetadata = async () => {
-      try {
-        const [bData, cData] = await Promise.all([apiService.getBatches(), apiService.getCenters()]);
-        setBatches(bData);
-        setCenters(cData);
-      } catch (err) {
-        console.error('Failed to load master metadata:', err);
-      }
-    };
-    fetchMetadata();
+    void fetchMetadata();
   }, []);
 
   const openAddModal = () => {
@@ -133,10 +136,10 @@ export const StudentsPage: React.FC = () => {
 
   const handleDownloadSampleCsv = () => {
     const sample =
-      'RollNumber,Name,Phone,Email,BatchCode,CentreCode\n' +
-      '2026101,Ada Lovelace,+919999900001,ada@lovelace.org,C12B,NC01\n' +
-      '2026102,Charles Babbage,+919999900002,charles@babbage.org,C12B,NC01\n' +
-      '2026103,Alan Turing,+919999900003,turing@cs.org,C12B,NC01\n';
+      'RollNumber,Name,Phone,Email,BatchCode,CentreCode,Password\n' +
+      '2026101,Ada Lovelace,+919999900001,ada@lovelace.org,C12B,NC01,\n' +
+      '2026102,Charles Babbage,+919999900002,charles@babbage.org,C12B,NC01,\n' +
+      '2026103,Alan Turing,+919999900003,turing@cs.org,C12B,NC01,\n';
     const blob = new Blob([sample], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -162,6 +165,7 @@ export const StudentsPage: React.FC = () => {
       setImportResult(res);
 
       if (res.status === 'SUCCESS' && (!res.errors || res.errors.length === 0)) {
+        void fetchMetadata();
         setTimeout(() => {
           setBulkModalOpen(false);
           setCsvFile(null);
@@ -231,6 +235,7 @@ export const StudentsPage: React.FC = () => {
           </div>
 
           <select
+            aria-label="Filter by batch"
             value={selectedBatch}
             onChange={(e) => {
               setSelectedBatch(e.target.value);
@@ -243,6 +248,20 @@ export const StudentsPage: React.FC = () => {
               <option key={b.id} value={b.id}>
                 {b.name} ({b.code})
               </option>
+            ))}
+          </select>
+          <select
+            aria-label="Filter by examination centre"
+            value={selectedCentre}
+            onChange={(e) => {
+              setSelectedCentre(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-700"
+          >
+            <option value="">All Centres</option>
+            {centers.map((centre) => (
+              <option key={centre.id} value={centre.id}>{centre.name} ({centre.code})</option>
             ))}
           </select>
         </div>
@@ -482,7 +501,7 @@ export const StudentsPage: React.FC = () => {
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Upload size={20} className="text-primary-500" />
-                <h2 className="text-lg font-bold text-slate-800">Bulk Ingestion (CSV / Excel)</h2>
+                <h2 className="text-lg font-bold text-slate-800">Bulk CSV Import</h2>
               </div>
               <button
                 onClick={() => setBulkModalOpen(false)}
@@ -497,7 +516,7 @@ export const StudentsPage: React.FC = () => {
                 <div>
                   <p className="text-xs font-bold text-blue-900">Need the correct column structure?</p>
                   <p className="text-[11px] text-blue-700 mt-0.5">
-                    Download sample CSV with RollNumber, Name, Email, BatchCode, CentreCode.
+                    Download a sample CSV. Include a Password for each candidate who needs to sign in after import.
                   </p>
                 </div>
                 <button

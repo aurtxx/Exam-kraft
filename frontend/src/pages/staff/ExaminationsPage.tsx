@@ -132,7 +132,11 @@ export const ExaminationsPage: React.FC = () => {
     }
     try {
       setErrorMsg('');
-      await apiService.createExamination(examForm);
+      await apiService.createExamination({
+        ...examForm,
+        start_window: examForm.start_window ? new Date(examForm.start_window).toISOString() : null,
+        end_window: examForm.end_window ? new Date(examForm.end_window).toISOString() : null,
+      });
       setNewExamModalOpen(false);
       fetchExams();
     } catch (err: any) {
@@ -162,7 +166,7 @@ export const ExaminationsPage: React.FC = () => {
         batch_ids: selectedBatches,
         centre_ids: selectedCenters,
       });
-      setSuccessMsg(`Successfully assigned ${res.assigned_count} candidates to examination!`);
+      setSuccessMsg(`${res.assigned_count} new batch or centre assignments saved.`);
       setTimeout(() => {
         setAssignDrawerOpen(false);
         fetchExams();
