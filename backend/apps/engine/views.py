@@ -53,115 +53,18 @@ class HeartbeatView(APIView):
 
 
 class SaveResponseView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsTenantMember]
 
     def post(self, request, id):
-        try:
-            attempt = ExaminationAttempt.objects.select_related('examination').get(id=id)
-        except (ExaminationAttempt.DoesNotExist, ValueError):
-            return Response({
-                'status': 'ERROR',
-                'code': 'ATTEMPT_NOT_FOUND',
-                'message': 'Attempt not found.'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        if attempt.user != request.user and not request.user.is_staff:
-            return Response({
-                'status': 'ERROR',
-                'code': 'UNAUTHORIZED',
-                'message': 'You do not have permission to access this attempt.'
-            }, status=status.HTTP_403_FORBIDDEN)
-
-        # Locked attempt check
-        if attempt.status in (AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED):
-            return Response({
-                'status': 'ERROR',
-                'code': 'ATTEMPT_LOCKED',
-                'message': 'Attempt is locked and submitted.'
-            }, status=status.HTTP_403_FORBIDDEN)
-
-        now = timezone.now()
-        # Late submission after deadline + 30s grace period
-        if now > (attempt.server_deadline + timedelta(seconds=30)):
-            attempt.status = AttemptStatus.AUTO_SUBMITTED
-            attempt.submitted_at = now
-            attempt.save(update_fields=['status', 'submitted_at', 'updated_at'])
-            return Response({
-                'status': 'ERROR',
-                'code': 'DEADLINE_EXPIRED',
-                'message': 'Response rejected: Server deadline + grace period has expired.'
-            }, status=status.HTTP_403_FORBIDDEN)
-
-        data = request.data
-        qid_raw = data.get('question_id')
-        if not qid_raw:
-            return Response({
-                'status': 'ERROR',
-                'code': 'INVALID_PAYLOAD',
-                'message': 'question_id is required.'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Lookup question
-        question = None
-        try:
-            # Check UUID or question_number
-            try:
-                qid_uuid = uuid.UUID(str(qid_raw))
-                question = Question.objects.filter(id=qid_uuid).first()
-            except ValueError:
-                pass
-            if not question:
-                # Try question_number
-                question = Question.objects.filter(question_number=int(qid_raw)).first()
-            if not question:
-                # Try raw pk if pk is numeric/other
-                question = Question.objects.filter(pk=qid_raw).first()
-        except Exception:
-            question = None
-
-        if not question:
-            return Response({
-                'status': 'ERROR',
-                'code': 'QUESTION_NOT_FOUND',
-                'message': f'Question {qid_raw} not found.'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        selected_options = data.get('selected_options', [])
-        numerical_value = data.get('numerical_value')
-        status_input = data.get('status')
-        time_spent = data.get('time_spent_seconds', 0)
-        try:
-            time_spent = int(time_spent)
-        except (ValueError, TypeError):
-            time_spent = 0
-
-        if status_input:
-            resp_status = normalize_response_status(status_input)
-        else:
-            if selected_options or (numerical_value is not None and str(numerical_value).strip() != ''):
-                resp_status = ResponseStatus.ANSWERED
-            else:
-                resp_status = ResponseStatus.UNANSWERED
-
-        response_obj, _ = AttemptResponse.objects.update_or_create(
-            attempt=attempt,
-            question=question,
-            defaults={
-                'selected_options': selected_options,
-                'numerical_value': str(numerical_value) if numerical_value is not None else None,
-                'status': resp_status,
-                'time_spent_seconds': time_spent,
-            }
+        qid_raw = request.data.get('question_id') if isinstance(request.data, dict) else None
+        outcome = services.save_response(
+            id,
+            request.user,
+            qid_raw,
+            request.data,
+            tenant=getattr(request, 'tenant', None),
         )
-
-        rem_secs = max(0, int((attempt.server_deadline - now).total_seconds()))
-
-        return Response({
-            'status': 'SUCCESS',
-            'saved_at': response_obj.saved_at.isoformat(),
-            'question_id': qid_raw,
-            'remaining_seconds': rem_secs,
-        }, status=status.HTTP_200_OK)
+        return Response(outcome.data, status=outcome.http_status)
 
 
 class SubmitAttemptView(APIView):

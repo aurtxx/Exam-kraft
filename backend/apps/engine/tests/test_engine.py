@@ -814,6 +814,243 @@ class AttemptLifecycleServicesTestCase(TestCase):
         self.assertEqual(att.status, AttemptStatus.IN_PROGRESS)
 
 
+class SaveResponseScopingAndValidationTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.org_a = Organization.objects.create(
+            name="Org Alpha",
+            slug="org-alpha-sr",
+            domain="alpha-sr.ezexam.in",
+        )
+        self.org_b = Organization.objects.create(
+            name="Org Beta",
+            slug="org-beta-sr",
+            domain="beta-sr.ezexam.in",
+        )
+
+        self.student_a = User.objects.create_user(
+            username="stud_a@alpha.edu",
+            password="Password123!",
+            role=UserRole.STUDENT,
+            organization=self.org_a,
+        )
+        self.student_b = User.objects.create_user(
+            username="stud_b@beta.edu",
+            password="Password123!",
+            role=UserRole.STUDENT,
+            organization=self.org_b,
+        )
+        self.headers_a = {"HTTP_X_TENANT_ID": str(self.org_a.id)}
+        self.headers_b = {"HTTP_X_TENANT_ID": str(self.org_b.id)}
+
+        self.paper_a = QuestionBank.objects.create(organization=self.org_a, name="Paper A")
+        self.q_a1 = Question.objects.create(
+            question_bank=self.paper_a,
+            section_name="Maths",
+            question_number=1,
+            question_type=QuestionType.MCQ_SINGLE,
+            content_text="Org A Q1",
+            key="A",
+            positive_marks=4.0,
+            negative_marks=1.0,
+        )
+        Option.objects.create(question=self.q_a1, option_key="A", content_text="1", is_correct=True, order=1)
+        Option.objects.create(question=self.q_a1, option_key="B", content_text="2", is_correct=False, order=2)
+
+        self.q_a_unlinked = Question.objects.create(
+            question_bank=self.paper_a,
+            section_name="Maths",
+            question_number=2,
+            question_type=QuestionType.MCQ_SINGLE,
+            content_text="Org A Unlinked Q2",
+            key="A",
+            positive_marks=4.0,
+            negative_marks=1.0,
+        )
+        Option.objects.create(question=self.q_a_unlinked, option_key="A", content_text="Yes", is_correct=True, order=1)
+
+        self.q_a_num = Question.objects.create(
+            question_bank=self.paper_a,
+            section_name="Chem",
+            question_number=3,
+            question_type=QuestionType.NUMERICAL,
+            content_text="Org A Numerical Q3",
+            key="5",
+            positive_marks=4.0,
+            negative_marks=0.0,
+        )
+
+        self.exam_a = Examination.objects.create(
+            organization=self.org_a,
+            name="Exam A Sectioned",
+            question_paper=self.paper_a,
+            duration_minutes=60,
+            total_marks=8.0,
+            status=ExaminationStatus.PUBLISHED,
+        )
+        sec_a = ExaminationSection.objects.create(exam=self.exam_a, title="Maths", order=1, total_questions=2)
+        ExaminationQuestion.objects.create(exam_section=sec_a, question=self.q_a1, order=1)
+        ExaminationQuestion.objects.create(exam_section=sec_a, question=self.q_a_num, order=2)
+
+        self.paper_a2 = QuestionBank.objects.create(organization=self.org_a, name="Paper A2")
+        self.q_a2 = Question.objects.create(
+            question_bank=self.paper_a2,
+            section_name="Physics",
+            question_number=1,
+            question_type=QuestionType.MCQ_SINGLE,
+            content_text="Other Exam Q",
+            key="A",
+        )
+        Option.objects.create(question=self.q_a2, option_key="A", content_text="Opt", is_correct=True, order=1)
+        self.exam_a2 = Examination.objects.create(
+            organization=self.org_a,
+            name="Exam A2 Paper Fallback",
+            question_paper=self.paper_a2,
+            duration_minutes=60,
+            total_marks=4.0,
+            status=ExaminationStatus.PUBLISHED,
+        )
+
+        self.paper_b = QuestionBank.objects.create(organization=self.org_b, name="Paper B")
+        self.q_b2 = Question.objects.create(
+            question_bank=self.paper_b,
+            section_name="Bio",
+            question_number=2,
+            question_type=QuestionType.MCQ_SINGLE,
+            content_text="Org B Q2",
+            key="A",
+        )
+        Option.objects.create(question=self.q_b2, option_key="A", content_text="Cell", is_correct=True, order=1)
+        self.exam_b = Examination.objects.create(
+            organization=self.org_b,
+            name="Exam B",
+            question_paper=self.paper_b,
+            duration_minutes=60,
+            total_marks=4.0,
+            status=ExaminationStatus.PUBLISHED,
+        )
+
+    def _start_attempt(self, user, exam, headers):
+        self.client.force_authenticate(user=user)
+        res = self.client.post(f"/api/v1/examinations/{exam.id}/start/", **headers)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        return res.data["attempt_id"]
+
+    def test_save_response_rejects_cross_tenant_question_number_fallback(self):
+        att_b = self._start_attempt(self.student_b, self.exam_b, self.headers_b)
+        res = self.client.post(
+            f"/api/v1/attempts/{att_b}/save_response/",
+            {"question_id": 1, "selected_options": ["A"]},
+            format="json",
+            **self.headers_b,
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res.data["code"], "INVALID_QUESTION_ID")
+        self.assertEqual(AttemptResponse.objects.filter(attempt_id=att_b).count(), 0)
+
+    def test_save_response_rejects_cross_tenant_question_uuid(self):
+        att_b = self._start_attempt(self.student_b, self.exam_b, self.headers_b)
+        res = self.client.post(
+            f"/api/v1/attempts/{att_b}/save_response/",
+            {"question_id": str(self.q_a1.id), "selected_options": ["A"]},
+            format="json",
+            **self.headers_b,
+        )
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(res.data["code"], "QUESTION_NOT_FOUND")
+        self.assertEqual(AttemptResponse.objects.filter(attempt_id=att_b).count(), 0)
+
+    def test_save_response_rejects_same_tenant_other_exam_and_unlinked_paper_questions(self):
+        att_a = self._start_attempt(self.student_a, self.exam_a, self.headers_a)
+        for foreign_q in (self.q_a2, self.q_a_unlinked):
+            res = self.client.post(
+                f"/api/v1/attempts/{att_a}/save_response/",
+                {"question_id": str(foreign_q.id), "selected_options": ["A"]},
+                format="json",
+                **self.headers_a,
+            )
+            self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+            self.assertEqual(res.data["code"], "QUESTION_NOT_FOUND")
+        self.assertEqual(AttemptResponse.objects.filter(attempt_id=att_a).count(), 0)
+
+    def test_save_response_allows_paper_fallback_exam_without_sections(self):
+        att_a2 = self._start_attempt(self.student_a, self.exam_a2, self.headers_a)
+        res = self.client.post(
+            f"/api/v1/attempts/{att_a2}/save_response/",
+            {"question_id": str(self.q_a2.id), "selected_options": ["A"]},
+            format="json",
+            **self.headers_a,
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(AttemptResponse.objects.filter(attempt_id=att_a2, question=self.q_a2).count(), 1)
+
+    def test_save_response_rejects_malformed_and_type_mismatched_payloads(self):
+        att_a = self._start_attempt(self.student_a, self.exam_a, self.headers_a)
+        bad_payloads = [
+            {"question_id": str(self.q_a1.id), "selected_options": None},
+            {"question_id": str(self.q_a1.id), "selected_options": "A"},
+            {"question_id": str(self.q_a1.id), "selected_options": ["Z"]},
+            {"question_id": str(self.q_a1.id), "selected_options": ["A", "B"]},
+            {"question_id": str(self.q_a1.id), "selected_options": ["A"], "numerical_value": "5"},
+            {"question_id": str(self.q_a_num.id), "selected_options": ["A"]},
+            {"question_id": str(self.q_a_num.id), "numerical_value": "abc"},
+            {"question_id": str(self.q_a_num.id), "numerical_value": "NaN"},
+            {"question_id": str(self.q_a_num.id), "numerical_value": "1" * 101},
+            {"question_id": str(self.q_a1.id), "selected_options": ["A"], "time_spent_seconds": -1},
+            {"question_id": str(self.q_a1.id), "selected_options": ["A"], "time_spent_seconds": "bad"},
+            {"question_id": str(self.q_a1.id), "selected_options": ["A"], "time_spent_seconds": True},
+            {"question_id": str(self.q_a1.id), "selected_options": ["A"], "status": "BOGUS_STATUS"},
+        ]
+        for payload in bad_payloads:
+            with self.subTest(payload=payload):
+                res = self.client.post(
+                    f"/api/v1/attempts/{att_a}/save_response/",
+                    payload,
+                    format="json",
+                    **self.headers_a,
+                )
+                self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(res.data["code"], "INVALID_RESPONSE")
+        self.assertEqual(AttemptResponse.objects.filter(attempt_id=att_a).count(), 0)
+
+    def test_save_response_after_deadline_auto_submits_and_rejects(self):
+        att_a = self._start_attempt(self.student_a, self.exam_a, self.headers_a)
+        att = ExaminationAttempt.objects.get(id=att_a)
+        att.server_deadline = timezone.now() - timedelta(seconds=45)
+        att.save(update_fields=["server_deadline"])
+
+        res1 = self.client.post(
+            f"/api/v1/attempts/{att_a}/save_response/",
+            {"question_id": str(self.q_a1.id), "selected_options": ["A"]},
+            format="json",
+            **self.headers_a,
+        )
+        self.assertEqual(res1.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res1.data["code"], "DEADLINE_EXPIRED")
+
+        att.refresh_from_db()
+        self.assertEqual(att.status, AttemptStatus.AUTO_SUBMITTED)
+        self.assertEqual(AttemptResponse.objects.filter(attempt_id=att_a).count(), 0)
+
+        res2 = self.client.post(
+            f"/api/v1/attempts/{att_a}/save_response/",
+            {"question_id": str(self.q_a1.id), "selected_options": ["A"]},
+            format="json",
+            **self.headers_a,
+        )
+        self.assertEqual(res2.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res2.data["code"], "ATTEMPT_LOCKED")
+
+    def test_attempt_response_serializer_does_not_expose_unscoped_questions(self):
+        from apps.engine.serializers import AttemptResponseSerializer
+
+        unscoped = AttemptResponseSerializer()
+        self.assertEqual(unscoped.fields["question_id"].queryset.count(), 0)
+        scoped = AttemptResponseSerializer(context={"examination": self.exam_a})
+        scoped_ids = set(scoped.fields["question_id"].queryset.values_list("id", flat=True))
+        self.assertEqual(scoped_ids, {self.q_a1.id, self.q_a_num.id})
+
+
 POSTGRES_CONCURRENCY_SKIP_REASON = (
     "Requires PostgreSQL for row-level locking / concurrent constraint enforcement"
 )
@@ -930,3 +1167,58 @@ class AttemptConcurrencyPostgresTestCase(TransactionTestCase):
         self.assertEqual(len(submitted_timestamps), 1)
         att = ExaminationAttempt.objects.get(id=att_id)
         self.assertEqual(att.status, AttemptStatus.SUBMITTED)
+
+    def test_save_response_blocks_behind_submit_lock_and_rejects(self):
+        from apps.engine import services
+
+        start_client = APIClient()
+        start_client.force_authenticate(user=self.student)
+        start_res = start_client.post(
+            "/api/v1/student/attempts/start/",
+            {"exam_id": str(self.exam.id)},
+            format="json",
+            **self.tenant_headers,
+        )
+        att_id = start_res.data["attempt_id"]
+
+        lock_acquired = threading.Event()
+        thread_b_result = {}
+
+        def submitter():
+            try:
+                with transaction.atomic():
+                    locked, _ = services.lock_attempt(att_id, user=self.student, tenant=self.org)
+                    lock_acquired.set()
+                    import time
+                    time.sleep(0.2)
+                    locked.status = AttemptStatus.SUBMITTED
+                    locked.submitted_at = timezone.now()
+                    locked.save(update_fields=["status", "submitted_at", "updated_at"])
+            finally:
+                connections.close_all()
+
+        def saver():
+            try:
+                lock_acquired.wait(timeout=10)
+                client = APIClient()
+                client.force_authenticate(user=self.student)
+                thread_b_result["res"] = client.post(
+                    f"/api/v1/attempts/{att_id}/save_response/",
+                    {"question_id": str(self.q1.id), "selected_options": ["A"]},
+                    format="json",
+                    **self.tenant_headers,
+                )
+            finally:
+                connections.close_all()
+
+        t1 = threading.Thread(target=submitter)
+        t2 = threading.Thread(target=saver)
+        t1.start()
+        t2.start()
+        t1.join(timeout=15)
+        t2.join(timeout=15)
+
+        res = thread_b_result["res"]
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res.data["code"], "ATTEMPT_LOCKED")
+        self.assertEqual(AttemptResponse.objects.filter(attempt_id=att_id).count(), 0)

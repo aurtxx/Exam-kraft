@@ -4,6 +4,7 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from django.core.exceptions import ValidationError
@@ -12,8 +13,10 @@ from django.utils import timezone
 
 from apps.accounts.models import User, UserRole
 from apps.examinations.candidates import candidate_examinations
-from apps.examinations.models import Examination, ExaminationStatus
+from apps.examinations.models import Examination, ExaminationQuestion, ExaminationStatus
+from apps.question_bank.models import Question, QuestionType, normalize_question_type
 from .models import (
+    AttemptResponse,
     AttemptStatus,
     ExaminationAttempt,
     ResponseStatus,
@@ -28,6 +31,20 @@ ACTIVE_EXAM_STATUSES = (
     ExaminationStatus.IN_PROGRESS,
 )
 VALID_SUBMISSION_REASONS = ('MANUAL_SUBMIT', 'AUTO_TIMER_EXPIRY')
+MAX_TIME_SPENT_SECONDS = 86400 * 7
+RESPONSE_STATUS_ALIASES = {
+    'ANSWERED_AND_MARKED_FOR_REVIEW': ResponseStatus.ANSWERED_AND_MARKED,
+    'ANSWERED_AND_MARKED': ResponseStatus.ANSWERED_AND_MARKED,
+    'ANSWERED_MARKED': ResponseStatus.ANSWERED_AND_MARKED,
+    'MARKED_FOR_REVIEW': ResponseStatus.MARKED_FOR_REVIEW,
+    'MARKED': ResponseStatus.MARKED_FOR_REVIEW,
+    'ANSWERED': ResponseStatus.ANSWERED,
+    'ATTEMPTED': ResponseStatus.ANSWERED,
+    'UNANSWERED': ResponseStatus.UNANSWERED,
+    'NOT_ANSWERED': ResponseStatus.UNANSWERED,
+    'NOT_VISITED': ResponseStatus.NOT_VISITED,
+    'UNVISITED': ResponseStatus.NOT_VISITED,
+}
 
 
 @dataclass(frozen=True)
@@ -510,4 +527,268 @@ def submit_attempt(
             'submission_status': 'SUBMITTED',
             'submitted_at': attempt.submitted_at.isoformat(),
             'message': 'Examination submitted successfully. Results will be published by faculty.',
+        })
+
+
+def scoped_exam_questions(examination: Examination):
+    """
+    Return the Question queryset strictly belonging to `examination` and its tenant.
+    Mirrors `build_attempt_payload`: uses ExaminationQuestion links if any exist on the exam,
+    otherwise falls back to `examination.question_paper`.
+    """
+    if ExaminationQuestion.objects.filter(exam_section__exam=examination).exists():
+        return Question.objects.filter(
+            exam_instances__exam_section__exam=examination,
+            question_bank__organization_id=examination.organization_id,
+        ).distinct()
+    if examination.question_paper_id:
+        return Question.objects.filter(
+            question_bank_id=examination.question_paper_id,
+            question_bank__organization_id=examination.organization_id,
+        )
+    return Question.objects.none()
+
+
+def resolve_exam_question(
+    attempt: ExaminationAttempt,
+    question_identifier: Any,
+) -> tuple[Question | None, ServiceOutcome | None]:
+    """Resolve a question by UUID strictly within `attempt.examination` and its tenant."""
+    if (
+        question_identifier is None
+        or isinstance(question_identifier, (bool, dict, list))
+        or not str(question_identifier).strip()
+    ):
+        return None, ServiceOutcome.error('INVALID_PAYLOAD', 'question_id is required.', 400)
+
+    try:
+        qid_uuid = uuid.UUID(str(question_identifier).strip())
+    except (ValueError, TypeError, AttributeError):
+        return None, ServiceOutcome.error('INVALID_QUESTION_ID', 'question_id must be a valid UUID.', 400)
+
+    question = (
+        scoped_exam_questions(attempt.examination)
+        .prefetch_related('options')
+        .filter(id=qid_uuid)
+        .first()
+    )
+    if question is None:
+        return None, ServiceOutcome.error(
+            'QUESTION_NOT_FOUND',
+            f'Question {question_identifier} not found in this examination.',
+            404,
+        )
+    return question, None
+
+
+def validate_answer_payload(
+    question: Question,
+    answer_payload: Any,
+) -> tuple[dict[str, Any] | None, ServiceOutcome | None]:
+    """Validate and normalize answer payload against Question type, options, and DB bounds."""
+    if not isinstance(answer_payload, dict):
+        return None, ServiceOutcome.error('INVALID_PAYLOAD', 'Request payload must be a JSON object.', 400)
+
+    kind = normalize_question_type(question.question_type)
+
+    # 1. selected_options (explicit null must be rejected to avoid NOT NULL IntegrityError)
+    if 'selected_options' in answer_payload:
+        raw_selected = answer_payload.get('selected_options')
+    else:
+        raw_selected = []
+    if not isinstance(raw_selected, list):
+        return None, ServiceOutcome.error('INVALID_RESPONSE', 'selected_options must be a list.', 400)
+
+    cleaned_options: list[str] = []
+    seen_opts: set[str] = set()
+    for item in raw_selected:
+        if not isinstance(item, str) or not item.strip() or len(item.strip()) > 50:
+            return None, ServiceOutcome.error(
+                'INVALID_RESPONSE',
+                'Each selected option must be a non-empty string.',
+                400,
+            )
+        token = item.strip()
+        norm = token.upper()
+        if norm not in seen_opts:
+            seen_opts.add(norm)
+            cleaned_options.append(token)
+
+    # 2. numerical_value
+    raw_num = answer_payload.get('numerical_value')
+    if raw_num is None:
+        cleaned_numerical = None
+    elif isinstance(raw_num, (bool, list, dict)):
+        return None, ServiceOutcome.error(
+            'INVALID_RESPONSE',
+            'numerical_value must be a string or number.',
+            400,
+        )
+    else:
+        num_str = str(raw_num).strip()
+        if num_str == '':
+            cleaned_numerical = None
+        elif len(num_str) > 100:
+            return None, ServiceOutcome.error(
+                'INVALID_RESPONSE',
+                'numerical_value exceeds maximum length of 100 characters.',
+                400,
+            )
+        else:
+            cleaned_numerical = num_str
+
+    # 3. Cross-field validation by question_type
+    if kind in (QuestionType.MCQ_SINGLE, QuestionType.MCQ_MULTI, QuestionType.TRUE_FALSE):
+        if cleaned_numerical is not None:
+            return None, ServiceOutcome.error(
+                'INVALID_RESPONSE',
+                'numerical_value is not allowed for choice questions.',
+                400,
+            )
+        if kind in (QuestionType.MCQ_SINGLE, QuestionType.TRUE_FALSE) and len(cleaned_options) > 1:
+            return None, ServiceOutcome.error(
+                'INVALID_RESPONSE',
+                'Single-choice questions accept at most one option.',
+                400,
+            )
+        configured = list(question.options.all())
+        if configured and cleaned_options:
+            valid_tokens = (
+                {opt.option_key.strip().upper() for opt in configured}
+                | {str(opt.pk).upper() for opt in configured}
+            )
+            if any(opt.upper() not in valid_tokens for opt in cleaned_options):
+                return None, ServiceOutcome.error(
+                    'INVALID_RESPONSE',
+                    'Selected option does not belong to this question.',
+                    400,
+                )
+    elif kind in (QuestionType.NUMERICAL, QuestionType.SINGLE_DIGIT):
+        if cleaned_options:
+            return None, ServiceOutcome.error(
+                'INVALID_RESPONSE',
+                'selected_options is not allowed for numerical questions.',
+                400,
+            )
+        if cleaned_numerical is not None:
+            try:
+                dec = Decimal(cleaned_numerical)
+            except InvalidOperation:
+                return None, ServiceOutcome.error(
+                    'INVALID_RESPONSE',
+                    'numerical_value must be a valid finite number.',
+                    400,
+                )
+            if not dec.is_finite():
+                return None, ServiceOutcome.error(
+                    'INVALID_RESPONSE',
+                    'numerical_value must be a valid finite number.',
+                    400,
+                )
+    else:
+        # ONE_WORD / SUBJECTIVE / CODING
+        if cleaned_options:
+            return None, ServiceOutcome.error(
+                'INVALID_RESPONSE',
+                'selected_options is not allowed for text/code questions.',
+                400,
+            )
+
+    # 4. time_spent_seconds
+    raw_time = answer_payload.get('time_spent_seconds', 0)
+    if isinstance(raw_time, bool):
+        return None, ServiceOutcome.error(
+            'INVALID_RESPONSE',
+            'time_spent_seconds must be a non-negative integer.',
+            400,
+        )
+    try:
+        time_spent = int(raw_time) if raw_time is not None else 0
+    except (ValueError, TypeError):
+        return None, ServiceOutcome.error(
+            'INVALID_RESPONSE',
+            'time_spent_seconds must be a non-negative integer.',
+            400,
+        )
+    if time_spent < 0 or time_spent > MAX_TIME_SPENT_SECONDS:
+        return None, ServiceOutcome.error(
+            'INVALID_RESPONSE',
+            'time_spent_seconds is out of valid range.',
+            400,
+        )
+
+    # 5. status
+    raw_status = answer_payload.get('status')
+    if raw_status is not None and str(raw_status).strip() != '':
+        if not isinstance(raw_status, str):
+            return None, ServiceOutcome.error('INVALID_RESPONSE', 'status must be a string.', 400)
+        resp_status = RESPONSE_STATUS_ALIASES.get(raw_status.strip().upper())
+        if resp_status is None:
+            return None, ServiceOutcome.error(
+                'INVALID_RESPONSE',
+                f"Invalid response status '{raw_status}'.",
+                400,
+            )
+    else:
+        if cleaned_options or cleaned_numerical is not None:
+            resp_status = ResponseStatus.ANSWERED
+        else:
+            resp_status = ResponseStatus.UNANSWERED
+
+    return {
+        'selected_options': cleaned_options,
+        'numerical_value': cleaned_numerical,
+        'status': resp_status,
+        'time_spent_seconds': time_spent,
+    }, None
+
+
+def save_response(
+    attempt_id,
+    user,
+    question_identifier: Any,
+    answer_payload: Any,
+    *,
+    tenant=None,
+    now: datetime | None = None,
+) -> ServiceOutcome:
+    """
+    Lock attempt, enforce status & deadline expiry, resolve question strictly within
+    `attempt.examination`, validate payload, and persist AttemptResponse atomically.
+    """
+    with transaction.atomic():
+        attempt, err = lock_attempt(attempt_id, user, allow_staff=False, tenant=tenant)
+        if err is not None:
+            return err
+
+        if is_finalized(attempt):
+            return ServiceOutcome.error('ATTEMPT_LOCKED', 'Attempt is locked and submitted.', 403)
+
+        check_now = now or timezone.now()
+        if expire_if_due(attempt, now=check_now):
+            return ServiceOutcome.error(
+                'DEADLINE_EXPIRED',
+                'Response rejected: Server deadline + grace period has expired.',
+                403,
+            )
+
+        question, q_err = resolve_exam_question(attempt, question_identifier)
+        if q_err is not None:
+            return q_err
+
+        cleaned, val_err = validate_answer_payload(question, answer_payload)
+        if val_err is not None:
+            return val_err
+
+        response_obj, _ = AttemptResponse.objects.update_or_create(
+            attempt=attempt,
+            question=question,
+            defaults=cleaned,
+        )
+        rem_secs = compute_remaining_seconds(attempt, now=check_now)
+        return ServiceOutcome.success({
+            'status': 'SUCCESS',
+            'saved_at': response_obj.saved_at.isoformat(),
+            'question_id': str(question.id),
+            'remaining_seconds': rem_secs,
         })

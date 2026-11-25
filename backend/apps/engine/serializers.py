@@ -44,7 +44,7 @@ class DeliveryQuestionSerializer(serializers.ModelSerializer):
 
 class AttemptResponseSerializer(serializers.ModelSerializer):
     question_id = serializers.PrimaryKeyRelatedField(
-        queryset=Question.objects.all(),
+        queryset=Question.objects.none(),
         source='question'
     )
 
@@ -60,6 +60,13 @@ class AttemptResponseSerializer(serializers.ModelSerializer):
             'time_spent_seconds',
         ]
         read_only_fields = ['id', 'saved_at']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        examination = self.context.get('examination') if hasattr(self, 'context') else None
+        if examination is not None:
+            from .services import scoped_exam_questions
+            self.fields['question_id'].queryset = scoped_exam_questions(examination)
 
     def validate_status(self, value):
         return normalize_response_status(value)
