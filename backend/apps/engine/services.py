@@ -10,6 +10,7 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from apps.accounts.models import User, UserRole
 from apps.examinations.candidates import candidate_examinations
@@ -19,9 +20,11 @@ from .models import (
     AttemptResponse,
     AttemptStatus,
     ExaminationAttempt,
+    ProctoringEventType,
+    ProctoringLog,
     ResponseStatus,
 )
-from .serializers import DeliveryQuestionSerializer
+from .serializers import DeliveryQuestionSerializer, ProctoringEventInputSerializer
 
 ATTEMPT_GRACE_PERIOD = timedelta(seconds=30)
 FINAL_ATTEMPT_STATUSES = (AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED)
@@ -32,6 +35,9 @@ ACTIVE_EXAM_STATUSES = (
 )
 VALID_SUBMISSION_REASONS = ('MANUAL_SUBMIT', 'AUTO_TIMER_EXPIRY')
 MAX_TIME_SPENT_SECONDS = 86400 * 7
+MAX_PROCTORING_LOGS_PER_ATTEMPT = 100
+MAX_PROCTORING_EVENTS_PER_MINUTE = 30
+PROCTORING_TIMESTAMP_SKEW = timedelta(minutes=5)
 RESPONSE_STATUS_ALIASES = {
     'ANSWERED_AND_MARKED_FOR_REVIEW': ResponseStatus.ANSWERED_AND_MARKED,
     'ANSWERED_AND_MARKED': ResponseStatus.ANSWERED_AND_MARKED,
@@ -791,4 +797,123 @@ def save_response(
             'saved_at': response_obj.saved_at.isoformat(),
             'question_id': str(question.id),
             'remaining_seconds': rem_secs,
+        })
+
+
+def record_proctoring_event(
+    attempt_id,
+    user,
+    event_data: Any,
+    *,
+    tenant=None,
+    now: datetime | None = None,
+) -> ServiceOutcome:
+    """
+    Validate and record a proctoring event atomically under the attempt row lock.
+    Enforces:
+      - Owner + same-organization check
+      - Strict IN_PROGRESS status check (rejects SUBMITTED / AUTO_SUBMITTED)
+      - Deadline expiration reconciliation (commits AUTO_SUBMITTED, returns 403 DEADLINE_EXPIRED)
+      - Event type enum + details schema/size/timestamp bounds
+      - Per-attempt log cap (100) and sliding-window rate cap (30/min)
+    """
+    if event_data is None:
+        event_data = {}
+    if not isinstance(event_data, dict):
+        return ServiceOutcome.error('INVALID_PAYLOAD', 'Proctoring event payload must be a JSON object.', 400)
+
+    serializer = ProctoringEventInputSerializer(data=event_data)
+    if not serializer.is_valid():
+        return ServiceOutcome.error(
+            'INVALID_PAYLOAD',
+            'Invalid proctoring event payload.',
+            400,
+            details=serializer.errors,
+        )
+
+    event_type = serializer.validated_data.get('event_type', ProctoringEventType.TAB_SWITCH)
+    details = dict(serializer.validated_data.get('details') or {})
+    check_now = now or timezone.now()
+
+    parsed_ts = None
+    if 'timestamp' in details:
+        ts_raw = details['timestamp']
+        parsed_ts = parse_datetime(ts_raw) if isinstance(ts_raw, str) else None
+        if parsed_ts is None or timezone.is_naive(parsed_ts):
+            return ServiceOutcome.error(
+                'INVALID_PAYLOAD',
+                'Invalid ISO-8601 timestamp in details.',
+                400,
+            )
+
+    with transaction.atomic():
+        attempt, err = lock_attempt(attempt_id, user, allow_staff=False, tenant=tenant)
+        if err is not None:
+            return err
+
+        if attempt.status != AttemptStatus.IN_PROGRESS:
+            return ServiceOutcome.error(
+                'ATTEMPT_LOCKED',
+                'Attempt is already finalized.',
+                403,
+            )
+
+        if expire_if_due(attempt, now=check_now):
+            return ServiceOutcome.error(
+                'DEADLINE_EXPIRED',
+                'Proctoring event rejected: Server deadline + grace period has expired.',
+                403,
+            )
+
+        if parsed_ts is not None:
+            if (
+                parsed_ts < (attempt.started_at - PROCTORING_TIMESTAMP_SKEW)
+                or parsed_ts > (check_now + PROCTORING_TIMESTAMP_SKEW)
+            ):
+                return ServiceOutcome.error(
+                    'INVALID_PAYLOAD',
+                    'Proctoring event timestamp is outside the valid attempt window.',
+                    400,
+                )
+
+        total_logs = ProctoringLog.objects.filter(attempt=attempt).count()
+        if total_logs >= MAX_PROCTORING_LOGS_PER_ATTEMPT:
+            return ServiceOutcome.error(
+                'PROCTORING_RATE_LIMIT',
+                'Maximum proctoring event limit reached for this attempt.',
+                429,
+            )
+
+        recent_logs = ProctoringLog.objects.filter(
+            attempt=attempt,
+            timestamp__gte=check_now - timedelta(seconds=60),
+        ).count()
+        if recent_logs >= MAX_PROCTORING_EVENTS_PER_MINUTE:
+            return ServiceOutcome.error(
+                'PROCTORING_RATE_LIMIT',
+                'Too many proctoring events submitted. Please slow down.',
+                429,
+            )
+
+        ProctoringLog.objects.create(
+            attempt=attempt,
+            event_type=event_type,
+            details=details,
+        )
+
+        max_switches = max_allowed_switches(attempt)
+        if event_type in (ProctoringEventType.TAB_SWITCH, ProctoringEventType.WINDOW_BLUR):
+            attempt.tab_switch_count += 1
+            update_fields = ['tab_switch_count', 'updated_at']
+            if attempt.tab_switch_count > max_switches:
+                attempt.status = AttemptStatus.AUTO_SUBMITTED
+                attempt.submitted_at = check_now
+                update_fields.extend(['status', 'submitted_at'])
+            attempt.save(update_fields=update_fields)
+
+        return ServiceOutcome.success({
+            'status': 'SUCCESS',
+            'tab_switch_count': attempt.tab_switch_count,
+            'max_allowed': max_switches,
+            'auto_submitted': attempt.status == AttemptStatus.AUTO_SUBMITTED,
         })

@@ -1051,6 +1051,221 @@ class SaveResponseScopingAndValidationTestCase(TestCase):
         self.assertEqual(scoped_ids, {self.q_a1.id, self.q_a_num.id})
 
 
+class ProctoringEventValidationAndLaunchTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.org = Organization.objects.create(
+            name="Proctor Org",
+            slug="proctor-org",
+            domain="proctor.ezexam.in",
+        )
+        self.student = User.objects.create_user(
+            username="stud_proc@proctor.edu",
+            password="Password123!",
+            role=UserRole.STUDENT,
+            organization=self.org,
+        )
+        self.other_student = User.objects.create_user(
+            username="stud_other@proctor.edu",
+            password="Password123!",
+            role=UserRole.STUDENT,
+            organization=self.org,
+        )
+        self.staff = User.objects.create_user(
+            username="staff_proc@proctor.edu",
+            password="Password123!",
+            role=UserRole.FACULTY,
+            is_staff=True,
+            organization=self.org,
+        )
+        self.tenant_headers = {"HTTP_X_TENANT_ID": str(self.org.id)}
+        self.paper = QuestionBank.objects.create(organization=self.org, name="Proctor Paper")
+        self.q1 = Question.objects.create(
+            question_bank=self.paper,
+            section_name="Gen",
+            question_number=1,
+            question_type=QuestionType.MCQ_SINGLE,
+            content_text="Q1",
+            key="A",
+        )
+        Option.objects.create(question=self.q1, option_key="A", content_text="Yes", is_correct=True, order=1)
+        self.exam = Examination.objects.create(
+            organization=self.org,
+            name="Proctored Exam",
+            question_paper=self.paper,
+            duration_minutes=60,
+            total_marks=4.0,
+            status=ExaminationStatus.PUBLISHED,
+            max_window_switches=3,
+        )
+
+    def _start(self):
+        self.client.force_authenticate(user=self.student)
+        res = self.client.post(f"/api/v1/examinations/{self.exam.id}/start/", **self.tenant_headers)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        return res.data["attempt_id"]
+
+    def test_proctoring_event_after_submit_rejected_without_status_overwrite(self):
+        att_id = self._start()
+        sub_res = self.client.post(
+            f"/api/v1/attempts/{att_id}/submit/",
+            {"submission_reason": "MANUAL_SUBMIT"},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(sub_res.status_code, status.HTTP_200_OK)
+        att_before = ExaminationAttempt.objects.get(id=att_id)
+
+        proc_res = self.client.post(
+            f"/api/v1/attempts/{att_id}/proctoring_event/",
+            {"event_type": "TAB_SWITCH", "details": {"switch_index": 1}},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(proc_res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(proc_res.data["code"], "ATTEMPT_LOCKED")
+
+        att_after = ExaminationAttempt.objects.get(id=att_id)
+        self.assertEqual(att_after.status, AttemptStatus.SUBMITTED)
+        self.assertEqual(att_after.submitted_at, att_before.submitted_at)
+        self.assertEqual(att_after.tab_switch_count, 0)
+        self.assertEqual(ProctoringLog.objects.filter(attempt_id=att_id).count(), 0)
+
+    def test_proctoring_event_after_deadline_auto_submits_and_rejects(self):
+        att_id = self._start()
+        att = ExaminationAttempt.objects.get(id=att_id)
+        att.server_deadline = timezone.now() - timedelta(seconds=45)
+        att.save(update_fields=["server_deadline"])
+
+        res = self.client.post(
+            f"/api/v1/attempts/{att_id}/proctoring_event/",
+            {"event_type": "FULLSCREEN_EXIT", "details": {}},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res.data["code"], "DEADLINE_EXPIRED")
+
+        att.refresh_from_db()
+        self.assertEqual(att.status, AttemptStatus.AUTO_SUBMITTED)
+        self.assertIsNotNone(att.submitted_at)
+        self.assertEqual(ProctoringLog.objects.filter(attempt_id=att_id).count(), 0)
+
+    def test_proctoring_event_validates_event_type_and_details_schema_and_size(self):
+        att_id = self._start()
+        invalid_payloads = [
+            {"event_type": "INVALID_EVENT", "details": {}},
+            {"event_type": None, "details": {}},
+            {"event_type": "TAB_SWITCH", "details": None},
+            {"event_type": "TAB_SWITCH", "details": ["not-a-dict"]},
+            {"event_type": "TAB_SWITCH", "details": {f"k{i}": i for i in range(21)}},
+            {"event_type": "TAB_SWITCH", "details": {"nested": {"a": 1}}},
+            {"event_type": "TAB_SWITCH", "details": {"blob": "x" * 5000}},
+            {"event_type": "TAB_SWITCH", "details": {"timestamp": "not-a-timestamp"}},
+            {
+                "event_type": "TAB_SWITCH",
+                "details": {"timestamp": (timezone.now() + timedelta(hours=2)).isoformat()},
+            },
+        ]
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                res = self.client.post(
+                    f"/api/v1/attempts/{att_id}/proctoring_event/",
+                    payload,
+                    format="json",
+                    **self.tenant_headers,
+                )
+                self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(res.data["code"], "INVALID_PAYLOAD")
+        self.assertEqual(ProctoringLog.objects.filter(attempt_id=att_id).count(), 0)
+
+        # Valid event with optional ISO timestamp passes
+        ok_res = self.client.post(
+            f"/api/v1/attempts/{att_id}/proctoring_event/",
+            {
+                "event_type": "WINDOW_BLUR",
+                "details": {"switch_index": 1, "timestamp": timezone.now().isoformat()},
+            },
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(ok_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(ProctoringLog.objects.filter(attempt_id=att_id).count(), 1)
+
+    def test_proctoring_event_enforces_per_minute_rate_limit_and_per_attempt_cap(self):
+        from apps.engine.models import ProctoringEventType
+
+        att_id = self._start()
+        att = ExaminationAttempt.objects.get(id=att_id)
+
+        # Seed 30 recent FULLSCREEN_EXIT logs within the last 60s
+        ProctoringLog.objects.bulk_create([
+            ProctoringLog(attempt=att, event_type=ProctoringEventType.FULLSCREEN_EXIT, details={"i": i})
+            for i in range(30)
+        ])
+
+        rate_res = self.client.post(
+            f"/api/v1/attempts/{att_id}/proctoring_event/",
+            {"event_type": "FULLSCREEN_EXIT", "details": {}},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(rate_res.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(rate_res.data["code"], "PROCTORING_RATE_LIMIT")
+
+        # Backdate existing 30 logs > 2 minutes ago and add 70 more old logs -> total 100
+        old_time = timezone.now() - timedelta(minutes=5)
+        ProctoringLog.objects.filter(attempt=att).update(timestamp=old_time)
+        more_logs = ProctoringLog.objects.bulk_create([
+            ProctoringLog(attempt=att, event_type=ProctoringEventType.FULLSCREEN_EXIT, details={"i": 30 + i})
+            for i in range(70)
+        ])
+        ProctoringLog.objects.filter(id__in=[m.id for m in more_logs]).update(timestamp=old_time)
+
+        cap_res = self.client.post(
+            f"/api/v1/attempts/{att_id}/proctoring_event/",
+            {"event_type": "FULLSCREEN_EXIT", "details": {}},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(cap_res.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(cap_res.data["code"], "PROCTORING_RATE_LIMIT")
+        self.assertEqual(ProctoringLog.objects.filter(attempt=att).count(), 100)
+
+    def test_start_attempt_rejects_draft_closed_and_unassigned_exams(self):
+        from apps.examinations.models import CandidateAssignment
+
+        draft_exam = Examination.objects.create(
+            organization=self.org,
+            name="Draft Exam",
+            question_paper=self.paper,
+            duration_minutes=60,
+            status=ExaminationStatus.DRAFT,
+        )
+        closed_exam = Examination.objects.create(
+            organization=self.org,
+            name="Closed Exam",
+            question_paper=self.paper,
+            duration_minutes=60,
+            status=ExaminationStatus.CLOSED,
+        )
+        CandidateAssignment.objects.create(exam=self.exam, student=self.student)
+
+        # Staff cannot launch DRAFT or CLOSED exams
+        self.client.force_authenticate(user=self.staff)
+        for bad_exam in (draft_exam, closed_exam):
+            res = self.client.post(f"/api/v1/examinations/{bad_exam.id}/start/", **self.tenant_headers)
+            self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Unassigned student cannot launch assigned exam
+        self.client.force_authenticate(user=self.other_student)
+        unassigned_res = self.client.post(
+            f"/api/v1/examinations/{self.exam.id}/start/",
+            **self.tenant_headers,
+        )
+        self.assertEqual(unassigned_res.status_code, status.HTTP_404_NOT_FOUND)
+
+
 POSTGRES_CONCURRENCY_SKIP_REASON = (
     "Requires PostgreSQL for row-level locking / concurrent constraint enforcement"
 )
@@ -1222,3 +1437,102 @@ class AttemptConcurrencyPostgresTestCase(TransactionTestCase):
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(res.data["code"], "ATTEMPT_LOCKED")
         self.assertEqual(AttemptResponse.objects.filter(attempt_id=att_id).count(), 0)
+
+    def test_proctoring_event_blocks_behind_submit_lock_and_does_not_overwrite(self):
+        from apps.engine import services
+
+        start_client = APIClient()
+        start_client.force_authenticate(user=self.student)
+        start_res = start_client.post(
+            "/api/v1/student/attempts/start/",
+            {"exam_id": str(self.exam.id)},
+            format="json",
+            **self.tenant_headers,
+        )
+        att_id = start_res.data["attempt_id"]
+
+        lock_acquired = threading.Event()
+        thread_b_result = {}
+
+        def submitter():
+            try:
+                with transaction.atomic():
+                    locked, _ = services.lock_attempt(att_id, user=self.student, tenant=self.org)
+                    lock_acquired.set()
+                    import time
+                    time.sleep(0.2)
+                    locked.status = AttemptStatus.SUBMITTED
+                    locked.submitted_at = timezone.now()
+                    locked.save(update_fields=["status", "submitted_at", "updated_at"])
+            finally:
+                connections.close_all()
+
+        def proctor_caller():
+            try:
+                lock_acquired.wait(timeout=10)
+                client = APIClient()
+                client.force_authenticate(user=self.student)
+                thread_b_result["res"] = client.post(
+                    f"/api/v1/attempts/{att_id}/proctoring_event/",
+                    {"event_type": "TAB_SWITCH", "details": {"switch_index": 1}},
+                    format="json",
+                    **self.tenant_headers,
+                )
+            finally:
+                connections.close_all()
+
+        t1 = threading.Thread(target=submitter)
+        t2 = threading.Thread(target=proctor_caller)
+        t1.start()
+        t2.start()
+        t1.join(timeout=15)
+        t2.join(timeout=15)
+
+        res = thread_b_result["res"]
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res.data["code"], "ATTEMPT_LOCKED")
+        self.assertEqual(ProctoringLog.objects.filter(attempt_id=att_id).count(), 0)
+        att = ExaminationAttempt.objects.get(id=att_id)
+        self.assertEqual(att.status, AttemptStatus.SUBMITTED)
+        self.assertEqual(att.tab_switch_count, 0)
+
+    def test_concurrent_proctoring_events_no_lost_tab_switch_updates(self):
+        start_client = APIClient()
+        start_client.force_authenticate(user=self.student)
+        start_res = start_client.post(
+            "/api/v1/student/attempts/start/",
+            {"exam_id": str(self.exam.id)},
+            format="json",
+            **self.tenant_headers,
+        )
+        att_id = start_res.data["attempt_id"]
+
+        worker_count = 5
+        barrier = threading.Barrier(worker_count)
+
+        def worker(idx):
+            try:
+                client = APIClient()
+                client.force_authenticate(user=self.student)
+                barrier.wait(timeout=10)
+                return client.post(
+                    f"/api/v1/attempts/{att_id}/proctoring_event/",
+                    {"event_type": "TAB_SWITCH", "details": {"switch_index": idx + 1}},
+                    format="json",
+                    **self.tenant_headers,
+                )
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=worker_count) as pool:
+            responses = list(pool.map(worker, range(worker_count)))
+
+        ok_responses = [r for r in responses if r.status_code == status.HTTP_200_OK]
+        locked_responses = [r for r in responses if r.status_code == status.HTTP_403_FORBIDDEN]
+        self.assertEqual(len(ok_responses), 4)
+        self.assertEqual(len(locked_responses), 1)
+        self.assertEqual(locked_responses[0].data["code"], "ATTEMPT_LOCKED")
+        att = ExaminationAttempt.objects.get(id=att_id)
+        self.assertEqual(att.tab_switch_count, 4)
+        self.assertEqual(att.status, AttemptStatus.AUTO_SUBMITTED)
+        self.assertEqual(ProctoringLog.objects.filter(attempt_id=att_id).count(), 4)

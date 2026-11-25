@@ -1,28 +1,10 @@
-import uuid
-from datetime import timedelta
-from collections import defaultdict
-
-from django.core.exceptions import ValidationError
-from django.db import transaction
-from django.utils import timezone
-from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from .models import (
-    ExaminationAttempt,
-    AttemptResponse,
-    ProctoringLog,
-    AttemptStatus,
-    ResponseStatus,
-    ProctoringEventType,
-    normalize_response_status,
-)
 from . import services
 from .services import build_attempt_payload
 from apps.accounts.permissions import IsTenantMember
-from apps.question_bank.models import Question
 
 
 class StartAttemptView(APIView):
@@ -94,46 +76,13 @@ class ResumeAttemptView(APIView):
 
 
 class ProctoringEventView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsTenantMember]
 
     def post(self, request, id):
-        try:
-            attempt = ExaminationAttempt.objects.select_related('examination').get(id=id)
-        except (ExaminationAttempt.DoesNotExist, ValueError):
-            return Response({
-                'status': 'ERROR',
-                'code': 'ATTEMPT_NOT_FOUND',
-                'message': 'Attempt not found.'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        if attempt.user != request.user and not request.user.is_staff:
-            return Response({
-                'status': 'ERROR',
-                'code': 'UNAUTHORIZED',
-                'message': 'You do not have permission to access this attempt.'
-            }, status=status.HTTP_403_FORBIDDEN)
-
-        event_type = request.data.get('event_type', ProctoringEventType.TAB_SWITCH)
-        details = request.data.get('details', {})
-
-        ProctoringLog.objects.create(
-            attempt=attempt,
-            event_type=event_type,
-            details=details
+        outcome = services.record_proctoring_event(
+            id,
+            request.user,
+            request.data,
+            tenant=getattr(request, 'tenant', None),
         )
-
-        if event_type in (ProctoringEventType.TAB_SWITCH, ProctoringEventType.WINDOW_BLUR):
-            attempt.tab_switch_count += 1
-            max_switches = getattr(attempt.examination, 'max_window_switches', 3) or 3
-            if attempt.tab_switch_count > max_switches and attempt.status == AttemptStatus.IN_PROGRESS:
-                attempt.status = AttemptStatus.AUTO_SUBMITTED
-                attempt.submitted_at = timezone.now()
-            attempt.save(update_fields=['tab_switch_count', 'status', 'submitted_at', 'updated_at'])
-
-        max_switches = getattr(attempt.examination, 'max_window_switches', 3) or 3
-        return Response({
-            'status': 'SUCCESS',
-            'tab_switch_count': attempt.tab_switch_count,
-            'max_allowed': max_switches,
-            'auto_submitted': attempt.status == AttemptStatus.AUTO_SUBMITTED,
-        }, status=status.HTTP_200_OK)
+        return Response(outcome.data, status=outcome.http_status)

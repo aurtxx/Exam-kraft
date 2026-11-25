@@ -1,5 +1,13 @@
+import json
 from rest_framework import serializers
-from .models import ExaminationAttempt, AttemptResponse, ProctoringLog, ResponseStatus, normalize_response_status
+from .models import (
+    ExaminationAttempt,
+    AttemptResponse,
+    ProctoringEventType,
+    ProctoringLog,
+    ResponseStatus,
+    normalize_response_status,
+)
 from apps.question_bank.models import Question, Option
 
 
@@ -115,3 +123,30 @@ class ProctoringLogSerializer(serializers.ModelSerializer):
             'details',
         ]
         read_only_fields = ['id', 'timestamp']
+
+
+class ProctoringEventInputSerializer(serializers.Serializer):
+    event_type = serializers.ChoiceField(
+        choices=ProctoringEventType.choices,
+        default=ProctoringEventType.TAB_SWITCH,
+        required=False,
+        allow_null=False,
+    )
+    details = serializers.DictField(
+        default=dict,
+        required=False,
+        allow_null=False,
+    )
+
+    def validate_details(self, value):
+        if len(value) > 20:
+            raise serializers.ValidationError("Too many keys in details payload (max 20).")
+        for k, v in value.items():
+            if not isinstance(k, str) or len(k) > 64:
+                raise serializers.ValidationError("Detail keys must be strings <= 64 characters.")
+            if isinstance(v, (dict, list)):
+                raise serializers.ValidationError("Nested objects/arrays are not permitted in details.")
+        raw_bytes = len(json.dumps(value, separators=(',', ':'), ensure_ascii=False).encode('utf-8'))
+        if raw_bytes > 4096:
+            raise serializers.ValidationError("Details payload exceeds 4096 bytes.")
+        return value
