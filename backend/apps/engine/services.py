@@ -27,6 +27,7 @@ ACTIVE_EXAM_STATUSES = (
     ExaminationStatus.SCHEDULED,
     ExaminationStatus.IN_PROGRESS,
 )
+VALID_SUBMISSION_REASONS = ('MANUAL_SUBMIT', 'AUTO_TIMER_EXPIRY')
 
 
 @dataclass(frozen=True)
@@ -447,4 +448,66 @@ def heartbeat_attempt(
             'remaining_seconds': rem_secs,
             'is_terminated': is_terminated,
             'tab_switch_count': attempt.tab_switch_count,
+        })
+
+
+def submit_attempt(
+    attempt_id,
+    user,
+    *,
+    reason: str = 'MANUAL_SUBMIT',
+    tenant=None,
+    now: datetime | None = None,
+) -> ServiceOutcome:
+    """
+    Atomically lock `attempt`, enforce idempotency and deadline expiry, and finalize submission.
+    """
+    if reason is None:
+        reason = 'MANUAL_SUBMIT'
+    if not isinstance(reason, str) or reason not in VALID_SUBMISSION_REASONS:
+        return ServiceOutcome.error(
+            'INVALID_SUBMISSION_REASON',
+            f"Invalid submission_reason '{reason}'.",
+            400,
+        )
+
+    with transaction.atomic():
+        attempt, err = lock_attempt(attempt_id, user, allow_staff=False, tenant=tenant)
+        if err is not None:
+            return err
+
+        check_now = now or timezone.now()
+
+        if is_finalized(attempt):
+            submitted_ts = attempt.submitted_at or check_now
+            return ServiceOutcome.success({
+                'status': 'SUCCESS',
+                'code': 'ALREADY_SUBMITTED',
+                'attempt_id': str(attempt.id),
+                'submission_status': 'SUBMITTED',
+                'submitted_at': submitted_ts.isoformat(),
+                'message': 'Attempt was already recorded as submitted.',
+            })
+
+        if reason != 'AUTO_TIMER_EXPIRY' and expire_if_due(attempt, now=check_now):
+            return ServiceOutcome.error(
+                'DEADLINE_EXPIRED',
+                'Manual submission rejected: Server deadline has expired.',
+                403,
+            )
+
+        attempt.status = (
+            AttemptStatus.AUTO_SUBMITTED
+            if reason == 'AUTO_TIMER_EXPIRY'
+            else AttemptStatus.SUBMITTED
+        )
+        attempt.submitted_at = check_now
+        attempt.save(update_fields=['status', 'submitted_at', 'updated_at'])
+
+        return ServiceOutcome.success({
+            'status': 'SUCCESS',
+            'attempt_id': str(attempt.id),
+            'submission_status': 'SUBMITTED',
+            'submitted_at': attempt.submitted_at.isoformat(),
+            'message': 'Examination submitted successfully. Results will be published by faculty.',
         })

@@ -733,6 +733,86 @@ class AttemptLifecycleServicesTestCase(TestCase):
         self.assertTrue(res.data["is_recovered"])
         self.assertEqual(res.data["attempt_id"], str(created_holder[0].id))
 
+    def test_manual_submit_after_deadline_persists_auto_submitted_and_returns_403(self):
+        start_res = self.client.post(
+            f"/api/v1/examinations/{self.exam.id}/start/",
+            **self.tenant_headers,
+        )
+        att_id = start_res.data["attempt_id"]
+
+        att = ExaminationAttempt.objects.get(id=att_id)
+        att.server_deadline = timezone.now() - timedelta(seconds=45)
+        att.save(update_fields=["server_deadline"])
+
+        late_manual = self.client.post(
+            f"/api/v1/attempts/{att_id}/submit/",
+            {"submission_reason": "MANUAL_SUBMIT"},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(late_manual.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(late_manual.data["code"], "DEADLINE_EXPIRED")
+
+        att.refresh_from_db()
+        self.assertEqual(att.status, AttemptStatus.AUTO_SUBMITTED)
+        self.assertIsNotNone(att.submitted_at)
+        recorded_ts = att.submitted_at.isoformat()
+
+        # Subsequent submit returns idempotent 200 ALREADY_SUBMITTED preserving timestamp
+        follow_up = self.client.post(
+            f"/api/v1/attempts/{att_id}/submit/",
+            {"submission_reason": "AUTO_TIMER_EXPIRY"},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(follow_up.status_code, status.HTTP_200_OK)
+        self.assertEqual(follow_up.data["code"], "ALREADY_SUBMITTED")
+        self.assertEqual(follow_up.data["submitted_at"], recorded_ts)
+
+    def test_submit_attempt_rejects_cross_tenant_staff_and_other_student(self):
+        start_res = self.client.post(
+            f"/api/v1/examinations/{self.exam.id}/start/",
+            **self.tenant_headers,
+        )
+        att_id = start_res.data["attempt_id"]
+
+        other_org = Organization.objects.create(name="Other Org", slug="other-org-submit")
+        other_staff = User.objects.create_user(
+            username="staff@other.edu",
+            password="StaffPassword123!",
+            role=UserRole.ORG_ADMIN,
+            is_staff=True,
+            organization=other_org,
+        )
+        other_student = User.objects.create_user(
+            username="peer@lifecycle.edu",
+            password="StudentPassword123!",
+            role=UserRole.STUDENT,
+            organization=self.org,
+        )
+
+        other_client = APIClient()
+        other_client.force_authenticate(user=other_staff)
+        res_staff = other_client.post(
+            f"/api/v1/attempts/{att_id}/submit/",
+            {"submission_reason": "MANUAL_SUBMIT"},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(res_staff.status_code, status.HTTP_403_FORBIDDEN)
+
+        other_client.force_authenticate(user=other_student)
+        res_peer = other_client.post(
+            f"/api/v1/attempts/{att_id}/submit/",
+            {"submission_reason": "MANUAL_SUBMIT"},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(res_peer.status_code, status.HTTP_403_FORBIDDEN)
+
+        att = ExaminationAttempt.objects.get(id=att_id)
+        self.assertEqual(att.status, AttemptStatus.IN_PROGRESS)
+
 
 POSTGRES_CONCURRENCY_SKIP_REASON = (
     "Requires PostgreSQL for row-level locking / concurrent constraint enforcement"
@@ -809,3 +889,44 @@ class AttemptConcurrencyPostgresTestCase(TransactionTestCase):
             ExaminationAttempt.objects.filter(examination=self.exam, user=self.student).count(),
             1,
         )
+
+    def test_concurrent_submit_attempts_serialize_and_submit_once(self):
+        start_client = APIClient()
+        start_client.force_authenticate(user=self.student)
+        start_res = start_client.post(
+            "/api/v1/student/attempts/start/",
+            {"exam_id": str(self.exam.id)},
+            format="json",
+            **self.tenant_headers,
+        )
+        att_id = start_res.data["attempt_id"]
+
+        worker_count = 5
+        barrier = threading.Barrier(worker_count)
+
+        def worker():
+            try:
+                client = APIClient()
+                client.force_authenticate(user=self.student)
+                barrier.wait(timeout=10)
+                return client.post(
+                    f"/api/v1/attempts/{att_id}/submit/",
+                    {"submission_reason": "MANUAL_SUBMIT"},
+                    format="json",
+                    **self.tenant_headers,
+                )
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=worker_count) as pool:
+            responses = list(pool.map(lambda _: worker(), range(worker_count)))
+
+        self.assertTrue(all(r.status_code == status.HTTP_200_OK for r in responses))
+        already_codes = [r for r in responses if r.data.get("code") == "ALREADY_SUBMITTED"]
+        first_submits = [r for r in responses if "code" not in r.data]
+        self.assertEqual(len(first_submits), 1)
+        self.assertEqual(len(already_codes), worker_count - 1)
+        submitted_timestamps = {r.data["submitted_at"] for r in responses}
+        self.assertEqual(len(submitted_timestamps), 1)
+        att = ExaminationAttempt.objects.get(id=att_id)
+        self.assertEqual(att.status, AttemptStatus.SUBMITTED)

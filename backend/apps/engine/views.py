@@ -165,70 +165,17 @@ class SaveResponseView(APIView):
 
 
 class SubmitAttemptView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsTenantMember]
 
     def post(self, request, id):
-        try:
-            # First check existence without lock
-            if not ExaminationAttempt.objects.filter(id=id).exists():
-                return Response({
-                    'status': 'ERROR',
-                    'code': 'ATTEMPT_NOT_FOUND',
-                    'message': f'Attempt {id} not found.'
-                }, status=status.HTTP_404_NOT_FOUND)
-        except (ValueError, TypeError):
-            return Response({
-                'status': 'ERROR',
-                'code': 'ATTEMPT_NOT_FOUND',
-                'message': f'Attempt {id} not found.'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        reason = request.data.get('submission_reason', 'MANUAL_SUBMIT')
-        now = timezone.now()
-
-        with transaction.atomic():
-            attempt = ExaminationAttempt.objects.select_for_update().get(id=id)
-
-            if attempt.user != request.user and not request.user.is_staff:
-                return Response({
-                    'status': 'ERROR',
-                    'code': 'UNAUTHORIZED',
-                    'message': 'You do not have permission to access this attempt.'
-                }, status=status.HTTP_403_FORBIDDEN)
-
-            # Idempotent return if already submitted
-            if attempt.status in (AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED):
-                return Response({
-                    'status': 'SUCCESS',
-                    'code': 'ALREADY_SUBMITTED',
-                    'attempt_id': str(attempt.id),
-                    'submission_status': 'SUBMITTED',
-                    'submitted_at': attempt.submitted_at.isoformat() if attempt.submitted_at else now.isoformat(),
-                    'message': 'Attempt was already recorded as submitted.'
-                }, status=status.HTTP_200_OK)
-
-            # Deadline boundary check for manual submission
-            if now > (attempt.server_deadline + timedelta(seconds=30)) and reason != 'AUTO_TIMER_EXPIRY':
-                return Response({
-                    'status': 'ERROR',
-                    'code': 'DEADLINE_EXPIRED',
-                    'message': 'Manual submission rejected: Server deadline has expired.'
-                }, status=status.HTTP_403_FORBIDDEN)
-
-            if reason == 'AUTO_TIMER_EXPIRY':
-                attempt.status = AttemptStatus.AUTO_SUBMITTED
-            else:
-                attempt.status = AttemptStatus.SUBMITTED
-            attempt.submitted_at = now
-            attempt.save(update_fields=['status', 'submitted_at', 'updated_at'])
-
-        return Response({
-            'status': 'SUCCESS',
-            'attempt_id': str(attempt.id),
-            'submission_status': 'SUBMITTED',
-            'submitted_at': attempt.submitted_at.isoformat(),
-            'message': 'Examination submitted successfully. Results will be published by faculty.'
-        }, status=status.HTTP_200_OK)
+        reason = request.data.get('submission_reason', 'MANUAL_SUBMIT') if isinstance(request.data, dict) else 'MANUAL_SUBMIT'
+        outcome = services.submit_attempt(
+            id,
+            request.user,
+            reason=reason,
+            tenant=getattr(request, 'tenant', None),
+        )
+        return Response(outcome.data, status=outcome.http_status)
 
 
 class ResumeAttemptView(APIView):
