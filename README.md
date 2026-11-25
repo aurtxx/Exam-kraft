@@ -24,7 +24,7 @@ npm ci
 npm run dev
 ```
 
-Open the frontend at http://localhost:3000 and Django admin at http://localhost:8000/admin/. Local development uses SQLite by default. For PostgreSQL, set `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and optionally `DB_PORT` (5432).
+Open the frontend at http://localhost:5173 and Django admin at http://localhost:8000/admin/. Local development uses SQLite by default. For PostgreSQL, set `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and optionally `DB_PORT` (5432).
 
 ### Demo data
 

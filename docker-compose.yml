@@ -12,6 +12,7 @@ x-app: &app
     DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     DB_HOST: db
     REDIS_URL: redis://redis:6379/0
+    CONN_MAX_AGE: 600
 
 services:
   db:
@@ -50,21 +51,30 @@ services:
 
   backend:
     <<: *app
+    command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
     depends_on:
       migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8000/readyz/', timeout=4)"]
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8000/api/v1/health/', timeout=4)"]
       interval: 10s
       timeout: 5s
       retries: 6
     restart: unless-stopped
 
-  worker:
+  celery_worker:
     <<: *app
-    command: ["celery", "-A", "config.celery:app", "worker", "--loglevel=INFO", "--concurrency=2"]
+    command: ["celery", "-A", "config.celery:app", "worker", "--loglevel=INFO", "--concurrency=4"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  celery_beat:
+    <<: *app
+    command: ["celery", "-A", "config.celery:app", "beat", "--loglevel=INFO"]
     depends_on:
       backend:
         condition: service_healthy
@@ -91,7 +101,7 @@ services:
       frontend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/readyz/"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/api/v1/health/"]
       interval: 10s
       timeout: 5s
       retries: 6
