@@ -28,6 +28,28 @@ import FinishConfirmationModal from '../../components/FinishConfirmationModal';
 import { useAuth } from '../../context/AuthContext';
 import MathRenderer from '../../components/MathRenderer';
 
+const TEXT_INPUT_TYPES = new Set(['NUMERICAL', 'SINGLE_DIGIT', 'ONE_WORD', 'SUBJECTIVE', 'CODING']);
+const NUMERIC_INPUT_TYPES = new Set(['NUMERICAL', 'SINGLE_DIGIT']);
+const VALID_NUMBER_PATTERN = /^-?(?:\d+\.?\d*|\.\d+)$/;
+
+function isValidTextInput(questionType: string | undefined, value: string): boolean {
+  const qType = questionType ?? '';
+  if (!TEXT_INPUT_TYPES.has(qType)) return false;
+  const trimmed = value.trim();
+  if (NUMERIC_INPUT_TYPES.has(qType)) {
+    return VALID_NUMBER_PATTERN.test(trimmed);
+  }
+  return trimmed.length > 0;
+}
+
+function formatTextPayloadValue(questionType: string | undefined, value: string): string | null {
+  if (!isValidTextInput(questionType, value)) return null;
+  if (questionType === 'SUBJECTIVE' || questionType === 'CODING') {
+    return value;
+  }
+  return value.trim();
+}
+
 export const ExamCBTPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -275,10 +297,13 @@ export const ExamCBTPage: React.FC = () => {
       const qidKey = String(qid);
       const timeSpent = Math.round((Date.now() - questionStartTimeRef.current) / 1000);
 
+      const qType = currentQuestion.question_type as string;
+      const isTextType = TEXT_INPUT_TYPES.has(qType);
+      const formattedTextValue = isTextType ? formatTextPayloadValue(qType, numericalValue) : null;
       const record: CBTResponseRecord = {
         question_id: qid,
-        selected_options: targetStatus === 'UNANSWERED' ? [] : selectedOptions,
-        numerical_value: targetStatus === 'UNANSWERED' ? null : numericalValue || null,
+        selected_options: targetStatus === 'UNANSWERED' ? [] : (isTextType ? [] : selectedOptions),
+        numerical_value: targetStatus === 'UNANSWERED' ? null : formattedTextValue,
         status: targetStatus,
         time_spent_seconds: timeSpent,
         saved_at: new Date().toISOString(),
@@ -335,16 +360,22 @@ export const ExamCBTPage: React.FC = () => {
 
   // Action Button: Save & Next
   const handleSaveAndNext = async () => {
-    const hasSelection =
-      selectedOptions.length > 0 || (numericalValue !== '' && numericalValue !== null);
+    const qType = currentQuestion?.question_type as string | undefined;
+    const isTextType = qType ? TEXT_INPUT_TYPES.has(qType) : false;
+    const hasSelection = isTextType
+      ? isValidTextInput(qType, numericalValue)
+      : selectedOptions.length > 0;
     const targetStatus: ResponseStatusType = hasSelection ? 'ANSWERED' : 'UNANSWERED';
     if (await saveCurrentResponse(targetStatus)) advanceToNextQuestion();
   };
 
   // Action Button: Mark for Review & Next
   const handleMarkForReviewAndNext = async () => {
-    const hasSelection =
-      selectedOptions.length > 0 || (numericalValue !== '' && numericalValue !== null);
+    const qType = currentQuestion?.question_type as string | undefined;
+    const isTextType = qType ? TEXT_INPUT_TYPES.has(qType) : false;
+    const hasSelection = isTextType
+      ? isValidTextInput(qType, numericalValue)
+      : selectedOptions.length > 0;
     const targetStatus: ResponseStatusType = hasSelection
       ? 'ANSWERED_AND_MARKED'
       : 'MARKED_FOR_REVIEW';
@@ -564,8 +595,18 @@ export const ExamCBTPage: React.FC = () => {
               <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[11px] font-semibold">
                 {currentQuestion?.question_type === 'NUMERICAL'
                   ? 'Numerical Value Answer'
+                  : currentQuestion?.question_type === 'SINGLE_DIGIT'
+                  ? 'Single Digit (0–9)'
                   : currentQuestion?.question_type === 'MCQ_MULTI'
                   ? 'Multiple Correct Options'
+                  : currentQuestion?.question_type === 'TRUE_FALSE'
+                  ? 'True / False'
+                  : currentQuestion?.question_type === 'ONE_WORD'
+                  ? 'One Word Answer'
+                  : currentQuestion?.question_type === 'SUBJECTIVE'
+                  ? 'Descriptive / Subjective'
+                  : currentQuestion?.question_type === 'CODING'
+                  ? 'Coding Problem'
                   : 'Single Correct Option'}
               </span>
             </div>
@@ -597,13 +638,153 @@ export const ExamCBTPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Option Inputs / Numerical Numpad */}
-                {currentQuestion.question_type === 'NUMERICAL' ? (
-                  <div className="pt-2">
+                {/* Option Inputs by Question Type */}
+                {currentQuestion.question_type === 'NUMERICAL' || currentQuestion.question_type === 'SINGLE_DIGIT' ? (
+                  <div className="pt-2 space-y-3">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {currentQuestion.question_type === 'SINGLE_DIGIT' ? 'Enter a single digit (0–9):' : 'Enter numerical value:'}
+                    </div>
                     <VirtualNumpad
+                      key={currentQuestion.id}
                       value={numericalValue}
                       onChange={(val) => setNumericalValue(val)}
+                      singleDigit={currentQuestion.question_type === 'SINGLE_DIGIT'}
                     />
+                    {numericalValue.trim().length > 0 && !VALID_NUMBER_PATTERN.test(numericalValue.trim()) && (
+                      <p className="text-xs text-amber-600 font-medium">
+                        Enter at least one digit (incomplete input like &ldquo;-&rdquo; or &ldquo;.&rdquo; will not be saved as an answer).
+                      </p>
+                    )}
+                  </div>
+                ) : currentQuestion.question_type === 'ONE_WORD' ? (
+                  <div className="pt-2 space-y-3 max-w-2xl">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        Enter one-word answer:
+                      </div>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        {numericalValue.length}/100
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={100}
+                      value={numericalValue}
+                      onChange={(e) => setNumericalValue(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-primary-400 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500/30 min-h-[48px] placeholder:text-slate-400 text-slate-800"
+                      placeholder="Type one word..."
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                    {numericalValue.trim().length > 0 && (
+                      <div className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                        Answer recorded — click Save &amp; Next to confirm
+                      </div>
+                    )}
+                  </div>
+                ) : currentQuestion.question_type === 'SUBJECTIVE' ? (
+                  <div className="pt-2 space-y-3 max-w-2xl">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        Write your answer below:
+                      </div>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        {numericalValue.length}/100
+                      </span>
+                    </div>
+                    <textarea
+                      value={numericalValue}
+                      onChange={(e) => setNumericalValue(e.target.value)}
+                      rows={5}
+                      maxLength={100}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-primary-400 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-y min-h-[48px] placeholder:text-slate-400 text-slate-800"
+                      placeholder="Write your detailed answer here..."
+                      autoComplete="off"
+                      spellCheck={true}
+                    />
+                    {numericalValue.trim().length > 0 && (
+                      <div className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                        Answer recorded — click Save &amp; Next to confirm
+                      </div>
+                    )}
+                  </div>
+                ) : currentQuestion.question_type === 'CODING' ? (
+                  <div className="pt-2 space-y-3 max-w-2xl">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                          Write your solution:
+                        </span>
+                        {currentQuestion.coding_language && (
+                          <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-100 text-[11px] font-mono font-semibold">
+                            {currentQuestion.coding_language}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        {numericalValue.length}/100
+                      </span>
+                    </div>
+                    {currentQuestion.code_boilerplate && (
+                      <div className="space-y-1">
+                        <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                          Boilerplate / Starter Reference
+                        </div>
+                        <pre className="p-3 rounded-xl bg-slate-900 text-slate-100 text-xs font-mono overflow-x-auto border border-slate-700 select-text">
+                          <code>{currentQuestion.code_boilerplate}</code>
+                        </pre>
+                      </div>
+                    )}
+                    <textarea
+                      value={numericalValue}
+                      onChange={(e) => setNumericalValue(e.target.value)}
+                      rows={6}
+                      maxLength={100}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-primary-400 text-sm font-mono bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-y min-h-[48px] placeholder:text-slate-400 text-slate-800"
+                      placeholder="Enter your code or answer here..."
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                    {numericalValue.trim().length > 0 && (
+                      <div className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                        Answer recorded — click Save &amp; Next to confirm
+                      </div>
+                    )}
+                  </div>
+                ) : currentQuestion.question_type === 'TRUE_FALSE' ? (
+                  <div className="space-y-3 max-w-xs">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select true or false:</div>
+                    {(currentQuestion.options && currentQuestion.options.length > 0
+                      ? currentQuestion.options.map((opt) => ({
+                          key: opt.key,
+                          label: opt.text || opt.content_text || opt.key,
+                        }))
+                      : [
+                          { key: 'TRUE', label: 'True' },
+                          { key: 'FALSE', label: 'False' },
+                        ]
+                    ).map((opt) => {
+                      const isSelected = selectedOptions.includes(opt.key);
+                      return (
+                        <div
+                          key={opt.key}
+                          onClick={() => handleOptionSelect(opt.key)}
+                          className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all font-semibold text-sm select-none ${
+                            isSelected
+                              ? 'border-[#2d8df1] bg-[#2d8df1]/10 text-primary-700 shadow-xs'
+                              : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 text-slate-700'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-[#2d8df1] bg-[#2d8df1]' : 'border-slate-300'}`}>
+                            {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                          </div>
+                          {opt.label}
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="space-y-3 max-w-2xl">
@@ -625,7 +806,7 @@ export const ExamCBTPage: React.FC = () => {
                           }`}
                         >
                           <div
-                            className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs mt-0.5 flex-shrink-0 transition-colors ${
+                            className={`w-5 h-5 ${currentQuestion.question_type === 'MCQ_MULTI' ? 'rounded-sm' : 'rounded-full'} flex items-center justify-center font-bold text-xs mt-0.5 flex-shrink-0 transition-colors ${
                               isSelected
                                 ? 'bg-[#2d8df1] text-white ring-2 ring-[#2d8df1]/30'
                                 : 'border border-slate-300 text-slate-600 bg-white'
