@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   Clock,
   Award,
@@ -11,15 +11,13 @@ import {
   ArrowRight,
   BookOpen,
 } from 'lucide-react';
-import studentExamApi from '../../services/studentExamApi';
-import apiClient from '../../services/api';
-import { Examination } from '../../types';
+import studentExamApi, { CandidateExamination } from '../../services/studentExamApi';
 
 export const ExamLobbyPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [exam, setExam] = useState<Examination | null>(null);
+  const [exam, setExam] = useState<CandidateExamination | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [declared, setDeclared] = useState(false);
@@ -27,27 +25,25 @@ export const ExamLobbyPage: React.FC = () => {
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
-    const fetchExam = async () => {
-      if (!id) return;
-      try {
-        setLoading(true);
-        // Try preview or list to fetch metadata
-        const res = await apiClient.get<{ exam: Examination }>(`/examinations/${id}/preview/`);
-        if (res.data?.exam) {
-          setExam(res.data.exam);
-        }
-      } catch (err: unknown) {
-        // Fallback: exam details might still be loadable upon start
-        console.warn('Could not prefetch exam preview, will load at start', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchExam();
+    if (!id) return;
+    let active = true;
+    setExam(null);
+    setError(null);
+    setLoading(true);
+    studentExamApi.getExamination(id).then(
+      (exam) => { if (active) setExam(exam); },
+      () => { if (active) setError('Could not open this examination. Check your candidate portal and try again.'); },
+    ).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [id]);
 
+  const now = Date.now();
+  const startTime = exam?.start_window;
+  const upcoming = startTime && Date.parse(startTime) > now;
+  const closed = exam?.end_window && Date.parse(exam.end_window) <= now;
+
   const handleStartExam = async () => {
-    if (!id || !declared) return;
+    if (!id || !exam || !declared || closed) return;
     try {
       setStarting(true);
       setError(null);
@@ -113,6 +109,10 @@ export const ExamLobbyPage: React.FC = () => {
 
       {/* Main Container */}
       <main className="max-w-6xl mx-auto w-full p-6 flex-1 flex flex-col gap-6">
+        <Link className="text-sm font-semibold text-primary-700" to="/student">My Examinations</Link>
+        {loading && <p role="status">Loading examination…</p>}
+        {upcoming && <p>Opens {new Date(startTime).toLocaleString()}</p>}
+        {closed && <p>This examination window has closed.</p>}
         {error && (
           <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl flex items-center gap-3 text-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -120,7 +120,7 @@ export const ExamLobbyPage: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {exam && <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Instructions & Guidelines */}
           <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col gap-5">
             <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
@@ -129,6 +129,7 @@ export const ExamLobbyPage: React.FC = () => {
             </div>
 
             <div className="space-y-4 text-xs text-slate-700 leading-relaxed overflow-y-auto max-h-[500px] pr-2">
+              {exam.instructions && <p className="whitespace-pre-wrap">{exam.instructions}</p>}
               <section>
                 <h3 className="font-bold text-slate-800 mb-1.5 flex items-center gap-1.5 text-xs uppercase tracking-wider text-primary-700">
                   1. Timing & Clock Enforcement
@@ -193,7 +194,7 @@ export const ExamLobbyPage: React.FC = () => {
                     Navigating outside the examination tab or minimizing your browser window will log an infraction telemetry record.
                   </li>
                   <li>
-                    Exceeding the allowable window switch limit (maximum 3 switches) will immediately trigger automated termination and lock your submission.
+                    Exceeding the allowable window switch limit (maximum {exam.max_window_switches} switches) will immediately trigger automated termination and lock your submission.
                   </li>
                   <li>
                     Periodic webcam snapshots will be captured to verify candidate identity and continuous test integrity.
@@ -216,7 +217,7 @@ export const ExamLobbyPage: React.FC = () => {
                     <Clock className="w-4 h-4 text-primary-600" /> Duration:
                   </span>
                   <span className="font-bold text-slate-800">
-                    {exam?.duration_minutes || 60} Minutes
+                    {exam.duration_minutes} Minutes
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-slate-600">
@@ -232,7 +233,7 @@ export const ExamLobbyPage: React.FC = () => {
                     <ShieldAlert className="w-4 h-4 text-purple-600" /> Max Tab Switches:
                   </span>
                   <span className="font-bold text-slate-800">
-                    {exam?.max_window_switches || 3} Allowed
+                    {exam.max_window_switches} Allowed
                   </span>
                 </div>
               </div>
@@ -293,7 +294,7 @@ export const ExamLobbyPage: React.FC = () => {
 
               <button
                 type="button"
-                disabled={!declared || starting || loading}
+                disabled={!declared || starting || !!closed}
                 onClick={handleStartExam}
                 className="w-full py-3.5 px-4 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2"
               >
@@ -311,7 +312,7 @@ export const ExamLobbyPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>}
       </main>
     </div>
   );

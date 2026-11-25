@@ -1,16 +1,17 @@
 import React from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Award, ArrowLeft } from 'lucide-react';
 import { SubmitResult } from '../../services/studentExamApi';
 
 export const ExamFinishPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
 
   const state = location.state as { submitResult?: SubmitResult; examName?: string } | undefined;
   const result = state?.submitResult;
   const examName = state?.examName || 'Examination';
+
+  if (!result) return <Navigate to="/student" replace />;
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 font-sans">
@@ -36,21 +37,19 @@ export const ExamFinishPage: React.FC = () => {
           <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <span className="text-slate-500 font-medium">Status:</span>
             <span className="font-bold text-emerald-600 uppercase">
-              {result?.submission_status || 'SUBMITTED'}
+              {result.submission_status}
             </span>
           </div>
           <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <span className="text-slate-500 font-medium">Attempt ID:</span>
             <span className="font-mono text-slate-800 font-bold">
-              {result?.attempt_id || id || 'N/A'}
+              {result.attempt_id}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-slate-500 font-medium">Submitted At:</span>
             <span className="font-mono text-slate-800">
-              {result?.submitted_at
-                ? new Date(result.submitted_at).toLocaleString()
-                : new Date().toLocaleString()}
+              {new Date(result.submitted_at).toLocaleString()}
             </span>
           </div>
         </div>
@@ -66,14 +65,7 @@ export const ExamFinishPage: React.FC = () => {
         <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <button
             type="button"
-            onClick={() => {
-              const attemptId = result?.attempt_id || id;
-              if (attemptId) {
-                navigate(`/student/exam/${attemptId}/report`);
-              } else {
-                navigate('/staff/exams');
-              }
-            }}
+            onClick={() => navigate(`/student/attempts/${result.attempt_id}/report`)}
             className="w-full sm:flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-sm flex items-center justify-center gap-2"
           >
             <Award className="w-4 h-4" />
@@ -81,11 +73,11 @@ export const ExamFinishPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => navigate('/staff/exams')}
+            onClick={() => navigate('/student')}
             className="w-full sm:flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Dashboard</span>
+            <span>My Examinations</span>
           </button>
         </div>
       </div>

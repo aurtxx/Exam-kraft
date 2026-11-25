@@ -1,5 +1,10 @@
 import apiClient from './api';
-import { CBTAttemptPayload, CBTResponseRecord } from '../types';
+import { CBTAttemptPayload, CBTResponseRecord, Examination } from '../types';
+
+export type CandidateExamination = Pick<Examination,
+  'id' | 'name' | 'instructions' | 'duration_minutes' | 'total_marks' |
+  'start_window' | 'end_window' | 'camera_proctoring' | 'max_window_switches'
+>;
 
 export interface SaveResponsePayload {
   question_id: string | number;
@@ -35,6 +40,16 @@ export interface SubmitResult {
 }
 
 export const studentExamApi = {
+  async listExaminations(): Promise<CandidateExamination[]> {
+    const res = await apiClient.get<{ examinations: CandidateExamination[] }>('/student/examinations/');
+    return res.data.examinations;
+  },
+
+  async getExamination(id: string): Promise<CandidateExamination> {
+    const res = await apiClient.get<{ exam: CandidateExamination }>(`/student/examinations/${id}/`);
+    return res.data.exam;
+  },
+
   async startExam(examId: string): Promise<CBTAttemptPayload> {
     const res = await apiClient.post<CBTAttemptPayload>('/student/attempts/start/', {
       exam_id: examId,

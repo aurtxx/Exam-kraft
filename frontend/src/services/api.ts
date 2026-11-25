@@ -181,7 +181,7 @@ export const apiService = {
   },
 
   // --- Students ---
-  async getStudents(params?: { page?: number; page_size?: number; search?: string; batch_id?: string }): Promise<{
+  async getStudents(params?: { page?: number; page_size?: number; search?: string; batch_id?: string; centre_id?: string }): Promise<{
     count: number;
     total_pages: number;
     current_page: number;

@@ -319,6 +319,7 @@ export interface CBTResponseRecord {
 }
 
 export interface CBTAttemptPayload {
+  candidate?: { roll_number: string | null };
   status: 'SUCCESS' | 'ERROR';
   attempt_id: string;
   attempt_token: string;

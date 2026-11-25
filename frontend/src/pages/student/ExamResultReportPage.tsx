@@ -169,7 +169,7 @@ export const ExamResultReportPage: React.FC = () => {
           <h2 className="text-xl font-bold text-slate-900 mb-2">Report Not Available</h2>
           <p className="text-sm text-slate-600 mb-6">{error || 'Unable to retrieve exam evaluation.'}</p>
           <button
-            onClick={() => navigate('/staff/exams')}
+            onClick={() => navigate('/student')}
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-medium text-sm transition"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Dashboard

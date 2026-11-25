@@ -14,7 +14,7 @@ import {
   Camera,
   ShieldAlert,
 } from 'lucide-react';
-import studentExamApi, { SaveResponsePayload } from '../../services/studentExamApi';
+import studentExamApi from '../../services/studentExamApi';
 import {
   CBTAttemptPayload,
   CBTSection,
@@ -25,12 +25,14 @@ import {
 import QuestionPalette from '../../components/QuestionPalette';
 import VirtualNumpad from '../../components/VirtualNumpad';
 import FinishConfirmationModal from '../../components/FinishConfirmationModal';
+import { useAuth } from '../../context/AuthContext';
 import MathRenderer from '../../components/MathRenderer';
 
 export const ExamCBTPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   // Attempt Data
   const [attempt, setAttempt] = useState<CBTAttemptPayload | null>(null);
@@ -62,13 +64,16 @@ export const ExamCBTPage: React.FC = () => {
 
   // Modals & UI controls
   const [showFinishModal, setShowFinishModal] = useState<boolean>(false);
+  const submittingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const pendingResponses = useRef<Record<string, CBTResponseRecord>>({});
+  const saveInFlight = useRef<Promise<void> | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // Candidate info
-  const candidateName = 'Candidate Student';
-  const rollNumber = '2026001';
+  const candidateName = user?.profile?.full_name || user?.username;
+  const rollNumber = attempt?.candidate?.roll_number || '—';
 
   // 1. Initial Load / Session Recovery
   useEffect(() => {
@@ -81,7 +86,7 @@ export const ExamCBTPage: React.FC = () => {
         let payload: CBTAttemptPayload | null = null;
         const routerState = location.state as { attemptPayload?: CBTAttemptPayload } | undefined;
 
-        if (routerState?.attemptPayload) {
+        if (routerState?.attemptPayload?.exam?.id === id) {
           payload = routerState.attemptPayload;
         } else {
           // Recover via start/resume endpoint
@@ -90,7 +95,7 @@ export const ExamCBTPage: React.FC = () => {
 
         if (payload && payload.status === 'SUCCESS') {
           setAttempt(payload);
-          setRemainingSeconds(payload.remaining_seconds || 3600);
+          setRemainingSeconds(payload.remaining_seconds);
 
           // Restore responses
           const initialResponses: Record<string, CBTResponseRecord> = {
@@ -98,16 +103,9 @@ export const ExamCBTPage: React.FC = () => {
           };
 
           // Reconcile with localStorage cache
-          const cacheKey = studentExamApi.getCacheKey('student', id);
-          const cached = studentExamApi.loadLocalCache(cacheKey);
-          if (cached) {
-            Object.keys(cached).forEach((qid) => {
-              if (!initialResponses[qid]) {
-                initialResponses[qid] = cached[qid];
-              }
-            });
-          }
-
+          const cacheKey = studentExamApi.getCacheKey(payload.attempt_id, id);
+          pendingResponses.current = studentExamApi.loadLocalCache(cacheKey) ?? {};
+          Object.assign(initialResponses, pendingResponses.current);
           setResponses(initialResponses);
 
           // Mark already answered questions as visited
@@ -160,26 +158,24 @@ export const ExamCBTPage: React.FC = () => {
     }
   }, [currentQuestion, activeSectionIndex, activeQuestionIndex]);
 
-  // 3. Countdown Timer Engine
+  // Countdown uses elapsed time so a throttled tab catches up on its next tick.
+  const clockRef = useRef({ seconds: 0, receivedAt: 0 });
   useEffect(() => {
     if (loading || !attempt) return;
-
+    clockRef.current = { seconds: attempt.remaining_seconds, receivedAt: performance.now() };
     timerIntervalRef.current = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerIntervalRef.current!);
-          // Auto submit on timer expiry
-          handleFinalSubmit('AUTO_TIMER_EXPIRY');
-          return 0;
-        }
-        return prev - 1;
-      });
+      const { seconds, receivedAt } = clockRef.current;
+      setRemainingSeconds(Math.max(0, seconds - Math.floor((performance.now() - receivedAt) / 1000)));
     }, 1000);
 
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
   }, [loading, attempt]);
+
+  useEffect(() => {
+    if (!loading && attempt && remainingSeconds === 0) void handleFinalSubmit('AUTO_TIMER_EXPIRY');
+  }, [loading, attempt, remainingSeconds]);
 
   // 4. Server-Authoritative Heartbeat Sync (every 20s)
   useEffect(() => {
@@ -190,6 +186,7 @@ export const ExamCBTPage: React.FC = () => {
         const hb = await studentExamApi.sendHeartbeat(attempt.attempt_id, blurCount);
         if (hb.status === 'SUCCESS') {
           // Sync server clock drift
+          clockRef.current = { seconds: hb.remaining_seconds, receivedAt: performance.now() };
           setRemainingSeconds(hb.remaining_seconds);
           if (hb.is_terminated) {
             handleFinalSubmit('AUTO_TIMER_EXPIRY');
@@ -271,8 +268,8 @@ export const ExamCBTPage: React.FC = () => {
 
   // 7. Save Response Core Function
   const saveCurrentResponse = useCallback(
-    async (targetStatus: ResponseStatusType): Promise<void> => {
-      if (!attempt || !currentQuestion) return;
+    async (targetStatus: ResponseStatusType): Promise<boolean> => {
+      if (!attempt || !currentQuestion || saveInFlight.current || submittingRef.current) return false;
 
       const qid = currentQuestion.id;
       const qidKey = String(qid);
@@ -280,39 +277,33 @@ export const ExamCBTPage: React.FC = () => {
 
       const record: CBTResponseRecord = {
         question_id: qid,
-        selected_options: selectedOptions,
-        numerical_value: numericalValue || null,
+        selected_options: targetStatus === 'UNANSWERED' ? [] : selectedOptions,
+        numerical_value: targetStatus === 'UNANSWERED' ? null : numericalValue || null,
         status: targetStatus,
         time_spent_seconds: timeSpent,
         saved_at: new Date().toISOString(),
       };
 
-      // 1. Update in-memory state
-      setResponses((prev) => {
-        const next = { ...prev, [qidKey]: record };
-        // 2. Dual-Layer Persistence: save immediately to local cache
-        const cacheKey = studentExamApi.getCacheKey('student', id || 'exam');
-        studentExamApi.saveLocalCache(cacheKey, next);
-        return next;
-      });
+      setResponses((prev) => ({ ...prev, [qidKey]: record }));
+      const cacheKey = studentExamApi.getCacheKey(attempt.attempt_id, id || 'exam');
+      pendingResponses.current[qidKey] = record;
+      studentExamApi.saveLocalCache(cacheKey, pendingResponses.current);
 
-      // 3. Debounced / Asynchronous HTTP Persistence
-      try {
-        setSaveStatus('saving');
-        const payload: SaveResponsePayload = {
-          question_id: qid,
-          selected_options: selectedOptions,
-          numerical_value: numericalValue || null,
-          status: targetStatus,
-          time_spent_seconds: timeSpent,
-        };
-        await studentExamApi.saveResponse(attempt.attempt_id, payload);
+      setSaveStatus('saving');
+      const request = studentExamApi.saveResponse(attempt.attempt_id, record).then(() => {
+        delete pendingResponses.current[qidKey];
+        studentExamApi.saveLocalCache(cacheKey, pendingResponses.current);
         setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 1500);
-      } catch (err) {
-        console.warn('Autosave backend sync failed, cached locally', err);
+      }).catch(() => {
         setSaveStatus('error');
+      });
+      saveInFlight.current = request;
+      try {
+        await request;
+      } finally {
+        saveInFlight.current = null;
       }
+      return true;
     },
     [attempt, currentQuestion, selectedOptions, numericalValue, id]
   );
@@ -347,8 +338,7 @@ export const ExamCBTPage: React.FC = () => {
     const hasSelection =
       selectedOptions.length > 0 || (numericalValue !== '' && numericalValue !== null);
     const targetStatus: ResponseStatusType = hasSelection ? 'ANSWERED' : 'UNANSWERED';
-    await saveCurrentResponse(targetStatus);
-    advanceToNextQuestion();
+    if (await saveCurrentResponse(targetStatus)) advanceToNextQuestion();
   };
 
   // Action Button: Mark for Review & Next
@@ -358,22 +348,14 @@ export const ExamCBTPage: React.FC = () => {
     const targetStatus: ResponseStatusType = hasSelection
       ? 'ANSWERED_AND_MARKED'
       : 'MARKED_FOR_REVIEW';
-    await saveCurrentResponse(targetStatus);
-    advanceToNextQuestion();
+    if (await saveCurrentResponse(targetStatus)) advanceToNextQuestion();
   };
 
   // Action Button: Clear Response
   const handleClearResponse = async () => {
+    if (saveInFlight.current || submittingRef.current) return;
     setSelectedOptions([]);
     setNumericalValue('');
-    if (currentQuestion) {
-      const qidKey = String(currentQuestion.id);
-      setResponses((prev) => {
-        const next = { ...prev };
-        delete next[qidKey];
-        return next;
-      });
-    }
     await saveCurrentResponse('UNANSWERED');
   };
 
@@ -381,20 +363,32 @@ export const ExamCBTPage: React.FC = () => {
   const handleFinalSubmit = async (
     reason: 'MANUAL_SUBMIT' | 'AUTO_TIMER_EXPIRY' = 'MANUAL_SUBMIT'
   ) => {
-    if (!attempt || isSubmitting) return;
+    if (!attempt || submittingRef.current) return;
+    submittingRef.current = true;
     try {
       setIsSubmitting(true);
+      await saveInFlight.current;
+      if (reason === 'MANUAL_SUBMIT') {
+        const cacheKey = studentExamApi.getCacheKey(attempt.attempt_id, id || 'exam');
+        for (const [qid, record] of Object.entries(pendingResponses.current)) {
+          await studentExamApi.saveResponse(attempt.attempt_id, record);
+          delete pendingResponses.current[qid];
+          studentExamApi.saveLocalCache(cacheKey, pendingResponses.current);
+        }
+      }
       const res = await studentExamApi.submitExam(attempt.attempt_id, reason);
       // Clear offline cache
       if (id) {
-        studentExamApi.clearLocalCache(studentExamApi.getCacheKey('student', id));
+        studentExamApi.clearLocalCache(studentExamApi.getCacheKey(attempt.attempt_id, id));
       }
       navigate(`/student/exam/${id}/finish`, {
+        replace: true,
         state: { submitResult: res, examName: attempt.exam?.name },
       });
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       alert(e.response?.data?.message || 'Submission failed. Please try again.');
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -433,7 +427,7 @@ export const ExamCBTPage: React.FC = () => {
           <p className="text-xs text-slate-600">{error || 'Could not load examination.'}</p>
           <button
             type="button"
-            onClick={() => navigate('/staff/exams')}
+            onClick={() => navigate('/student')}
             className="px-5 py-2.5 rounded-xl bg-primary-600 text-white font-bold text-xs hover:bg-primary-700 transition-colors"
           >
             Return to Dashboard
