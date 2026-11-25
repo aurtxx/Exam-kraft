@@ -1,6 +1,9 @@
 import uuid
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
+from django.db.models import Q, Sum
+from django.utils import timezone
+from .candidates import candidate_examinations
 from rest_framework import status, generics, exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -21,6 +24,7 @@ from apps.organizations.models import Batch, ExaminationCenter
 from apps.accounts.models import User, UserRole
 from apps.accounts.permissions import (
     IsActiveTenantMember,
+    IsStudent,
     IsOrgAdminOrFaculty,
     IsOrgAdminOrReadOnly,
     require_tenant,
@@ -102,6 +106,9 @@ class ExaminationListCreateView(APIView):
         if len(selected_batches) != len(batch_ids):
             raise exceptions.ValidationError({'batch_ids': 'Unknown batch.'})
 
+        total_marks = data.get('total_marks')
+        if total_marks is None:
+            total_marks = paper.questions.aggregate(total=Sum('positive_marks'))['total'] if paper else 0
         exam = Examination.all_objects.create(
             organization=tenant,
             name=name,
@@ -110,7 +117,7 @@ class ExaminationListCreateView(APIView):
             question_paper=paper,
             instructions=data.get('instructions', ''),
             duration_minutes=duration,
-            total_marks=data.get('total_marks', 0.00),
+            total_marks=total_marks or 0,
             passing_marks=data.get('passing_marks'),
             status=ExaminationStatus.DRAFT,
             start_window=start_dt,
@@ -313,3 +320,33 @@ class StaffPreviewView(APIView):
             'exam': ExaminationSerializer(exam).data,
             'questions': questions_data,
         }, status=status.HTTP_200_OK)
+
+
+class CandidateExaminationView(APIView):
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsStudent]
+
+    def get(self, request, id=None):
+        exams = candidate_examinations(request.user)
+        if id is not None:
+            exam = generics.get_object_or_404(exams, pk=id)
+            return Response({'exam': self.metadata(exam)})
+
+        now = timezone.now()
+        exams = exams.filter(
+            Q(end_window__isnull=True) | Q(end_window__gt=now)
+        )
+        return Response({'examinations': [self.metadata(exam) for exam in exams]})
+
+    @staticmethod
+    def metadata(exam):
+        return {
+            'id': exam.id,
+            'name': exam.name,
+            'instructions': exam.instructions,
+            'duration_minutes': exam.duration_minutes,
+            'total_marks': exam.total_marks,
+            'start_window': exam.start_window,
+            'end_window': exam.end_window,
+            'camera_proctoring': exam.camera_proctoring,
+            'max_window_switches': exam.max_window_switches,
+        }

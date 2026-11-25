@@ -1,5 +1,6 @@
 import io
 import uuid
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -609,3 +610,102 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
         list_res = self.client.get("/api/v1/notices/?active=true", **self.tenant_headers)
         self.assertEqual(list_res.status_code, status.HTTP_200_OK)
         self.assertTrue(any(n["id"] == notice_id for n in list_res.data["notices"]))
+
+    def test_staff_authoring_and_csv_roster_to_candidate_submission(self):
+        def staff_post(path, data=None, format="json", expected=200):
+            response = self.client.post(f"/api/v1/{path}", data, format=format, **self.tenant_headers)
+            self.assertEqual(response.status_code, expected, response.data)
+            return response.data
+
+        batch = staff_post("organizations/batches/", {"name": "Lab", "code": "LAB"}, expected=201)
+        center = staff_post("organizations/centers/", {"name": "North", "code": "NORTH", "capacity": 20}, expected=201)
+        imported = staff_post("users/students/bulk-upload/", {
+            "file": SimpleUploadedFile("candidates.csv", (
+                b"RollNumber,Name,Email,BatchCode,CentreCode,Password\n"
+                b"100,Candidate One,candidate@example.org,LAB,NORTH,CandidatePassword123!\n"
+            ), content_type="text/csv"),
+        }, format="multipart")
+        self.assertEqual(imported["created_count"], 1)
+
+        student = User.objects.get(email="candidate@example.org")
+        other_batch = Batch.all_objects.create(organization=self.org, name="Other", code="OTHER")
+        StudentBatchEnrollment.objects.create(student=student, batch=other_batch, roll_number="001")
+        roster = self.client.get(
+            "/api/v1/users/students/", {"batch_id": batch["id"], "centre_id": center["id"]},
+            **self.tenant_headers,
+        )
+        self.assertEqual(roster.status_code, 200)
+        row, = roster.data["students"]
+        self.assertEqual((row["roll_number"], row["batch_name"], row["centre_name"]), ("100", "Lab", "North"))
+
+        paper = staff_post("question-papers/", {"name": "Algebra"}, expected=201)
+        formula = r"Simplify $\frac{x^2}{x}$"
+        question = staff_post(f"question-papers/{paper['id']}/questions/", {
+            "section": "Algebra", "question_type": "MCQ_SINGLE", "content_text": formula,
+            "key": "A", "positive_marks": 4, "negative_marks": 0,
+            "options": [{"key": "A", "text": "$x$", "is_correct": True},
+                        {"key": "B", "text": "$x^2$", "is_correct": False}],
+        }, expected=201)["question"]
+        exam = staff_post("examinations/", {
+            "name": "Algebra CBT", "question_paper_id": paper["id"], "duration_minutes": 15,
+        }, expected=201)
+        exam_id = exam["id"]
+        assignments = {"batch_ids": [batch["id"]], "centre_ids": [center["id"]]}
+        self.assertEqual(staff_post(f"examinations/{exam_id}/assign-candidates/", assignments)["assigned_count"], 2)
+        self.assertEqual(staff_post(f"examinations/{exam_id}/assign-candidates/", assignments)["assigned_count"], 0)
+
+        candidate = APIClient()
+        login = candidate.post("/api/v1/auth/login/", {
+            "username": "candidate@example.org", "password": "CandidatePassword123!",
+        }, format="json")
+        self.assertEqual(login.status_code, 200, login.data)
+        self.assertEqual(login.data["user"]["role"], "STUDENT")
+        candidate.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}", **self.tenant_headers)
+
+        portal_url = "/api/v1/student/examinations/"
+        lobby_url = f"{portal_url}{exam_id}/"
+        start_url = "/api/v1/student/attempts/start/"
+        start_body = {"exam_id": exam_id}
+        self.assertEqual(candidate.get(portal_url).data["examinations"], [])
+        self.assertEqual(candidate.post(start_url, start_body, format="json").status_code, 404)
+
+        staff_post(f"examinations/{exam_id}/publish/")
+        visible, = candidate.get(portal_url).json()["examinations"]
+        self.assertEqual(visible["id"], exam_id)
+        self.assertEqual(float(visible["total_marks"]), 4)
+        lobby = candidate.get(lobby_url)
+        self.assertEqual(lobby.status_code, 200)
+        self.assertNotIn("questions", lobby.data)
+        self.assertEqual(candidate.get(f"/api/v1/examinations/{exam_id}/preview/").status_code, 403)
+
+        outsider = User.objects.create_user(username="unassigned", role=UserRole.STUDENT, organization=self.org)
+        unassigned = APIClient()
+        unassigned.force_authenticate(outsider)
+        self.assertEqual(unassigned.get(lobby_url, **self.tenant_headers).status_code, 404)
+        self.assertEqual(unassigned.post(start_url, start_body, format="json", **self.tenant_headers).status_code, 404)
+
+        start = candidate.post(start_url, start_body, format="json")
+        self.assertEqual(start.status_code, 200, start.data)
+        self.assertGreater(start.data["remaining_seconds"], 0)
+        delivered, = start.data["sections"][0]["questions"]
+        self.assertEqual(delivered["id"], question["id"])
+        self.assertEqual(delivered["content_text"], formula)
+        self.assertEqual([opt["key"] for opt in delivered["options"]], ["A", "B"])
+        self.assertNotIn("key", delivered)
+        self.assertNotIn("is_correct", delivered["options"][0])
+        attempt_url = f"/api/v1/student/attempts/{start.data['attempt_id']}/"
+        heartbeat = candidate.post(f"{attempt_url}heartbeat/", {}, format="json")
+        self.assertEqual(heartbeat.status_code, 200)
+        self.assertGreater(heartbeat.data["remaining_seconds"], 0)
+
+        for options in (["A"], [], ["B"]):
+            saved = candidate.post(f"{attempt_url}responses/", {
+                "question_id": question["id"], "selected_options": options,
+            }, format="json")
+            self.assertEqual(saved.status_code, 200, saved.data)
+            resume = candidate.get(f"{attempt_url}resume/")
+            self.assertEqual(resume.data["existing_responses"][question["id"]]["selected_options"], options)
+
+        submit = candidate.post(f"{attempt_url}submit/", {"submission_reason": "MANUAL_SUBMIT"}, format="json")
+        self.assertEqual(submit.status_code, 200, submit.data)
+        self.assertEqual(submit.data["submission_status"], "SUBMITTED")

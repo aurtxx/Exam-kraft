@@ -92,11 +92,6 @@ class ExaminationSerializer(serializers.ModelSerializer):
         ret = super().to_representation(instance)
         if instance.question_paper:
             ret['question_paper_id'] = str(instance.question_paper_id)
-        # Format start_window and end_window cleanly with ISO format if present
-        if instance.start_window:
-            ret['start_window'] = instance.start_window.strftime('%Y-%m-%dT%H:%M:%SZ')
-        if instance.end_window:
-            ret['end_window'] = instance.end_window.strftime('%Y-%m-%dT%H:%M:%SZ')
         return ret
 
 
