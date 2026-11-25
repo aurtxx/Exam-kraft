@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { homeForRole } from '../components/layout/ProtectedRoutes';
 import { useAuth } from '../context/AuthContext';
 import { Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 
@@ -13,7 +14,7 @@ export const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/staff';
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,8 +27,11 @@ export const Login: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await login(username.trim(), password);
-      navigate(from, { replace: true });
+      const { user } = await login(username.trim(), password);
+      const validReturn = user.role === 'STUDENT'
+        ? from === '/student' || from?.startsWith('/student/') || from?.startsWith('/online-exams/')
+        : from === '/staff' || from?.startsWith('/staff/');
+      navigate(validReturn && from ? from : homeForRole(user.role), { replace: true });
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       setError(

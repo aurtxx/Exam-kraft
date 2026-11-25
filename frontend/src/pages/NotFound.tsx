@@ -15,7 +15,7 @@ export const NotFound: React.FC = () => {
           The requested page or route does not exist in the EZExam platform.
         </p>
         <Link
-          to="/staff"
+          to="/"
           className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all shadow-sm"
         >
           <Home size={16} />

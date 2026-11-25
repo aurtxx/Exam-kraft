@@ -5,7 +5,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 
 export const Shell: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   if (isLoading) {
@@ -19,9 +19,11 @@ export const Shell: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  if (user.role === 'STUDENT') return <Navigate to="/student" replace />;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100">
