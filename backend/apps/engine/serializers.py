@@ -146,7 +146,16 @@ class ProctoringEventInputSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Detail keys must be strings <= 64 characters.")
             if isinstance(v, (dict, list)):
                 raise serializers.ValidationError("Nested objects/arrays are not permitted in details.")
-        raw_bytes = len(json.dumps(value, separators=(',', ':'), ensure_ascii=False).encode('utf-8'))
+        try:
+            serialized = json.dumps(
+                value,
+                separators=(',', ':'),
+                ensure_ascii=False,
+                allow_nan=False,
+            )
+        except ValueError:
+            raise serializers.ValidationError("Details payload cannot contain NaN or Infinity.")
+        raw_bytes = len(serialized.encode('utf-8'))
         if raw_bytes > 4096:
             raise serializers.ValidationError("Details payload exceeds 4096 bytes.")
         return value

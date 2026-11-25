@@ -11,6 +11,15 @@ class StartAttemptView(APIView):
     permission_classes = [IsAuthenticated, IsTenantMember]
 
     def post(self, request, id=None):
+        if not isinstance(request.data, dict):
+            return Response(
+                {
+                    'status': 'ERROR',
+                    'code': 'INVALID_PAYLOAD',
+                    'message': 'Request payload must be a JSON object.',
+                },
+                status=400,
+            )
         exam_id = id or request.data.get('exam_id')
         outcome = services.start_attempt(
             request.user,
@@ -24,6 +33,15 @@ class HeartbeatView(APIView):
     permission_classes = [IsAuthenticated, IsTenantMember]
 
     def post(self, request, id):
+        if not isinstance(request.data, dict):
+            return Response(
+                {
+                    'status': 'ERROR',
+                    'code': 'INVALID_PAYLOAD',
+                    'message': 'Request payload must be a JSON object.',
+                },
+                status=400,
+            )
         blur_count = request.data.get('window_blur_count', 0)
         outcome = services.heartbeat_attempt(
             id,

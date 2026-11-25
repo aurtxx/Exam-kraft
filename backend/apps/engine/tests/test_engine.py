@@ -1266,6 +1266,200 @@ class ProctoringEventValidationAndLaunchTestCase(TestCase):
         self.assertEqual(unassigned_res.status_code, status.HTTP_404_NOT_FOUND)
 
 
+class RemediationGuardsAndFallbackTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.org = Organization.objects.create(
+            name="Guard Org",
+            slug="guard-org",
+            domain="guard.ezexam.in",
+        )
+        self.other_org = Organization.objects.create(
+            name="Other Guard Org",
+            slug="other-guard-org",
+            domain="other-guard.ezexam.in",
+        )
+        self.student = User.objects.create_user(
+            username="stud_guard@guard.edu",
+            password="Password123!",
+            role=UserRole.STUDENT,
+            organization=self.org,
+        )
+        self.other_student = User.objects.create_user(
+            username="stud_guard_other@guard.edu",
+            password="Password123!",
+            role=UserRole.STUDENT,
+            organization=self.org,
+        )
+        self.client.force_authenticate(user=self.student)
+        self.tenant_headers = {"HTTP_X_TENANT_ID": str(self.org.id)}
+        self.paper = QuestionBank.objects.create(organization=self.org, name="Guard Paper")
+        self.q1 = Question.objects.create(
+            question_bank=self.paper,
+            section_name="Gen",
+            question_number=1,
+            question_type=QuestionType.MCQ_SINGLE,
+            content_text="Q1",
+            key="A",
+        )
+        Option.objects.create(question=self.q1, option_key="A", content_text="Yes", is_correct=True, order=1)
+        self.exam = Examination.objects.create(
+            organization=self.org,
+            name="Guard Exam",
+            question_paper=self.paper,
+            duration_minutes=60,
+            total_marks=4.0,
+            status=ExaminationStatus.PUBLISHED,
+            max_window_switches=3,
+        )
+
+    def test_services_candidate_examinations_fallback_when_module_missing(self):
+        import importlib
+        import sys
+        from unittest.mock import patch
+        from apps.examinations.models import CandidateAssignment
+        from apps.organizations.models import StudentBatchEnrollment
+        from apps.engine import services
+
+        batch = Batch.objects.create(organization=self.org, name="Batch G1")
+        StudentBatchEnrollment.objects.create(student=self.student, batch=batch, is_active=True)
+
+        assigned_student_exam = Examination.objects.create(
+            organization=self.org,
+            name="Student Assigned Exam",
+            question_paper=self.paper,
+            duration_minutes=30,
+            status=ExaminationStatus.PUBLISHED,
+        )
+        CandidateAssignment.objects.create(exam=assigned_student_exam, student=self.student)
+
+        assigned_batch_exam = Examination.objects.create(
+            organization=self.org,
+            name="Batch Assigned Exam",
+            question_paper=self.paper,
+            duration_minutes=30,
+            status=ExaminationStatus.SCHEDULED,
+        )
+        CandidateAssignment.objects.create(exam=assigned_batch_exam, batch=batch)
+
+        other_student_exam = Examination.objects.create(
+            organization=self.org,
+            name="Other Student Assigned Exam",
+            question_paper=self.paper,
+            duration_minutes=30,
+            status=ExaminationStatus.PUBLISHED,
+        )
+        CandidateAssignment.objects.create(exam=other_student_exam, student=self.other_student)
+
+        draft_exam = Examination.objects.create(
+            organization=self.org,
+            name="Draft Exam",
+            question_paper=self.paper,
+            duration_minutes=30,
+            status=ExaminationStatus.DRAFT,
+        )
+        other_org_exam = Examination.objects.create(
+            organization=self.other_org,
+            name="Other Org Exam",
+            duration_minutes=30,
+            status=ExaminationStatus.PUBLISHED,
+        )
+
+        # Simulate clean checkout where apps.examinations.candidates does not exist
+        try:
+            with patch.dict(sys.modules, {"apps.examinations.candidates": None}):
+                reloaded = importlib.reload(services)
+                scoped_ids = set(reloaded.candidate_examinations(self.student).values_list("id", flat=True))
+                self.assertEqual(
+                    scoped_ids,
+                    {self.exam.id, assigned_student_exam.id, assigned_batch_exam.id},
+                )
+                self.assertNotIn(other_student_exam.id, scoped_ids)
+                self.assertNotIn(draft_exam.id, scoped_ids)
+                self.assertNotIn(other_org_exam.id, scoped_ids)
+        finally:
+            importlib.reload(services)
+
+    def test_start_and_heartbeat_reject_non_dict_json_payloads(self):
+        for payload in ("[]", '"bad-string"', "123", "null"):
+            with self.subTest(endpoint="student_start", payload=payload):
+                res = self.client.post(
+                    "/api/v1/student/attempts/start/",
+                    data=payload,
+                    content_type="application/json",
+                    **self.tenant_headers,
+                )
+                self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(res.data["code"], "INVALID_PAYLOAD")
+
+            with self.subTest(endpoint="exam_start", payload=payload):
+                res = self.client.post(
+                    f"/api/v1/examinations/{self.exam.id}/start/",
+                    data=payload,
+                    content_type="application/json",
+                    **self.tenant_headers,
+                )
+                self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(res.data["code"], "INVALID_PAYLOAD")
+
+        start_res = self.client.post(
+            f"/api/v1/examinations/{self.exam.id}/start/",
+            **self.tenant_headers,
+        )
+        self.assertEqual(start_res.status_code, status.HTTP_200_OK)
+        att_id = start_res.data["attempt_id"]
+
+        for payload in ("[]", '"bad-string"', "123", "null"):
+            with self.subTest(endpoint="heartbeat", payload=payload):
+                res = self.client.post(
+                    f"/api/v1/attempts/{att_id}/heartbeat/",
+                    data=payload,
+                    content_type="application/json",
+                    **self.tenant_headers,
+                )
+                self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(res.data["code"], "INVALID_PAYLOAD")
+
+    def test_proctoring_details_rejects_nan_and_infinity(self):
+        from apps.engine import services
+        from apps.engine.serializers import ProctoringEventInputSerializer
+
+        start_res = self.client.post(
+            f"/api/v1/examinations/{self.exam.id}/start/",
+            **self.tenant_headers,
+        )
+        att_id = start_res.data["attempt_id"]
+
+        for bad_float in (float("nan"), float("inf"), float("-inf")):
+            ser = ProctoringEventInputSerializer(
+                data={"event_type": "TAB_SWITCH", "details": {"v": bad_float}}
+            )
+            self.assertFalse(ser.is_valid())
+            self.assertIn("details", ser.errors)
+
+            outcome = services.record_proctoring_event(
+                att_id,
+                self.student,
+                {"event_type": "TAB_SWITCH", "details": {"v": bad_float}},
+                tenant=self.org,
+            )
+            self.assertFalse(outcome.ok)
+            self.assertEqual(outcome.http_status, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(outcome.data["code"], "INVALID_PAYLOAD")
+
+        for bad_literal in ("NaN", "Infinity", "-Infinity"):
+            raw_body = f'{{"event_type": "TAB_SWITCH", "details": {{"v": {bad_literal}}}}}'
+            res = self.client.post(
+                f"/api/v1/attempts/{att_id}/proctoring_event/",
+                data=raw_body,
+                content_type="application/json",
+                **self.tenant_headers,
+            )
+            self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(ProctoringLog.objects.filter(attempt_id=att_id).count(), 0)
+
+
 POSTGRES_CONCURRENCY_SKIP_REASON = (
     "Requires PostgreSQL for row-level locking / concurrent constraint enforcement"
 )

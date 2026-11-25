@@ -13,7 +13,30 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from apps.accounts.models import User, UserRole
-from apps.examinations.candidates import candidate_examinations
+try:
+    from apps.examinations.candidates import candidate_examinations
+except (ImportError, ModuleNotFoundError):
+    def candidate_examinations(user):
+        from django.db.models import Q
+        from apps.organizations.models import StudentBatchEnrollment
+        from apps.examinations.models import Examination, ExaminationStatus
+
+        enrollments = StudentBatchEnrollment.objects.filter(
+            student=user, is_active=True, batch__organization_id=user.organization_id
+        )
+        return Examination.all_objects.filter(
+            organization_id=user.organization_id,
+            status__in=(
+                ExaminationStatus.PUBLISHED,
+                ExaminationStatus.SCHEDULED,
+                ExaminationStatus.IN_PROGRESS,
+            ),
+        ).filter(
+            Q(candidate_assignments__isnull=True)
+            | Q(candidate_assignments__student=user)
+            | Q(candidate_assignments__batch_id__in=enrollments.values('batch_id'))
+            | Q(candidate_assignments__center_id__in=enrollments.values('center_id'))
+        ).distinct()
 from apps.examinations.models import Examination, ExaminationQuestion, ExaminationStatus
 from apps.question_bank.models import Question, QuestionType, normalize_question_type
 from .models import (
