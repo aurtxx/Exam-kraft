@@ -5,12 +5,13 @@ from corsheaders.defaults import default_headers
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ezexam-dev-secret-key-m1-2026')
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-
-if not DEBUG and not os.environ.get('SECRET_KEY'):
-    raise RuntimeError('SECRET_KEY is required when DEBUG=False')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise RuntimeError('SECRET_KEY is required when DEBUG=False')
+    SECRET_KEY = 'django-insecure-ezexam-dev-secret-key-m1-2026'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*' if DEBUG else 'localhost').split(',')
 CSRF_TRUSTED_ORIGINS = [
@@ -150,6 +151,9 @@ else:
         }
     }
 
+if not DEBUG and 'sqlite' in DATABASES['default']['ENGINE']:
+    raise RuntimeError('SQLite is not allowed in production (DEBUG=False). Configure PostgreSQL.')
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -191,6 +195,14 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
     ),
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '60/minute',
+        'user': '600/minute',
+    },
 }
 
 # SimpleJWT Configuration
@@ -208,7 +220,14 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        'CORS_ALLOWED_ORIGINS',
+        'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000',
+    ).split(',')
+    if origin.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-tenant-id',

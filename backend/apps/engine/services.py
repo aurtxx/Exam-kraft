@@ -222,7 +222,7 @@ def build_attempt_payload(
     sections_data = []
     total_q_count = 0
 
-    exam_sections = exam.sections.all().order_by('order')
+    exam_sections = exam.sections.prefetch_related('exam_questions__question__options').all().order_by('order')
     if exam_sections.exists():
         for sec in exam_sections:
             eq_qs = sec.exam_questions.all().order_by('order')
@@ -926,13 +926,16 @@ def record_proctoring_event(
 
         max_switches = max_allowed_switches(attempt)
         if event_type in (ProctoringEventType.TAB_SWITCH, ProctoringEventType.WINDOW_BLUR):
-            attempt.tab_switch_count += 1
-            update_fields = ['tab_switch_count', 'updated_at']
+            from django.db.models import F
+            ExaminationAttempt.objects.filter(pk=attempt.pk).update(
+                tab_switch_count=F('tab_switch_count') + 1,
+                updated_at=check_now,
+            )
+            attempt.refresh_from_db(fields=['tab_switch_count'])
             if attempt.tab_switch_count > max_switches:
                 attempt.status = AttemptStatus.AUTO_SUBMITTED
                 attempt.submitted_at = check_now
-                update_fields.extend(['status', 'submitted_at'])
-            attempt.save(update_fields=update_fields)
+                attempt.save(update_fields=['status', 'submitted_at', 'updated_at'])
 
         return ServiceOutcome.success({
             'status': 'SUCCESS',

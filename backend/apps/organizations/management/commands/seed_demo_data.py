@@ -39,7 +39,7 @@ from apps.question_bank.models import (
 
 
 class Command(BaseCommand):
-    help = "Seed deterministic and realistic demo dataset for Exam-Kraft reconstruction (Feature 26)."
+    help = "Seed deterministic and realistic demo dataset for EZExam reconstruction (Feature 26)."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -95,12 +95,12 @@ class Command(BaseCommand):
         fac_pw = options["password"] or "Faculty@123456"
         stu_pw = options["password"] or "Student@123456"
 
-        self.stdout.write(self.style.NOTICE(">>> Starting Exam-Kraft Demo Data Seeding..."))
+        self.stdout.write(self.style.NOTICE(">>> Starting EZExam Demo Data Seeding..."))
 
         # 1. Organizations
         org_ezexam, _ = Organization.objects.update_or_create(
             slug="ezexam-academy",
-            defaults={"name": "Exam-Kraft Academy", "is_active": True},
+            defaults={"name": "EZExam Academy", "is_active": True},
         )
         org_apex, _ = Organization.objects.update_or_create(
             slug="apex-institute",
@@ -121,7 +121,7 @@ class Command(BaseCommand):
             "orgadmin@ezexam.local",
             org_pw,
             UserRole.ORG_ADMIN,
-            "Exam-Kraft Org Administrator",
+            "EZExam Org Administrator",
             org_ezexam,
         )
         faculty = self._create_user(
@@ -662,7 +662,7 @@ class Command(BaseCommand):
         evaluate_examination(exam_eval.id)
         Result.objects.filter(attempt__examination=exam_eval).update(is_published=True)
 
-        self.stdout.write(self.style.SUCCESS("✓ Seeded Organizations: Exam-Kraft Academy, Apex Technical Institute"))
+        self.stdout.write(self.style.SUCCESS("✓ Seeded Organizations: EZExam Academy, Apex Technical Institute"))
         self.stdout.write(self.style.SUCCESS(f"✓ Seeded Accounts: SuperAdmin, OrgAdmin, Faculty, {len(student_users)} Students"))
         self.stdout.write(self.style.SUCCESS("✓ Seeded Master Data: Batches (ENG-12A, MED-12B), Centers (CENTER-MAIN, CENTER-NORTH)"))
         self.stdout.write(self.style.SUCCESS("✓ Seeded Question Bank: 16 questions across Math, Physics, Chemistry, Aptitude"))

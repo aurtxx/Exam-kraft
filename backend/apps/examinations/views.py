@@ -1,4 +1,5 @@
 import uuid
+from django.conf import settings
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
 from django.db.models import Q, Sum
@@ -132,7 +133,7 @@ class ExaminationListCreateView(APIView):
             hide_results=bool(data.get('hide_results', False)),
             hide_rank=bool(data.get('hide_rank', False)),
             hide_analytics=bool(data.get('hide_analytics', False)),
-            short_url=f"ezex.in/{slug}",
+            short_url=f"{getattr(settings, 'SHORT_URL_BASE', 'https://examkraft.in')}/{slug}",
             created_by=request.user if request.user.is_authenticated else None,
         )
 
@@ -267,7 +268,7 @@ class PublishExaminationView(APIView):
                 raise exceptions.ValidationError({'question_paper_id': 'Unknown question paper.'})
             q_count = paper.questions.count()
         if q_count == 0:
-            q_count = exam.sections.filter(exam_questions__isnull=False).count()
+            q_count = ExaminationQuestion.objects.filter(section__exam=exam).count()
 
         if q_count == 0:
             return Response({

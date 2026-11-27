@@ -20,6 +20,53 @@ import ExamResultReportPage from './pages/student/ExamResultReportPage';
 import BatchAnalyticsPage from './pages/staff/BatchAnalyticsPage';
 import NotFound from './pages/NotFound';
 
+class ExamErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+          <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-6 text-center shadow-sm space-y-4">
+            <h2 className="text-lg font-bold text-slate-900">
+              An error occurred — your progress is auto-saved
+            </h2>
+            <p className="text-sm text-slate-600">
+              You can reload the page to resume your exam or return to the student portal.
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded-lg bg-[#2d8df1] text-white text-sm font-semibold hover:bg-[#1f7ad8]"
+              >
+                Reload Exam
+              </button>
+              <a
+                href="/student"
+                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50"
+              >
+                Return to Portal
+              </a>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -32,11 +79,11 @@ export const App: React.FC = () => {
           <Route element={<ProtectedRoutes student />}>
             <Route path="/student" element={<CandidatePortal />} />
             <Route path="/student/exam/:id/lobby" element={<ExamLobbyPage />} />
-            <Route path="/student/exam/:id/test" element={<ExamCBTPage />} />
+            <Route path="/student/exam/:id/test" element={<ExamErrorBoundary><ExamCBTPage /></ExamErrorBoundary>} />
             <Route path="/student/exam/:id/finish" element={<ExamFinishPage />} />
             <Route path="/student/attempts/:id/report" element={<ExamResultReportPage />} />
             <Route path="/online-exams/:id" element={<ExamLobbyPage />} />
-            <Route path="/online-exams/:id/test" element={<ExamCBTPage />} />
+            <Route path="/online-exams/:id/test" element={<ExamErrorBoundary><ExamCBTPage /></ExamErrorBoundary>} />
           </Route>
 
           <Route element={<ProtectedRoutes />}>

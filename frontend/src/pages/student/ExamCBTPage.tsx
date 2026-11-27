@@ -379,11 +379,9 @@ export const ExamCBTPage: React.FC = () => {
       }
     };
 
-    window.addEventListener('blur', handleVisibilityOrBlur);
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      window.removeEventListener('blur', handleVisibilityOrBlur);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [loading, attempt, blurCount, isSubmitting, maxBlurSwitches]);
@@ -914,10 +912,11 @@ export const ExamCBTPage: React.FC = () => {
                     ).map((opt) => {
                       const isSelected = selectedOptions.includes(opt.key);
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={opt.key}
                           onClick={() => handleOptionSelect(opt.key)}
-                          className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all font-semibold text-sm select-none ${
+                          className={`w-full text-left flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all font-semibold text-sm select-none ${
                             isSelected
                               ? 'border-[#2d8df1] bg-[#2d8df1]/10 text-primary-700 shadow-xs'
                               : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 text-slate-700'
@@ -927,7 +926,7 @@ export const ExamCBTPage: React.FC = () => {
                             {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                           </div>
                           {opt.label}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -941,10 +940,11 @@ export const ExamCBTPage: React.FC = () => {
                     {currentQuestion.options?.map((opt) => {
                       const isSelected = selectedOptions.includes(opt.key);
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={opt.key}
                           onClick={() => handleOptionSelect(opt.key)}
-                          className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all select-none ${
+                          className={`w-full text-left flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all select-none ${
                             isSelected
                               ? 'border-[#2d8df1] bg-[#2d8df1]/10 text-slate-900 shadow-xs'
                               : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 text-slate-700'
@@ -962,7 +962,7 @@ export const ExamCBTPage: React.FC = () => {
                           <div className="text-xs font-medium leading-relaxed pt-0.5">
                             <MathRenderer content={opt.text || opt.content_text || ''} />
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

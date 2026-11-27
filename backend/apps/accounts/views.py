@@ -3,7 +3,7 @@ import csv
 import secrets
 import uuid
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.db.models.functions import Trim
 from rest_framework import status, generics, exceptions
 from rest_framework.views import APIView
@@ -11,6 +11,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser, BaseParser
 from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from .models import User, UserProfile, UserRole, FacultyProfile
 from .serializers import (
     LoginSerializer,
@@ -106,7 +108,13 @@ class LogoutView(APIView):
 
     def post(self, request):
         serializer = LogoutSerializer(data=request.data)
-        serializer.is_valid(raise_exception=False)
+        if serializer.is_valid():
+            refresh_token = serializer.validated_data.get('refresh')
+            if refresh_token:
+                try:
+                    RefreshToken(refresh_token).blacklist()
+                except TokenError:
+                    pass
         return Response(
             {
                 'status': 'SUCCESS',
@@ -235,13 +243,10 @@ class StudentListCreateView(APIView):
         search = request.query_params.get('search')
         if search:
             qs = qs.filter(
-                username__icontains=search
-            ) | qs.filter(
-                profile__full_name__icontains=search
-            ) | qs.filter(
-                enrollments__roll_number__icontains=search
-            ) | qs.filter(
-                email__icontains=search
+                Q(username__icontains=search)
+                | Q(profile__full_name__icontains=search)
+                | Q(enrollments__roll_number__icontains=search)
+                | Q(email__icontains=search)
             )
 
         batch_id = request.query_params.get('batch_id')
@@ -501,6 +506,8 @@ class StudentBulkImportView(APIView):
                 errors.append(f"Row {row_num}: Missing required columns.")
                 continue
 
+            prev_err_count = len(errors)
+
             r_num = row[roll_idx].strip()
             r_name = row[name_idx].strip()
             r_batch_code = row[batch_idx].strip()
@@ -546,6 +553,9 @@ class StudentBulkImportView(APIView):
             # Check DB duplicate roll
             if tenant and StudentBatchEnrollment.objects.filter(batch__organization=tenant, roll_number=r_num).exists():
                 errors.append(f"Row {row_num}: Roll number '{r_num}' already exists in database.")
+
+            if len(errors) > prev_err_count:
+                continue
 
             to_create.append({
                 'roll_number': r_num,

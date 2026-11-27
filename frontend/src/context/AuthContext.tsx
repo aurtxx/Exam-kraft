@@ -15,12 +15,42 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+    if (typeof payload.exp !== 'number') return false;
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
+function clearAuthStorage(): void {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('current_user');
+  localStorage.removeItem('current_organization');
+  localStorage.removeItem('tenant_id');
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token || isTokenExpired(token)) {
+      clearAuthStorage();
+      return null;
+    }
     const cached = localStorage.getItem('current_user');
     return cached ? JSON.parse(cached) : null;
   });
   const [organization, setOrganization] = useState<Organization | null>(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token || isTokenExpired(token)) {
+      return null;
+    }
     const cached = localStorage.getItem('current_organization');
     return cached ? JSON.parse(cached) : null;
   });

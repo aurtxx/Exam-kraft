@@ -11,7 +11,7 @@ class TenantMiddleware(MiddlewareMixin):
     Resolves the active tenant Organization from:
     1. Authenticated User / JWT token claims
     2. 'X-Tenant-ID' request header (UUID or slug)
-    3. Host subdomain mapping (e.g. {slug}.examkraft.in)
+    3. Host subdomain mapping (e.g. {slug}.ezexam.in)
     and binds it to thread/task context via contextvars.
     """
 
@@ -36,7 +36,14 @@ class TenantMiddleware(MiddlewareMixin):
         if not tenant:
             header_tenant = request.META.get('HTTP_X_TENANT_ID')
             if header_tenant:
-                tenant = self._get_organization(header_tenant.strip())
+                candidate_tenant = self._get_organization(header_tenant.strip())
+                if candidate_tenant is not None:
+                    user = getattr(request, 'user', None)
+                    if user and user.is_authenticated:
+                        if getattr(user, 'role', None) == 'SUPERADMIN' or getattr(user, 'organization_id', None) == candidate_tenant.id:
+                            tenant = candidate_tenant
+                    else:
+                        tenant = candidate_tenant
 
         # 3. Try Host Subdomain
         if not tenant:
