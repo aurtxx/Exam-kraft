@@ -813,6 +813,182 @@ class AttemptLifecycleServicesTestCase(TestCase):
         att = ExaminationAttempt.objects.get(id=att_id)
         self.assertEqual(att.status, AttemptStatus.IN_PROGRESS)
 
+    def test_submit_attempt_derives_status_server_authoritatively(self):
+        # 1. Spoofing AUTO_TIMER_EXPIRY before server_deadline still persists SUBMITTED
+        start1 = self.client.post(f"/api/v1/examinations/{self.exam.id}/start/", **self.tenant_headers)
+        att1_id = start1.data["attempt_id"]
+
+        res1 = self.client.post(
+            f"/api/v1/attempts/{att1_id}/submit/",
+            {"submission_reason": "AUTO_TIMER_EXPIRY"},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(res1.status_code, status.HTTP_200_OK)
+        self.assertEqual(res1.data["submission_status"], "SUBMITTED")
+        self.assertEqual(res1.data["attempt_status"], AttemptStatus.SUBMITTED)
+        self.assertEqual(res1.data["submission_reason"], "MANUAL_SUBMIT")
+        self.assertEqual(ExaminationAttempt.objects.get(id=att1_id).status, AttemptStatus.SUBMITTED)
+
+        # 2. MANUAL_SUBMIT inside [server_deadline, hard_deadline] grace window derives AUTO_SUBMITTED
+        student2 = User.objects.create_user(
+            username="stud_grace@lifecycle.edu",
+            password="StudentPassword123!",
+            role=UserRole.STUDENT,
+            organization=self.org,
+        )
+        self.client.force_authenticate(user=student2)
+        start2 = self.client.post(f"/api/v1/examinations/{self.exam.id}/start/", **self.tenant_headers)
+        att2_id = start2.data["attempt_id"]
+        att2 = ExaminationAttempt.objects.get(id=att2_id)
+        att2.server_deadline = timezone.now() - timedelta(seconds=10)
+        att2.save(update_fields=["server_deadline"])
+
+        res2 = self.client.post(
+            f"/api/v1/attempts/{att2_id}/submit/",
+            {"submission_reason": "MANUAL_SUBMIT"},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(res2.status_code, status.HTTP_200_OK)
+        self.assertEqual(res2.data["submission_status"], "SUBMITTED")
+        self.assertEqual(res2.data["attempt_status"], AttemptStatus.AUTO_SUBMITTED)
+        self.assertEqual(res2.data["submission_reason"], "AUTO_TIMER_EXPIRY")
+        att2.refresh_from_db()
+        self.assertEqual(att2.status, AttemptStatus.AUTO_SUBMITTED)
+
+        # Idempotent re-submit preserves derived AUTO_SUBMITTED status/reason
+        res2_dup = self.client.post(
+            f"/api/v1/attempts/{att2_id}/submit/",
+            {"submission_reason": "MANUAL_SUBMIT"},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(res2_dup.status_code, status.HTTP_200_OK)
+        self.assertEqual(res2_dup.data["code"], "ALREADY_SUBMITTED")
+        self.assertEqual(res2_dup.data["attempt_status"], AttemptStatus.AUTO_SUBMITTED)
+        self.assertEqual(res2_dup.data["submission_reason"], "AUTO_TIMER_EXPIRY")
+
+        # 3. MANUAL_SUBMIT when tab_switch_count > max_allowed_switches derives AUTO_SUBMITTED (PROCTORING_VIOLATION)
+        student3 = User.objects.create_user(
+            username="stud_proc_limit@lifecycle.edu",
+            password="StudentPassword123!",
+            role=UserRole.STUDENT,
+            organization=self.org,
+        )
+        self.client.force_authenticate(user=student3)
+        start3 = self.client.post(f"/api/v1/examinations/{self.exam.id}/start/", **self.tenant_headers)
+        att3_id = start3.data["attempt_id"]
+        ExaminationAttempt.objects.filter(id=att3_id).update(tab_switch_count=4)
+
+        res3 = self.client.post(
+            f"/api/v1/attempts/{att3_id}/submit/",
+            {"submission_reason": "MANUAL_SUBMIT"},
+            format="json",
+            **self.tenant_headers,
+        )
+        self.assertEqual(res3.status_code, status.HTTP_200_OK)
+        self.assertEqual(res3.data["attempt_status"], AttemptStatus.AUTO_SUBMITTED)
+        self.assertEqual(res3.data["submission_reason"], "PROCTORING_VIOLATION")
+        self.assertEqual(ExaminationAttempt.objects.get(id=att3_id).status, AttemptStatus.AUTO_SUBMITTED)
+
+    def test_expire_overdue_attempts_command_and_dry_run(self):
+        from io import StringIO
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+
+        now = timezone.now()
+        exam2 = Examination.objects.create(
+            organization=self.org,
+            name="Lifecycle Exam 2",
+            question_paper=self.paper,
+            duration_minutes=60,
+            total_marks=4.0,
+            status=ExaminationStatus.PUBLISHED,
+        )
+        s_grace = User.objects.create_user(username="grace@lc.edu", password="Pw!", role=UserRole.STUDENT, organization=self.org)
+        s_active = User.objects.create_user(username="active@lc.edu", password="Pw!", role=UserRole.STUDENT, organization=self.org)
+        s_done = User.objects.create_user(username="done@lc.edu", password="Pw!", role=UserRole.STUDENT, organization=self.org)
+
+        overdue_1 = ExaminationAttempt.objects.create(
+            user=self.student,
+            examination=self.exam,
+            started_at=now - timedelta(minutes=90),
+            server_deadline=now - timedelta(seconds=60),
+            status=AttemptStatus.IN_PROGRESS,
+        )
+        in_grace = ExaminationAttempt.objects.create(
+            user=s_grace,
+            examination=self.exam,
+            started_at=now - timedelta(minutes=60),
+            server_deadline=now - timedelta(seconds=10),
+            status=AttemptStatus.IN_PROGRESS,
+        )
+        still_active = ExaminationAttempt.objects.create(
+            user=s_active,
+            examination=self.exam,
+            started_at=now - timedelta(minutes=10),
+            server_deadline=now + timedelta(minutes=50),
+            status=AttemptStatus.IN_PROGRESS,
+        )
+        done_ts = now - timedelta(minutes=5)
+        already_done = ExaminationAttempt.objects.create(
+            user=s_done,
+            examination=self.exam,
+            started_at=now - timedelta(minutes=90),
+            server_deadline=now - timedelta(minutes=30),
+            submitted_at=done_ts,
+            status=AttemptStatus.SUBMITTED,
+        )
+        overdue_2 = ExaminationAttempt.objects.create(
+            user=self.student,
+            examination=exam2,
+            started_at=now - timedelta(minutes=90),
+            server_deadline=now - timedelta(minutes=5),
+            status=AttemptStatus.IN_PROGRESS,
+        )
+
+        # Dry-run must not mutate any attempts
+        out_dry = StringIO()
+        call_command("expire_overdue_attempts", "--dry-run", stdout=out_dry)
+        self.assertIn("2 overdue", out_dry.getvalue())
+        overdue_1.refresh_from_db()
+        overdue_2.refresh_from_db()
+        self.assertEqual(overdue_1.status, AttemptStatus.IN_PROGRESS)
+        self.assertEqual(overdue_2.status, AttemptStatus.IN_PROGRESS)
+
+        # Exam-scoped sweep expires only exam1's overdue attempt
+        out_scoped = StringIO()
+        call_command("expire_overdue_attempts", "--exam-id", str(self.exam.id), stdout=out_scoped)
+        self.assertIn("auto-submitted 1", out_scoped.getvalue())
+
+        overdue_1.refresh_from_db()
+        in_grace.refresh_from_db()
+        still_active.refresh_from_db()
+        already_done.refresh_from_db()
+        overdue_2.refresh_from_db()
+
+        self.assertEqual(overdue_1.status, AttemptStatus.AUTO_SUBMITTED)
+        self.assertIsNotNone(overdue_1.submitted_at)
+        self.assertEqual(in_grace.status, AttemptStatus.IN_PROGRESS)
+        self.assertEqual(still_active.status, AttemptStatus.IN_PROGRESS)
+        self.assertEqual(already_done.status, AttemptStatus.SUBMITTED)
+        self.assertEqual(already_done.submitted_at, done_ts)
+        self.assertEqual(overdue_2.status, AttemptStatus.IN_PROGRESS)
+
+        # Unscoped batched sweep expires remaining overdue attempt on exam2
+        out_batched = StringIO()
+        call_command("expire_overdue_attempts", "--batch-size", "1", stdout=out_batched)
+        self.assertIn("auto-submitted 1", out_batched.getvalue())
+        overdue_2.refresh_from_db()
+        self.assertEqual(overdue_2.status, AttemptStatus.AUTO_SUBMITTED)
+
+        # Invalid arguments raise CommandError cleanly
+        with self.assertRaises(CommandError):
+            call_command("expire_overdue_attempts", "--exam-id", "not-a-uuid")
+        with self.assertRaises(CommandError):
+            call_command("expire_overdue_attempts", "--batch-size", "0")
+
 
 class SaveResponseScopingAndValidationTestCase(TestCase):
     def setUp(self):

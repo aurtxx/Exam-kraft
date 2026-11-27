@@ -268,7 +268,7 @@ class PublishExaminationView(APIView):
                 raise exceptions.ValidationError({'question_paper_id': 'Unknown question paper.'})
             q_count = paper.questions.count()
         if q_count == 0:
-            q_count = ExaminationQuestion.objects.filter(section__exam=exam).count()
+            q_count = ExaminationQuestion.objects.filter(exam_section__exam=exam).count()
 
         if q_count == 0:
             return Response({

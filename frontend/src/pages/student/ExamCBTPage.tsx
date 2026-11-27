@@ -35,6 +35,7 @@ import {
 } from '../../utils/offlineResponseQueue';
 import {
   ClockAnchor,
+  getMonotonicNowMs,
   normalizeRemainingSeconds,
   createClockAnchor,
   computeClockRemaining,
@@ -85,7 +86,7 @@ export const ExamCBTPage: React.FC = () => {
   // Current question inputs
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [numericalValue, setNumericalValue] = useState<string>('');
-  const questionStartTimeRef = useRef<number>(Date.now());
+  const questionStartTimeRef = useRef<number>(getMonotonicNowMs());
 
   // Timer & Heartbeat state
   const [remainingSeconds, setRemainingSeconds] = useState<number>(3600);
@@ -110,10 +111,10 @@ export const ExamCBTPage: React.FC = () => {
   const flushRunnerRef = useRef<ReturnType<typeof createResponseFlushRunner> | null>(null);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const clockRef = useRef<ClockAnchor>(createClockAnchor(0, Date.now()));
+  const clockRef = useRef<ClockAnchor>(createClockAnchor(0, getMonotonicNowMs()));
 
   const applyServerClock = useCallback((remainingSecondsRaw: unknown) => {
-    const nowMs = Date.now();
+    const nowMs = getMonotonicNowMs();
     clockRef.current = createClockAnchor(remainingSecondsRaw, nowMs);
     setRemainingSeconds(normalizeRemainingSeconds(remainingSecondsRaw));
   }, []);
@@ -231,7 +232,7 @@ export const ExamCBTPage: React.FC = () => {
   useEffect(() => {
     if (!currentQuestion) return;
 
-    questionStartTimeRef.current = Date.now();
+    questionStartTimeRef.current = getMonotonicNowMs();
     const qidKey = String(currentQuestion.id);
 
     // Mark visited
@@ -253,12 +254,12 @@ export const ExamCBTPage: React.FC = () => {
     }
   }, [currentQuestion, activeSectionIndex, activeQuestionIndex]);
 
-  // Countdown uses wall-clock elapsed time so throttled tabs / OS sleep catch up on tick.
+  // Countdown uses monotonic performance.now() elapsed time so OS clock jumps cannot tamper with the timer, while throttled tabs / sleep still catch up on tick.
   useEffect(() => {
     if (loading || !attempt) return;
-    clockRef.current = createClockAnchor(attempt.remaining_seconds, Date.now());
+    clockRef.current = createClockAnchor(attempt.remaining_seconds, getMonotonicNowMs());
     const recomputeTick = () => {
-      setRemainingSeconds(computeClockRemaining(clockRef.current, Date.now()));
+      setRemainingSeconds(computeClockRemaining(clockRef.current, getMonotonicNowMs()));
     };
     recomputeTick();
     timerIntervalRef.current = setInterval(recomputeTick, 1000);
@@ -308,14 +309,14 @@ export const ExamCBTPage: React.FC = () => {
         void triggerPendingFlush();
       }
       void syncHeartbeat();
-      if (shouldAutoSubmitOnTick(computeClockRemaining(clockRef.current, Date.now()))) {
+      if (shouldAutoSubmitOnTick(computeClockRemaining(clockRef.current, getMonotonicNowMs()))) {
         void handleFinalSubmitRef.current('AUTO_TIMER_EXPIRY');
       }
     };
 
     const onVisibilityWake = () => {
       if (document.visibilityState === 'visible') {
-        setRemainingSeconds(computeClockRemaining(clockRef.current, Date.now()));
+        setRemainingSeconds(computeClockRemaining(clockRef.current, getMonotonicNowMs()));
         void syncHeartbeat();
       }
     };
@@ -416,7 +417,7 @@ export const ExamCBTPage: React.FC = () => {
 
       const qid = currentQuestion.id;
       const qidKey = String(qid);
-      const timeSpent = Math.round((Date.now() - questionStartTimeRef.current) / 1000);
+      const timeSpent = Math.max(0, Math.round((getMonotonicNowMs() - questionStartTimeRef.current) / 1000));
 
       const qType = currentQuestion.question_type as string;
       const isTextType = TEXT_INPUT_TYPES.has(qType);
@@ -554,12 +555,29 @@ export const ExamCBTPage: React.FC = () => {
   const handleFinalSubmitRef = useRef(handleFinalSubmit);
   handleFinalSubmitRef.current = handleFinalSubmit;
 
+  // Sync fullscreen indicator when user presses Escape or browser exits fullscreen
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   // Fullscreen toggle
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true));
+      document.documentElement
+        .requestFullscreen()
+        .then(() => setIsFullscreen(true))
+        .catch(() => {});
     } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false));
+      document
+        .exitFullscreen()
+        .then(() => setIsFullscreen(false))
+        .catch(() => {});
     }
   };
 

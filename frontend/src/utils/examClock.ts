@@ -3,6 +3,18 @@ export interface ClockAnchor {
   receivedAt: number;
 }
 
+/**
+ * Returns a monotonic millisecond timestamp using performance.now() so OS
+ * wall-clock changes (NTP jumps, manual clock tampering, DST) cannot distort
+ * elapsed exam countdown intervals.
+ */
+export function getMonotonicNowMs(): number {
+  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+    return performance.now();
+  }
+  return Date.now();
+}
+
 export function normalizeRemainingSeconds(raw: unknown): number {
   let num: number;
   if (typeof raw === 'number') {
@@ -22,17 +34,17 @@ export function normalizeRemainingSeconds(raw: unknown): number {
 
 export function createClockAnchor(
   remainingSeconds: unknown,
-  nowMs: number = Date.now()
+  nowMs: number = getMonotonicNowMs()
 ): ClockAnchor {
   return {
     seconds: normalizeRemainingSeconds(remainingSeconds),
-    receivedAt: Number.isFinite(nowMs) ? nowMs : Date.now(),
+    receivedAt: Number.isFinite(nowMs) ? nowMs : getMonotonicNowMs(),
   };
 }
 
 export function computeClockRemaining(
   anchor: ClockAnchor,
-  nowMs: number = Date.now()
+  nowMs: number = getMonotonicNowMs()
 ): number {
   const elapsedMs = Math.max(0, nowMs - anchor.receivedAt);
   const elapsedSeconds = Math.floor(elapsedMs / 1000);

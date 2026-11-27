@@ -109,10 +109,53 @@ export const ExamLobbyPage: React.FC = () => {
 
       {/* Main Container */}
       <main className="max-w-6xl mx-auto w-full p-6 flex-1 flex flex-col gap-6">
-        <Link className="text-sm font-semibold text-primary-700" to="/student">My Examinations</Link>
-        {loading && <p role="status">Loading examination…</p>}
-        {upcoming && <p>Opens {new Date(startTime).toLocaleString()}</p>}
-        {closed && <p>This examination window has closed.</p>}
+        <Link className="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline w-fit" to="/student">
+          ← My Examinations
+        </Link>
+        {loading && (
+          <div role="status" aria-busy="true" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <span className="sr-only">Loading examination…</span>
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm animate-pulse space-y-4">
+              <div className="h-6 w-64 bg-slate-200 rounded-md" />
+              <div className="space-y-2.5 pt-2">
+                <div className="h-4 w-full bg-slate-100 rounded-md" />
+                <div className="h-4 w-5/6 bg-slate-100 rounded-md" />
+                <div className="h-4 w-4/6 bg-slate-100 rounded-md" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+                <div className="h-12 bg-slate-100 rounded-xl" />
+                <div className="h-12 bg-slate-100 rounded-xl" />
+                <div className="h-12 bg-slate-100 rounded-xl" />
+                <div className="h-12 bg-slate-100 rounded-xl" />
+              </div>
+            </div>
+            <div className="space-y-5">
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm animate-pulse space-y-3">
+                <div className="h-5 w-40 bg-slate-200 rounded-md" />
+                <div className="h-4 w-full bg-slate-100 rounded-md" />
+                <div className="h-4 w-full bg-slate-100 rounded-md" />
+                <div className="h-4 w-3/4 bg-slate-100 rounded-md" />
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm animate-pulse space-y-3">
+                <div className="h-5 w-44 bg-slate-200 rounded-md" />
+                <div className="h-10 w-full bg-slate-100 rounded-xl" />
+                <div className="h-11 w-full bg-slate-200 rounded-xl" />
+              </div>
+            </div>
+          </div>
+        )}
+        {upcoming && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl flex items-center gap-3 text-sm font-medium">
+            <Clock className="w-5 h-5 flex-shrink-0 text-amber-600" />
+            <span>Opens {new Date(startTime).toLocaleString()}</span>
+          </div>
+        )}
+        {closed && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl flex items-center gap-3 text-sm font-medium">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span>This examination window has closed.</span>
+          </div>
+        )}
         {error && (
           <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl flex items-center gap-3 text-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />

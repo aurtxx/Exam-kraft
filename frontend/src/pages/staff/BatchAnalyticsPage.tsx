@@ -142,10 +142,31 @@ export const BatchAnalyticsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-slate-800">Compiling Cohort Analytics...</h2>
-        <p className="text-sm text-slate-500 mt-1">Aggregating score distribution, calculating percentiles and leaderboard.</p>
+      <div role="status" aria-busy="true" className="space-y-8 pb-16 animate-pulse">
+        <span className="sr-only">Compiling Cohort Analytics...</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div className="space-y-2">
+            <div className="h-7 w-64 bg-slate-200 rounded-md" />
+            <div className="h-4 w-48 bg-slate-100 rounded-md" />
+          </div>
+          <div className="flex gap-3">
+            <div className="h-9 w-36 bg-slate-200 rounded-xl" />
+            <div className="h-9 w-36 bg-slate-200 rounded-xl" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[0, 1, 2, 3, 4].map((idx) => (
+            <div key={idx} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+              <div className="h-4 w-28 bg-slate-100 rounded-md" />
+              <div className="h-8 w-16 bg-slate-200 rounded-md" />
+              <div className="h-3 w-32 bg-slate-100 rounded-md" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 h-72" />
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 h-72" />
+        </div>
       </div>
     );
   }
@@ -282,26 +303,36 @@ export const BatchAnalyticsPage: React.FC = () => {
             <BarChart2 className="w-5 h-5 text-indigo-500" />
           </div>
 
-          <div className="h-48 flex items-end gap-3 pt-6 border-b border-slate-200 pb-2">
-            {distributionBins.map((bin, idx) => {
-              const count = Number(bin.candidates);
-              const heightPct = Math.round((count / maxBinCount) * 100);
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group">
-                  <span className="text-xs font-bold text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
-                    {count}
-                  </span>
-                  <div
-                    className="w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg transition-all duration-300 min-h-[4px]"
-                    style={{ height: `${Math.max(heightPct, 6)}%` }}
-                  />
-                  <span className="text-[10px] text-slate-500 mt-2 rotate-[-45deg] origin-top-left font-mono">
-                    {bin.total_score}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {distributionBins.length > 0 ? (
+            <div className="h-48 flex items-end gap-3 pt-6 border-b border-slate-200 pb-2">
+              {distributionBins.map((bin, idx) => {
+                const count = Number(bin.candidates);
+                const heightPct = Math.round((count / maxBinCount) * 100);
+                return (
+                  <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group">
+                    <span className="text-xs font-bold text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
+                      {count}
+                    </span>
+                    <div
+                      className="w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg transition-all duration-300 min-h-[4px]"
+                      style={{ height: `${Math.max(heightPct, 6)}%` }}
+                    />
+                    <span className="text-[10px] text-slate-500 mt-2 rotate-[-45deg] origin-top-left font-mono">
+                      {bin.total_score}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-48 flex flex-col items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/70 text-center px-4">
+              <BarChart2 className="w-6 h-6 text-slate-400 mb-2" />
+              <p className="text-xs font-semibold text-slate-600">No score distribution data yet</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Histogram bars appear once candidates submit and are evaluated.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Top Performers Podium */}
@@ -312,40 +343,50 @@ export const BatchAnalyticsPage: React.FC = () => {
               <Award className="w-5 h-5 text-amber-500" />
             </div>
 
-            <div className="space-y-3">
-              {topPerformers.map((cand, idx) => (
-                <div
-                  key={cand.attempt_id}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                        idx === 0
-                          ? 'bg-amber-400 text-white'
-                          : idx === 1
-                          ? 'bg-slate-300 text-slate-800'
-                          : 'bg-amber-700/60 text-white'
-                      }`}
-                    >
-                      #{cand.rank}
-                    </span>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-xs">
-                        {cand.candidate_name || cand.student || cand.username}
-                      </h4>
-                      <span className="text-[10px] text-slate-400 font-mono">@{cand.username}</span>
+            {topPerformers.length > 0 ? (
+              <div className="space-y-3">
+                {topPerformers.map((cand, idx) => (
+                  <div
+                    key={cand.attempt_id}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
+                          idx === 0
+                            ? 'bg-amber-400 text-white'
+                            : idx === 1
+                            ? 'bg-slate-300 text-slate-800'
+                            : 'bg-amber-700/60 text-white'
+                        }`}
+                      >
+                        #{cand.rank}
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-xs">
+                          {cand.candidate_name || cand.student || cand.username}
+                        </h4>
+                        <span className="text-[10px] text-slate-400 font-mono">@{cand.username}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-extrabold text-sm text-indigo-600">{cand.total_score} pts</span>
+                      <span className="block text-[10px] text-emerald-600 font-semibold">
+                        {cand.percentile?.toFixed(2)}%ile
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-extrabold text-sm text-indigo-600">{cand.total_score} pts</span>
-                    <span className="block text-[10px] text-emerald-600 font-semibold">
-                      {cand.percentile?.toFixed(2)}%ile
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-10 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/70 px-4">
+                <Trophy className="w-6 h-6 text-slate-400 mx-auto mb-2" />
+                <p className="text-xs font-semibold text-slate-600">No ranked attempts yet</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Top 3 performers will be highlighted after evaluation.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-400 text-center">

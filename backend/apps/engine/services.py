@@ -209,6 +209,74 @@ def expire_if_due(attempt: ExaminationAttempt, *, now: datetime | None = None) -
     return False
 
 
+def expire_overdue_attempts(
+    *,
+    exam_id: Any = None,
+    batch_size: int = 500,
+    dry_run: bool = False,
+    now: datetime | None = None,
+) -> dict[str, int]:
+    """
+    Sweep IN_PROGRESS attempts whose hard_deadline (server_deadline + ATTEMPT_GRACE_PERIOD)
+    has elapsed and transition them to AUTO_SUBMITTED under row-level locks.
+    """
+    if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
+        raise ValueError('batch_size must be a positive integer.')
+
+    exam_uuid = None
+    if exam_id is not None and str(exam_id).strip() != '':
+        try:
+            exam_uuid = uuid.UUID(str(exam_id).strip())
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise ValueError(f'Invalid exam_id: {exam_id}') from exc
+
+    check_now = now or timezone.now()
+    cutoff = check_now - ATTEMPT_GRACE_PERIOD
+
+    base_qs = ExaminationAttempt.objects.filter(
+        status=AttemptStatus.IN_PROGRESS,
+        server_deadline__lt=cutoff,
+    )
+    if exam_uuid is not None:
+        base_qs = base_qs.filter(examination_id=exam_uuid)
+
+    if dry_run:
+        due_count = base_qs.count()
+        return {'scanned': due_count, 'expired': 0, 'would_expire': due_count}
+
+    scanned = 0
+    expired = 0
+    seen_ids: set[uuid.UUID] = set()
+    use_skip_locked = transaction.get_connection().features.has_select_for_update_skip_locked
+
+    while True:
+        with transaction.atomic():
+            batch_qs = (
+                ExaminationAttempt.objects
+                .select_for_update(of=('self',), skip_locked=use_skip_locked)
+                .filter(status=AttemptStatus.IN_PROGRESS, server_deadline__lt=cutoff)
+            )
+            if exam_uuid is not None:
+                batch_qs = batch_qs.filter(examination_id=exam_uuid)
+            if seen_ids:
+                batch_qs = batch_qs.exclude(id__in=seen_ids)
+
+            batch = list(batch_qs.order_by('server_deadline', 'id')[:batch_size])
+            if not batch:
+                break
+
+            for attempt in batch:
+                seen_ids.add(attempt.id)
+                scanned += 1
+                if expire_if_due(attempt, now=check_now):
+                    expired += 1
+
+            if len(batch) < batch_size:
+                break
+
+    return {'scanned': scanned, 'expired': expired, 'would_expire': expired}
+
+
 def build_attempt_payload(
     attempt: ExaminationAttempt,
     is_recovered: bool = False,
@@ -526,11 +594,19 @@ def submit_attempt(
 
         if is_finalized(attempt):
             submitted_ts = attempt.submitted_at or check_now
+            if attempt.status == AttemptStatus.SUBMITTED:
+                derived_reason = 'MANUAL_SUBMIT'
+            elif attempt.tab_switch_count > max_allowed_switches(attempt):
+                derived_reason = 'PROCTORING_VIOLATION'
+            else:
+                derived_reason = 'AUTO_TIMER_EXPIRY'
             return ServiceOutcome.success({
                 'status': 'SUCCESS',
                 'code': 'ALREADY_SUBMITTED',
                 'attempt_id': str(attempt.id),
                 'submission_status': 'SUBMITTED',
+                'attempt_status': attempt.status,
+                'submission_reason': derived_reason,
                 'submitted_at': submitted_ts.isoformat(),
                 'message': 'Attempt was already recorded as submitted.',
             })
@@ -542,11 +618,21 @@ def submit_attempt(
                 403,
             )
 
-        attempt.status = (
-            AttemptStatus.AUTO_SUBMITTED
-            if reason == 'AUTO_TIMER_EXPIRY'
-            else AttemptStatus.SUBMITTED
-        )
+        max_switches = max_allowed_switches(attempt)
+        proctoring_exceeded = attempt.tab_switch_count > max_switches
+        deadline_reached = check_now >= attempt.server_deadline
+
+        if proctoring_exceeded or deadline_reached:
+            attempt.status = AttemptStatus.AUTO_SUBMITTED
+            derived_reason = (
+                'PROCTORING_VIOLATION'
+                if proctoring_exceeded and not deadline_reached
+                else 'AUTO_TIMER_EXPIRY'
+            )
+        else:
+            attempt.status = AttemptStatus.SUBMITTED
+            derived_reason = 'MANUAL_SUBMIT'
+
         attempt.submitted_at = check_now
         attempt.save(update_fields=['status', 'submitted_at', 'updated_at'])
 
@@ -554,6 +640,8 @@ def submit_attempt(
             'status': 'SUCCESS',
             'attempt_id': str(attempt.id),
             'submission_status': 'SUBMITTED',
+            'attempt_status': attempt.status,
+            'submission_reason': derived_reason,
             'submitted_at': attempt.submitted_at.isoformat(),
             'message': 'Examination submitted successfully. Results will be published by faculty.',
         })
