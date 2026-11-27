@@ -79,6 +79,11 @@ export const ExamCBTPage: React.FC = () => {
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [calcDisplay, setCalcDisplay] = useState("0");
+  const [calcPrev, setCalcPrev] = useState<number | null>(null);
+  const [calcOp, setCalcOp] = useState<string | null>(null);
+  const [calcClearNext, setCalcClearNext] = useState(false);
 
   // In-memory responses & visited tracker
   const [responses, setResponses] = useState<Record<string, CBTResponseRecord>>({});
@@ -1079,6 +1084,82 @@ export const ExamCBTPage: React.FC = () => {
           </aside>
         )}
       </div>
+
+            {/* VIRTUAL CALCULATOR POPUP */}
+      {showCalculator && (
+        <div className="fixed bottom-20 right-8 z-50 w-72 bg-white rounded-2xl shadow-2xl border border-slate-300 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800 text-white select-none">
+            <span className="text-xs font-bold tracking-wider uppercase flex items-center gap-1.5">
+              <span>🧮</span> Scientific Calculator
+            </span>
+            <button
+              onClick={() => setShowCalculator(false)}
+              className="text-slate-400 hover:text-white text-sm font-bold p-1"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="p-3 bg-slate-900">
+            <div className="bg-slate-950 rounded-xl px-3 py-2 text-right text-white font-mono text-xl tracking-wider overflow-x-auto min-h-[44px] flex items-center justify-end">
+              {calcDisplay}
+            </div>
+          </div>
+          <div className="p-3 grid grid-cols-4 gap-2 bg-slate-100 select-none">
+            {["C", "±", "%", "÷", "7", "8", "9", "×", "4", "5", "6", "-", "1", "2", "3", "+", "0", ".", "⌫", "="].map((btn) => (
+              <button
+                key={btn}
+                onClick={() => {
+                  if (btn === "C") {
+                    setCalcDisplay("0");
+                    setCalcPrev(null);
+                    setCalcOp(null);
+                    setCalcClearNext(false);
+                  } else if (btn === "⌫") {
+                    setCalcDisplay((prev) => (prev.length > 1 ? prev.slice(0, -1) : "0"));
+                  } else if (btn === "±") {
+                    setCalcDisplay((prev) => (prev.startsWith("-") ? prev.slice(1) : "-" + prev));
+                  } else if (["+", "-", "×", "÷"].includes(btn)) {
+                    setCalcPrev(parseFloat(calcDisplay));
+                    setCalcOp(btn);
+                    setCalcClearNext(true);
+                  } else if (btn === "=") {
+                    if (calcOp && calcPrev !== null) {
+                      const cur = parseFloat(calcDisplay);
+                      let res = 0;
+                      if (calcOp === "+") res = calcPrev + cur;
+                      if (calcOp === "-") res = calcPrev - cur;
+                      if (calcOp === "×") res = calcPrev * cur;
+                      if (calcOp === "÷") res = cur !== 0 ? calcPrev / cur : 0;
+                      setCalcDisplay(String(Number(res.toFixed(8))));
+                      setCalcPrev(null);
+                      setCalcOp(null);
+                      setCalcClearNext(true);
+                    }
+                  } else if (btn === ".") {
+                    if (!calcDisplay.includes(".")) setCalcDisplay((prev) => prev + ".");
+                  } else {
+                    if (calcDisplay === "0" || calcClearNext) {
+                      setCalcDisplay(btn);
+                      setCalcClearNext(false);
+                    } else {
+                      setCalcDisplay((prev) => prev + btn);
+                    }
+                  }
+                }}
+                className={`py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-xs ${
+                  ["+", "-", "×", "÷", "="].includes(btn)
+                    ? "bg-primary-600 text-white hover:bg-primary-700"
+                    : btn === "C"
+                    ? "bg-rose-500 text-white hover:bg-rose-600"
+                    : "bg-white text-slate-800 hover:bg-slate-200 border border-slate-200"
+                }`}
+              >
+                {btn}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 5. FINISH CONFIRMATION MODAL */}
       <FinishConfirmationModal
