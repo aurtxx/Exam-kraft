@@ -78,6 +78,7 @@ export const ExamCBTPage: React.FC = () => {
   // Active navigation state
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   // In-memory responses & visited tracker
   const [responses, setResponses] = useState<Record<string, CBTResponseRecord>>({});
@@ -1038,17 +1039,44 @@ export const ExamCBTPage: React.FC = () => {
           </footer>
         </div>
 
-        {/* Right: Question Palette Sidebar */}
-        {currentSection && (
-          <QuestionPalette
-            questions={currentSection.questions || []}
-            currentQuestionIndex={activeQuestionIndex}
-            responses={responses}
-            visitedQuestionIds={visitedQuestionIds}
-            onSelectQuestion={(idx) => setActiveQuestionIndex(idx)}
-            candidateName={candidateName}
-            rollNumber={rollNumber}
+        {/* Backdrop for mobile drawer */}
+        {isPaletteOpen && (
+          <div
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 lg:hidden"
+            onClick={() => setIsPaletteOpen(false)}
           />
+        )}
+
+        {/* Right: Question Palette - Slide-over drawer on mobile/tablet, pinned on lg+ */}
+        {currentSection && (
+          <aside
+            className={`fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-2xl transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:z-auto lg:shadow-sm lg:border-l lg:border-slate-200 flex flex-col flex-shrink-0 overflow-hidden ${
+              isPaletteOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+            }`}
+          >
+            {/* Mobile drawer header */}
+            <div className="lg:hidden flex items-center justify-between p-3 border-b border-slate-200 bg-slate-50">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Question Palette</span>
+              <button
+                onClick={() => setIsPaletteOpen(false)}
+                className="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <QuestionPalette
+              questions={currentSection.questions || []}
+              currentQuestionIndex={activeQuestionIndex}
+              responses={responses}
+              visitedQuestionIds={visitedQuestionIds}
+              onSelectQuestion={(idx) => {
+                setActiveQuestionIndex(idx);
+                setIsPaletteOpen(false);
+              }}
+              candidateName={candidateName}
+              rollNumber={rollNumber}
+            />
+          </aside>
         )}
       </div>
 
