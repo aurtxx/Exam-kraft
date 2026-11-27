@@ -351,6 +351,37 @@ class EngineComprehensiveTestCase(TestCase):
         self.assertEqual(late_save.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(late_save.data["code"], "ATTEMPT_LOCKED")
 
+    def test_pending_responses_submit_as_a_batch_and_are_ignored_on_retry(self):
+        start = self.client.post(f"/api/v1/examinations/{self.exam.id}/start/", **self.tenant_headers)
+        attempt_id = start.data["attempt_id"]
+        url = f"/api/v1/attempts/{attempt_id}/submit/"
+        responses = AttemptResponse.objects.filter(attempt_id=attempt_id)
+        first = {"question_id": str(self.q1.id), "selected_options": ["C"]}
+        second = {"question_id": str(self.q2.id), "selected_options": ["A", "C"]}
+
+        invalid = self.client.post(
+            url, {"pending_responses": [first, {**second, "selected_options": ["Z"]}]},
+            format="json", **self.tenant_headers,
+        )
+        self.assertEqual(invalid.status_code, status.HTTP_400_BAD_REQUEST, invalid.data)
+        self.assertFalse(responses.exists())
+        self.assertEqual(ExaminationAttempt.objects.get(pk=attempt_id).status, AttemptStatus.IN_PROGRESS)
+
+        submitted = self.client.post(
+            url, {"pending_responses": [first, second]}, format="json", **self.tenant_headers,
+        )
+        self.assertEqual(submitted.status_code, status.HTTP_200_OK, submitted.data)
+        self.assertEqual(submitted.data["attempt_status"], AttemptStatus.SUBMITTED)
+        self.assertEqual(responses.get(question=self.q1).selected_options, ["C"])
+        self.assertEqual(responses.get(question=self.q2).selected_options, ["A", "C"])
+
+        retry = self.client.post(
+            url, {"pending_responses": [{**first, "selected_options": ["A"]}]},
+            format="json", **self.tenant_headers,
+        )
+        self.assertEqual(retry.data["code"], "ALREADY_SUBMITTED")
+        self.assertEqual(responses.get(question=self.q1).selected_options, ["C"])
+
     def test_auto_submit_on_timer_expiry(self):
         start_res = self.client.post(f"/api/v1/examinations/{self.exam.id}/start/", **self.tenant_headers)
         att_id = start_res.data["attempt_id"]

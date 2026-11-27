@@ -570,11 +570,12 @@ def submit_attempt(
     user,
     *,
     reason: str = 'MANUAL_SUBMIT',
+    pending_responses: list[dict[str, Any]] | None = None,
     tenant=None,
     now: datetime | None = None,
 ) -> ServiceOutcome:
     """
-    Atomically lock `attempt`, enforce idempotency and deadline expiry, and finalize submission.
+    Save pending responses and finalize submission under the same attempt lock.
     """
     if reason is None:
         reason = 'MANUAL_SUBMIT'
@@ -621,6 +622,25 @@ def submit_attempt(
         max_switches = max_allowed_switches(attempt)
         proctoring_exceeded = attempt.tab_switch_count > max_switches
         deadline_reached = check_now >= attempt.server_deadline
+
+        if pending_responses is not None and not isinstance(pending_responses, list):
+            return ServiceOutcome.error('INVALID_PAYLOAD', 'pending_responses must be a list.', 400)
+
+        # A late timer notification can still finalize the attempt after the answer-saving grace period.
+        if pending_responses and check_now <= hard_deadline(attempt):
+            prepared_responses = []
+            for payload in pending_responses:
+                if not isinstance(payload, dict):
+                    return ServiceOutcome.error(
+                        'INVALID_PAYLOAD', 'Each pending response must be a JSON object.', 400,
+                    )
+                question, cleaned, err = prepare_response(attempt, payload.get('question_id'), payload)
+                if err is not None:
+                    return err
+                prepared_responses.append((question, cleaned))
+
+            for question, cleaned in prepared_responses:
+                AttemptResponse.objects.update_or_create(attempt=attempt, question=question, defaults=cleaned)
 
         if proctoring_exceeded or deadline_reached:
             attempt.status = AttemptStatus.AUTO_SUBMITTED
@@ -745,10 +765,16 @@ def validate_answer_payload(
         num_str = str(raw_num).strip()
         if num_str == '':
             cleaned_numerical = None
-        elif len(num_str) > 100:
+        elif kind in (QuestionType.NUMERICAL, QuestionType.SINGLE_DIGIT) and len(num_str) > 100:
             return None, ServiceOutcome.error(
-                'INVALID_RESPONSE',
-                'numerical_value exceeds maximum length of 100 characters.',
+                "INVALID_RESPONSE",
+                "numerical_value exceeds maximum length of 100 characters.",
+                400,
+            )
+        elif len(num_str) > 50000:
+            return None, ServiceOutcome.error(
+                "INVALID_RESPONSE",
+                "Response text exceeds maximum length of 50,000 characters.",
                 400,
             )
         else:
@@ -860,6 +886,14 @@ def validate_answer_payload(
     }, None
 
 
+def prepare_response(attempt, question_identifier, answer_payload):
+    question, err = resolve_exam_question(attempt, question_identifier)
+    if err is not None:
+        return None, None, err
+    cleaned, err = validate_answer_payload(question, answer_payload)
+    return question, cleaned, err
+
+
 def save_response(
     attempt_id,
     user,
@@ -889,13 +923,9 @@ def save_response(
                 403,
             )
 
-        question, q_err = resolve_exam_question(attempt, question_identifier)
-        if q_err is not None:
-            return q_err
-
-        cleaned, val_err = validate_answer_payload(question, answer_payload)
-        if val_err is not None:
-            return val_err
+        question, cleaned, err = prepare_response(attempt, question_identifier, answer_payload)
+        if err is not None:
+            return err
 
         response_obj, _ = AttemptResponse.objects.update_or_create(
             attempt=attempt,

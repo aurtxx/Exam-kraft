@@ -67,6 +67,14 @@ class ExaminationSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['id', 'organization', 'status', 'created_at', 'updated_at']
+        extra_kwargs = {'duration_minutes': {'min_value': 1, 'max_value': 1440}}
+
+    def validate(self, attrs):
+        start_window = attrs.get('start_window', getattr(self.instance, 'start_window', None))
+        end_window = attrs.get('end_window', getattr(self.instance, 'end_window', None))
+        if start_window is not None and end_window is not None and start_window >= end_window:
+            raise serializers.ValidationError({'end_window': 'Must be later than start_window.'})
+        return attrs
 
     def validate_question_paper(self, paper):
         self.validate_question_paper_id(paper.pk if paper else None)

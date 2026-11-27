@@ -1,5 +1,6 @@
 import uuid
 from django.db import transaction
+from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
 from rest_framework import status, generics, exceptions
 from rest_framework.views import APIView
@@ -33,6 +34,18 @@ def ensure_paper_unlocked(paper):
             'code': 'LOCKED',
             'message': 'Cannot modify a locked or published question paper.',
         })
+
+
+class ProtectedDeletionMixin:
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response({
+                'status': 'ERROR',
+                'code': 'PROTECTED_DELETE',
+                'message': 'This item cannot be deleted because it is referenced by an examination.',
+            }, status=status.HTTP_409_CONFLICT)
 
 
 class QuestionBankListCreateView(APIView):
@@ -77,7 +90,7 @@ class QuestionBankListCreateView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 
-class QuestionBankDetailView(generics.RetrieveUpdateDestroyAPIView):
+class QuestionBankDetailView(ProtectedDeletionMixin, generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
     serializer_class = QuestionBankSerializer
     lookup_field = 'id'
@@ -306,7 +319,7 @@ class QuestionListCreateView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 
-class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
+class QuestionDetailView(ProtectedDeletionMixin, generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
     serializer_class = QuestionSerializer
     queryset = Question.objects.all()

@@ -71,11 +71,12 @@ class SubmitAttemptView(APIView):
     permission_classes = [IsAuthenticated, IsTenantMember]
 
     def post(self, request, id):
-        reason = request.data.get('submission_reason', 'MANUAL_SUBMIT') if isinstance(request.data, dict) else 'MANUAL_SUBMIT'
+        data = request.data if isinstance(request.data, dict) else {}
         outcome = services.submit_attempt(
             id,
             request.user,
-            reason=reason,
+            reason=data.get('submission_reason', 'MANUAL_SUBMIT'),
+            pending_responses=data.get('pending_responses'),
             tenant=getattr(request, 'tenant', None),
         )
         return Response(outcome.data, status=outcome.http_status)

@@ -851,14 +851,14 @@ export const ExamCBTPage: React.FC = () => {
                         Write your answer below:
                       </div>
                       <span className="text-[11px] font-mono text-slate-400">
-                        {numericalValue.length}/100
+                        {numericalValue.length}/10,000
                       </span>
                     </div>
                     <textarea
                       value={numericalValue}
                       onChange={(e) => setNumericalValue(e.target.value)}
                       rows={5}
-                      maxLength={100}
+                      maxLength={10000}
                       className="w-full px-4 py-3 rounded-xl border-2 border-primary-400 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-y min-h-[48px] placeholder:text-slate-400 text-slate-800"
                       placeholder="Write your detailed answer here..."
                       autoComplete="off"
@@ -885,7 +885,7 @@ export const ExamCBTPage: React.FC = () => {
                         )}
                       </div>
                       <span className="text-[11px] font-mono text-slate-400">
-                        {numericalValue.length}/100
+                        {numericalValue.length}/50,000
                       </span>
                     </div>
                     {currentQuestion.code_boilerplate && (
@@ -902,7 +902,7 @@ export const ExamCBTPage: React.FC = () => {
                       value={numericalValue}
                       onChange={(e) => setNumericalValue(e.target.value)}
                       rows={6}
-                      maxLength={100}
+                      maxLength={50000}
                       className="w-full px-4 py-3 rounded-xl border-2 border-primary-400 text-sm font-mono bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/30 resize-y min-h-[48px] placeholder:text-slate-400 text-slate-800"
                       placeholder="Enter your code or answer here..."
                       autoComplete="off"

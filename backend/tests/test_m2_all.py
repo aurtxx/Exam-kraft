@@ -8,7 +8,9 @@ from rest_framework import status
 from apps.organizations.models import Organization, Batch, ExaminationCenter, StudentBatchEnrollment
 from apps.accounts.models import User, UserRole, UserProfile, FacultyProfile
 from apps.question_bank.models import QuestionBank, Question, Option, QuestionType
-from apps.examinations.models import Examination, ExaminationStatus, CandidateAssignment
+from apps.examinations.models import (
+    CandidateAssignment, Examination, ExaminationQuestion, ExaminationSection, ExaminationStatus,
+)
 from apps.notices.models import Notice
 
 
@@ -30,6 +32,67 @@ class MilestoneM2ComprehensiveTestCase(TestCase):
         UserProfile.objects.create(user=self.admin_user, full_name="System Administrator")
         self.client.force_authenticate(user=self.admin_user)
         self.tenant_headers = {"HTTP_X_TENANT_ID": str(self.org.id)}
+
+    def test_referenced_paper_and_question_cannot_be_deleted(self):
+        paper = QuestionBank.all_objects.create(organization=self.org, name="Protected paper")
+        question = Question.objects.create(
+            question_bank=paper, question_type=QuestionType.SUBJECTIVE,
+            content_text="Explain your answer.",
+        )
+        exam = Examination.all_objects.create(organization=self.org, name="Exam", question_paper=paper)
+        section = ExaminationSection.objects.create(exam=exam, title="Section")
+        ExaminationQuestion.objects.create(exam_section=section, question=question)
+
+        for resource, pk in (("question-papers", paper.pk), ("questions", question.pk)):
+            with self.subTest(resource=resource):
+                response = self.client.delete(f"/api/v1/{resource}/{pk}/", **self.tenant_headers)
+                self.assertEqual(response.status_code, status.HTTP_409_CONFLICT, response.data)
+
+        self.assertTrue(QuestionBank.all_objects.filter(pk=paper.pk).exists())
+        self.assertTrue(Question.objects.filter(pk=question.pk).exists())
+
+    def test_roster_creation_rejects_malformed_batch_and_centre_ids(self):
+        for resource, invalid_fields in (
+            ("students", {"batch_id": "invalid", "centre_id": "invalid"}),
+            ("faculty", {"batch_ids": ["invalid"], "centre_ids": ["invalid"]}),
+        ):
+            for field, value in invalid_fields.items():
+                with self.subTest(resource=resource, field=field):
+                    response = self.client.post(
+                        f"/api/v1/users/{resource}/",
+                        {"name": "Invalid assignment", "roll_number": "R1", field: value},
+                        format="json", **self.tenant_headers,
+                    )
+                    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+                    self.assertIn(field, response.data)
+        self.assertFalse(User.objects.filter(organization=self.org).exclude(pk=self.admin_user.pk).exists())
+
+    def test_exam_updates_validate_duration_and_effective_window(self):
+        exam = Examination.all_objects.create(
+            organization=self.org, name="Exam",
+            start_window="2026-11-28T10:00:00Z", end_window="2026-11-28T11:00:00Z",
+        )
+        url = f"/api/v1/examinations/{exam.pk}/"
+        cases = (
+            (self.client.put, {"name": "Exam", "duration_minutes": 1441}, "duration_minutes"),
+            (self.client.patch, {"duration_minutes": 0}, "duration_minutes"),
+            (self.client.patch, {"start_window": "2026-11-28T11:00:00Z"}, "end_window"),
+            (self.client.put, {"name": "Exam", "end_window": "2026-11-28T09:00:00Z"}, "end_window"),
+        )
+        for update, payload, field in cases:
+            with self.subTest(payload=payload):
+                response = update(url, payload, format="json", **self.tenant_headers)
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+                self.assertIn(field, response.data)
+
+        for duration in (1, 1440):
+            response = self.client.patch(
+                url, {"duration_minutes": duration, "start_window": None},
+                format="json", **self.tenant_headers,
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+            self.assertEqual(response.data["duration_minutes"], duration)
+            self.assertIsNone(response.data["start_window"])
 
     # ==========================================================================
     # 1. Master Data: Batch & Center CRUD with Tenant Isolation

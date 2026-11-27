@@ -26,6 +26,21 @@ from apps.organizations.serializers import OrganizationSerializer
 from apps.accounts.permissions import IsOrgAdmin, IsActiveTenantMember, IsOrgAdminOrReadOnly, require_tenant
 
 
+def parse_uuid(value, field):
+    try:
+        return uuid.UUID(str(value))
+    except ValueError:
+        raise exceptions.ValidationError({field: 'Enter a valid UUID.'})
+
+
+def parse_uuid_list(values, field):
+    if values is None or values == '':
+        return []
+    if not isinstance(values, list):
+        raise exceptions.ValidationError({field: 'Expected a list of UUIDs.'})
+    return [parse_uuid(value, field) for value in values]
+
+
 class PlainTextOrCSVParser(BaseParser):
     media_type = 'text/csv'
 
@@ -162,8 +177,8 @@ class FacultyListCreateView(APIView):
         department = data.get('department', '')
 
         subjects = data.get('subjects') or data.get('subject_ids') or []
-        batch_ids = data.get('batch_ids') or []
-        centre_ids = data.get('centre_ids') or []
+        batch_ids = parse_uuid_list(data.get('batch_ids'), 'batch_ids')
+        centre_ids = parse_uuid_list(data.get('centre_ids'), 'centre_ids')
 
         with transaction.atomic():
             user = User.objects.create_user(
@@ -316,6 +331,11 @@ class StudentListCreateView(APIView):
                 'message': 'name is required.'
             }, status=status.HTTP_400_BAD_REQUEST)
         name = name.strip()
+
+        if batch_id is not None and batch_id != '':
+            batch_id = parse_uuid(batch_id, 'batch_id')
+        if centre_id is not None and centre_id != '':
+            centre_id = parse_uuid(centre_id, 'centre_id')
 
         # Check duplicate roll number in tenant
         if tenant:
