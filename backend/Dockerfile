@@ -5,6 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN groupadd --system ezexam && useradd --system --gid ezexam ezexam
+RUN mkdir -p /app/staticfiles /app/media && chown -R ezexam:ezexam /app
 COPY --chown=ezexam:ezexam . .
 USER ezexam
 RUN SECRET_KEY=build-dummy-key DEBUG=True python manage.py collectstatic --noinput
