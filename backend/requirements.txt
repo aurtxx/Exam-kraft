@@ -10,4 +10,6 @@ channels>=4.1.0
 channels_redis>=4.2.0
 gunicorn>=23,<24
 whitenoise>=6.8,<7
+openpyxl>=3.1.0
+Pillow>=10.0.0
 
