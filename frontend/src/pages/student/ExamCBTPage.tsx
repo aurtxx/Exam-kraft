@@ -1174,7 +1174,13 @@ export const ExamCBTPage: React.FC = () => {
 
       {/* 6. TAB SWITCH / BLUR PROCTORING WARNING MODAL */}
       {showBlurWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="proctoring-modal-title"
+          aria-describedby="proctoring-modal-desc"
+        >
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-rose-200 text-center space-y-4 animate-in zoom-in-95 duration-150">
             <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 mx-auto flex items-center justify-center">
               <ShieldAlert className="w-8 h-8" />

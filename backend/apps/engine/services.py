@@ -621,7 +621,10 @@ def submit_attempt(
 
         max_switches = max_allowed_switches(attempt)
         proctoring_exceeded = attempt.tab_switch_count > max_switches
-        deadline_reached = check_now >= attempt.server_deadline
+        # Unify deadline boundary with hard_deadline grace period & support small client skew for AUTO_TIMER_EXPIRY
+        deadline_reached = check_now >= hard_deadline(attempt) or (
+            reason == "AUTO_TIMER_EXPIRY" and check_now >= (attempt.server_deadline - timedelta(seconds=5))
+        )
 
         if pending_responses is not None and not isinstance(pending_responses, list):
             return ServiceOutcome.error('INVALID_PAYLOAD', 'pending_responses must be a list.', 400)
