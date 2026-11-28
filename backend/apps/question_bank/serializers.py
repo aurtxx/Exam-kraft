@@ -109,6 +109,8 @@ class QuestionSerializer(serializers.ModelSerializer):
             'content_text',
             'content_html',
             'image_url',
+            'raw_image_url',
+            'upload_metadata',
             'explanation',
             'difficulty',
             'key',

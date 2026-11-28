@@ -387,3 +387,66 @@ class TagListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         tenant = require_tenant(self.request)
         serializer.save(organization=tenant)
+
+
+class BulkZipUploadView(APIView):
+    """
+    Accepts a ZIP file containing:
+    1. Screenshot images (auto-converted to questions with high-res raw + light webp), OR
+    2. Excel sheet (questions.xlsx) with an images/ directory.
+    Stores metadata (uploader, reason, timestamp) and allows teachers to curate/reorder.
+    """
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
+
+    def post(self, request, paper_id):
+        tenant = require_tenant(request)
+        paper = get_object_or_404(QuestionBank.objects.select_for_update(), organization=tenant, pk=paper_id)
+        ensure_paper_unlocked(paper)
+
+        zip_file = request.FILES.get('file') or request.FILES.get('zip_file')
+        if not zip_file:
+            return Response({'error': 'No ZIP file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        reason = request.data.get('reason', 'Bulk screenshot / question bank import')
+
+        from .importers import ingest_zip_package
+        result = ingest_zip_package(zip_file, paper, user=request.user, reason=reason)
+
+        if 'error' in result:
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'status': 'SUCCESS',
+            'message': f"Successfully ingested {result.get('questions_created', 0)} questions.",
+            'data': result
+        }, status=status.HTTP_201_CREATED)
+
+
+class BulkQuestionCurateView(APIView):
+    """
+    Allows teachers to bulk curate questions in a paper:
+    - reorder question numbers
+    - batch delete unwanted questions (e.g. invalid screenshots)
+    """
+    permission_classes = [IsAuthenticated, IsActiveTenantMember, IsOrgAdminOrFaculty]
+
+    @transaction.atomic
+    def post(self, request, paper_id):
+        tenant = require_tenant(request)
+        paper = get_object_or_404(QuestionBank.objects.select_for_update(), organization=tenant, pk=paper_id)
+        ensure_paper_unlocked(paper)
+
+        delete_ids = request.data.get('delete_ids', [])
+        order_map = request.data.get('order_map', {}) # {question_id: new_number}
+
+        if delete_ids:
+            Question.objects.filter(question_bank=paper, id__in=delete_ids).delete()
+
+        for q_id, new_order in order_map.items():
+            Question.objects.filter(question_bank=paper, id=q_id).update(question_number=int(new_order))
+
+        return Response({
+            'status': 'SUCCESS',
+            'message': 'Questions curated successfully.'
+        }, status=status.HTTP_200_OK)
+

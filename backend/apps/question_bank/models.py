@@ -128,6 +128,7 @@ class Question(models.Model):
     content_text = models.TextField()  # LaTeX / Markdown
     content_html = models.TextField(blank=True, default='')
     image_url = models.URLField(max_length=500, null=True, blank=True)
+    raw_image_url = models.URLField(max_length=500, null=True, blank=True)
     explanation = models.TextField(blank=True, default='')
     difficulty = models.CharField(max_length=20, default='MEDIUM')
     
@@ -148,6 +149,9 @@ class Question(models.Model):
     coding_language = models.CharField(max_length=50, blank=True, default='')
     code_boilerplate = models.TextField(blank=True, default='')
     test_cases = models.JSONField(default=list, blank=True)
+
+    # Ingestion & Audit Metadata
+    upload_metadata = models.JSONField(default=dict, blank=True)
 
     tags = models.ManyToManyField(Tag, blank=True, related_name='questions')
     created_at = models.DateTimeField(auto_now_add=True)

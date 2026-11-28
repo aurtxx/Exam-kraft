@@ -159,6 +159,8 @@ export interface Question {
   content_text: string;
   content_html?: string;
   image_url?: string | null;
+  raw_image_url?: string | null;
+  upload_metadata?: Record<string, unknown>;
   explanation?: string;
   difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
   key?: string;
